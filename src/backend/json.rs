@@ -1,6 +1,7 @@
 use super::Backend;
 use async_trait::async_trait;
 use futures_util::StreamExt;
+use serde::Deserialize;
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -19,6 +20,9 @@ pub enum JsonError {
     /// todo
     #[error("an IO error occurred: {0}")]
     Io(#[from] io::Error),
+    /// todo
+    #[error("a deserialization error occurred")]
+    Deserialization(#[from] serde_json::Error),
 }
 
 /// todo
@@ -46,8 +50,14 @@ impl JsonBackend {
         }
     }
 
-    fn resolve_path<P: AsRef<Path>>(&self, path: P) -> PathBuf {
-        self.base_directory.clone().join(path)
+    fn resolve_path<P: AsRef<Path>>(&self, path: &[P]) -> PathBuf {
+        let mut base = self.base_directory.clone();
+
+        for value in path {
+            base = base.join(value);
+        }
+
+        base
     }
 }
 
@@ -64,7 +74,7 @@ impl Backend for JsonBackend {
     }
 
     async fn has_table(&self, table: &str) -> Result<bool, Self::Error> {
-        let result = fs::read_dir(self.resolve_path(table)).await;
+        let result = fs::read_dir(self.resolve_path(&[table])).await;
 
         match result {
             Ok(_) => Ok(true),
@@ -74,21 +84,21 @@ impl Backend for JsonBackend {
     }
 
     async fn create_table(&self, table: &str) -> Result<(), Self::Error> {
-        fs::create_dir(self.resolve_path(table)).await?;
+        fs::create_dir(self.resolve_path(&[table])).await?;
 
         Ok(())
     }
 
     async fn delete_table(&self, table: &str) -> Result<(), Self::Error> {
         if self.has_table(table).await? {
-            fs::remove_dir_all(self.resolve_path(table)).await?;
+            fs::remove_dir_all(self.resolve_path(&[table])).await?;
         }
 
         Ok(())
     }
 
     async fn get_keys(&self, table: &str) -> Result<Vec<String>, Self::Error> {
-        let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(table)).await?);
+        let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(&[table])).await?);
         let mut output = Vec::new();
 
         while let Some(raw) = stream.next().await {
@@ -99,5 +109,20 @@ impl Backend for JsonBackend {
         }
 
         Ok(output)
+    }
+
+    async fn get<D>(&self, table: &str, id: &str) -> Result<D, Self::Error>
+    where
+        D: for<'de> Deserialize<'de>,
+    {
+        let filename = id.to_owned() + ".json";
+        let path = self.resolve_path(&[table, filename.as_str()]);
+        let file: std::fs::File = fs::File::open(path).await?.into_std().await;
+        let reader = io::BufReader::new(file);
+        Ok(serde_json::from_reader(reader)?)
+    }
+
+    async fn has(&self, table: &str, id: &str) -> Result<bool, Self::Error> {
+        todo!()
     }
 }

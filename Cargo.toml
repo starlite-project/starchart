@@ -18,7 +18,6 @@ version = "0.3"
 default-features = false
 features = ["derive"]
 version = "1"
-optional = true
 
 [dependencies.serde_json]
 version = "1"
@@ -39,4 +38,4 @@ optional = true
 [features]
 default = ["json", "serial"]
 json = ["serde_json", "serial"]
-serial = ["serde", "tokio", "tokio-stream"]
+serial = ["tokio", "tokio-stream"]
