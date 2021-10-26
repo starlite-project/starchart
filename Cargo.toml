@@ -13,7 +13,15 @@ default-features = false
 features = ["derive"]
 version = "1"
 
+[dependencies.serde_json]
+version = "1"
+optional = true
+
 [dependencies.tokio]
 default-features = false
 features = ["fs"]
 version = "1"
+
+[features]
+default = ["json"]
+json = ["serde_json"]
