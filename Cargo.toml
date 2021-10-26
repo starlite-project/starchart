@@ -1,0 +1,19 @@
+[package]
+name = "starchart"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1.0.30"
+
+[dependencies.serde]
+default-features = false
+features = ["derive"]
+version = "1"
+
+[dependencies.tokio]
+default-features = false
+features = ["fs"]
+version = "1"
