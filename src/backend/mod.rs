@@ -18,7 +18,7 @@ pub use self::json::JsonError;
 ///
 /// [`Database`]: crate::Database
 #[async_trait]
-pub trait Backend {
+pub trait Backend: Send + Sync {
     /// The [`Error`] type that the backend will report up.
     ///
     /// [`Error`]: std::error::Error

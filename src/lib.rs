@@ -9,14 +9,15 @@
     missing_copy_implementations
 )]
 #![deny(clippy::all, missing_docs)]
-#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding)]
+#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding, dead_code)]
 //! todo
 
 pub mod backend;
 mod database;
 pub mod error;
+mod gateway;
 
-pub use self::{database::Database, error::ChartError as Error};
+pub use self::{database::Database, error::ChartError as Error, gateway::Gateway};
 
 /// todo
 pub type ChartResult<T> = Result<T, Error>;
