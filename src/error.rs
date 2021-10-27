@@ -15,6 +15,6 @@ pub enum ChartError {
     #[error(transparent)]
     Json(#[from] JsonError),
     /// todo
-    #[error("an unknown error has occurred {0}")]
-    Custom(&'static str),
+    #[error(transparent)]
+    Custom(Box<dyn std::error::Error + Send + Sync>),
 }

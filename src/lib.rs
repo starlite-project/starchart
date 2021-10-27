@@ -21,7 +21,9 @@ mod database;
 pub mod error;
 mod gateway;
 
-pub use self::{database::Database, error::ChartError as Error, gateway::Gateway};
+#[doc(inline)]
+pub use self::error::ChartError as Error;
+pub use self::{database::Database, gateway::Gateway};
 
 /// todo
 pub type ChartResult<T> = Result<T, Error>;

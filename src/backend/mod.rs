@@ -34,9 +34,15 @@ pub trait Backend: Send + Sync {
     /// An optional shutdown function, useful for disconnecting from databases gracefully.
     ///
     /// The default impl does nothing
-    async fn shutdown(&self) -> Result<(), Self::Error> {
-        Ok(())
-    }
+    /// 
+    /// # Safety
+    /// 
+    /// This should not fail, as it's ran upon dropping the [`Gateway`],
+    /// and panicking during a drop means resources haven't adequately been cleaned up,
+    /// which isn't inherintly UB however it should still be documented.
+    /// 
+    /// [`Gateway`]: crate::Gateway
+    async unsafe fn shutdown(&self) {}
 
     /// Check if a table exists in the [`Database`].
     ///

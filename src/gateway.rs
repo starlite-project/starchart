@@ -26,8 +26,6 @@ impl<B: Backend> Gateway<B> {
 
 impl<B: Backend> Drop for Gateway<B> {
     fn drop(&mut self) {
-        let fut = self.backend.shutdown();
-
-        block_on(fut).expect("failed to shutdown (this is really bad)");
+        block_on(unsafe { self.backend.shutdown() });
     }
 }
