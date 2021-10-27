@@ -1,4 +1,4 @@
-#![feature(doc_cfg)]
+#![feature(doc_cfg, option_result_unwrap_unchecked)]
 #![warn(
     clippy::pedantic,
     clippy::nursery,
@@ -13,17 +13,10 @@
 //! todo
 
 pub mod backend;
+mod database;
 pub mod error;
 
-pub use self::error::ChartError as Error;
-
-use self::backend::Backend;
+pub use self::{database::Database, error::ChartError as Error};
 
 /// todo
 pub type ChartResult<T> = Result<T, Error>;
-
-/// todo
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct Database<B: Backend> {
-    backend: B,
-}

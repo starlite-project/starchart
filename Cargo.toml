@@ -39,3 +39,6 @@ optional = true
 default = ["json", "serial"]
 json = ["serde_json", "serial"]
 serial = ["tokio", "tokio-stream"]
+
+[workspace]
+members = ["./testing"]
