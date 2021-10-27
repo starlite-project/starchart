@@ -16,5 +16,5 @@ pub enum ChartError {
     Json(#[from] JsonError),
     /// todo
     #[error("an unknown error has occurred {0}")]
-    Custom(&'static str)
+    Custom(&'static str),
 }

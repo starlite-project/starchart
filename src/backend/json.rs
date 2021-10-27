@@ -178,7 +178,7 @@ impl Backend for JsonBackend {
         S: Serialize + Send + Sync,
     {
         let filepath = id.to_owned() + ".json";
-        
+
         let path = self.resolve_path(&[table, filepath.as_str()]);
 
         if self.has(table, id).await? {

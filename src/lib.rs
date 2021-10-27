@@ -9,7 +9,11 @@
     missing_copy_implementations
 )]
 #![deny(clippy::all, missing_docs)]
-#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding, dead_code)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::no_effect_underscore_binding,
+    dead_code
+)]
 //! todo
 
 pub mod backend;

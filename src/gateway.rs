@@ -1,6 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
-use crate::{Database, backend::Backend};
+use crate::{backend::Backend, Database};
 use futures::executor::block_on;
+use std::{collections::HashMap, sync::Arc};
 
 /// todo
 #[derive(Debug, Clone)]
@@ -11,9 +11,9 @@ pub struct Gateway<B: Backend> {
 
 impl<B: Backend> Gateway<B> {
     /// todo
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// todo
     pub async fn new(backend: B) -> Result<Self, B::Error> {
         backend.init().await?;

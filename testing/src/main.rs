@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use starchart::backend::{Backend, JsonBackend};
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct Settings {
@@ -24,7 +24,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     json_backend.ensure_table("guilds").await?;
 
-    json_backend.create("guilds", "hey", &Settings::new("hey".to_string())).await?;
+    json_backend
+        .create("guilds", "hey", &Settings::new("hey".to_string()))
+        .await?;
 
     Ok(())
 }
