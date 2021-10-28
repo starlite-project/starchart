@@ -1,5 +1,10 @@
-use super::Backend;
-use async_trait::async_trait;
+use super::{
+    future::{
+        CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
+        HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+    },
+    Backend,
+};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -89,138 +94,174 @@ impl JsonBackend {
     }
 }
 
-#[async_trait]
 impl Backend for JsonBackend {
     type Error = JsonError;
 
-    async fn init(&self) -> Result<(), JsonError> {
-        if fs::read_dir(&self.base_directory).await.is_err() {
-            fs::create_dir_all(&self.base_directory).await?;
-        }
+    fn init(&self) -> InitFuture<'_, JsonError> {
+        Box::pin(async move {
+            if fs::read_dir(&self.base_directory).await.is_err() {
+                fs::create_dir_all(&self.base_directory).await?;
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn has_table(&self, table: &str) -> Result<bool, Self::Error> {
-        let result = fs::read_dir(self.resolve_path(&[table])).await;
+    fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, JsonError> {
+        Box::pin(async move {
+            let result = fs::read_dir(self.resolve_path(&[table])).await;
 
-        match result {
-            Ok(_) => Ok(true),
-            Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-            Err(e) => Err(e.into()),
-        }
+            match result {
+                Ok(_) => Ok(true),
+                Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
+                Err(e) => Err(e.into()),
+            }
+        })
     }
 
-    async fn create_table(&self, table: &str) -> Result<(), Self::Error> {
-        fs::create_dir(self.resolve_path(&[table])).await?;
+    fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, JsonError> {
+        Box::pin(async move {
+            fs::create_dir(self.resolve_path(&[table])).await?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn delete_table(&self, table: &str) -> Result<(), Self::Error> {
-        if self.has_table(table).await? {
-            fs::remove_dir_all(self.resolve_path(&[table])).await?;
-        }
+    fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, JsonError> {
+        Box::pin(async move {
+            if self.has_table(table).await? {
+                fs::remove_dir_all(self.resolve_path(&[table])).await?;
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn get_keys<I>(&self, table: &str) -> Result<I, Self::Error>
+    fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, JsonError>
     where
         I: FromIterator<String>,
     {
-        let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(&[table])).await?);
-        let mut output = Vec::new();
+        Box::pin(async move {
+            let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(&[table])).await?);
+            let mut output = Vec::new();
 
-        while let Some(raw) = stream.next().await {
-            let entry = raw?;
+            while let Some(raw) = stream.next().await {
+                let entry = raw?;
 
-            if entry.file_type().await?.is_dir() {
-                continue;
+                if entry.file_type().await?.is_dir() {
+                    continue;
+                }
+
+                let filename = Self::resolve_key(entry.file_name()).ok();
+
+                if filename.is_none() {
+                    continue;
+                }
+
+                output.push(unsafe { filename.unwrap_unchecked() });
             }
 
-            let filename = Self::resolve_key(entry.file_name()).ok();
-
-            if filename.is_none() {
-                continue;
-            }
-
-            output.push(unsafe { filename.unwrap_unchecked() });
-        }
-
-        Ok(output.into_iter().collect())
+            Ok(output.into_iter().collect())
+        })
     }
 
-    async fn get<D>(&self, table: &str, id: &str) -> Result<D, Self::Error>
+    fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, JsonError>
     where
         D: for<'de> Deserialize<'de>,
     {
-        let filename = id.to_owned() + ".json";
-        let path = self.resolve_path(&[table, filename.as_str()]);
-        let file: std::fs::File = fs::File::open(path).await?.into_std().await;
-        let reader = io::BufReader::new(file);
-        Ok(serde_json::from_reader(reader)?)
+        Box::pin(async move {
+            let filename = id.to_owned() + ".json";
+            let path = self.resolve_path(&[table, filename.as_str()]);
+            let file: std::fs::File = fs::File::open(path).await?.into_std().await;
+            let reader = io::BufReader::new(file);
+            Ok(serde_json::from_reader(reader)?)
+        })
     }
 
-    async fn has(&self, table: &str, id: &str) -> Result<bool, Self::Error> {
-        let filename = id.to_owned() + ".json";
-        let file = fs::read(self.resolve_path(&[table, filename.as_str()])).await;
+    fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, JsonError> {
+        Box::pin(async move {
+            let filename = id.to_owned() + ".json";
+            let file = fs::read(self.resolve_path(&[table, filename.as_str()])).await;
 
-        match file {
-            Ok(_) => Ok(true),
-            Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-            Err(e) => Err(e.into()),
-        }
+            match file {
+                Ok(_) => Ok(true),
+                Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
+                Err(e) => Err(e.into()),
+            }
+        })
     }
 
-    async fn create<S>(&self, table: &str, id: &str, value: &S) -> Result<(), Self::Error>
+    fn create<'a, S>(
+        &'a self,
+        table: &'a str,
+        id: &'a str,
+        value: &'a S,
+    ) -> CreateFuture<'a, JsonError>
     where
         S: Serialize + Send + Sync,
     {
-        let filepath = id.to_owned() + ".json";
+        Box::pin(async move {
+            let filepath = id.to_owned() + ".json";
 
-        let path = self.resolve_path(&[table, filepath.as_str()]);
+            let path = self.resolve_path(&[table, filepath.as_str()]);
 
-        if self.has(table, id).await? {
-            return Err(JsonError::FileAlreadyExists(path));
-        }
+            if self.has(table, id).await? {
+                return Err(JsonError::FileAlreadyExists(path));
+            }
 
-        let serialized = serde_json::to_string(value)?.into_bytes();
+            let serialized = serde_json::to_string(value)?.into_bytes();
 
-        fs::write(path, serialized).await?;
+            fs::write(path, serialized).await?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn update<S>(&self, table: &str, id: &str, value: &S) -> Result<(), Self::Error>
+    fn update<'a, S>(
+        &'a self,
+        table: &'a str,
+        id: &'a str,
+        value: &'a S,
+    ) -> UpdateFuture<'a, JsonError>
     where
         S: Serialize + Send + Sync,
     {
-        let serialized = serde_json::to_string(value)?.into_bytes();
+        Box::pin(async move {
+            let serialized = serde_json::to_string(value)?.into_bytes();
 
-        let filepath = id.to_owned() + ".json";
+            let filepath = id.to_owned() + ".json";
 
-        let path = self.resolve_path(&[table, filepath.as_str()]);
+            let path = self.resolve_path(&[table, filepath.as_str()]);
 
-        fs::write(path, serialized).await?;
+            fs::write(path, serialized).await?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn replace<S>(&self, table: &str, id: &str, value: &S) -> Result<(), Self::Error>
+    fn replace<'a, S>(
+        &'a self,
+        table: &'a str,
+        id: &'a str,
+        value: &'a S,
+    ) -> ReplaceFuture<'a, JsonError>
     where
         S: Serialize + Send + Sync,
     {
-        self.update(table, id, value).await?;
+        Box::pin(async move {
+            self.update(table, id, value).await?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    async fn delete(&self, table: &str, id: &str) -> Result<(), Self::Error> {
-        let filename = id.to_owned() + ".json";
+    fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, JsonError> {
+        Box::pin(async move {
+            let filename = id.to_owned() + ".json";
 
-        fs::remove_file(self.resolve_path(&[table, filename.as_str()])).await?;
+            fs::remove_file(self.resolve_path(&[table, filename.as_str()])).await?;
 
-        Ok(())
+            Ok(())
+        })
     }
 }

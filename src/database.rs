@@ -23,7 +23,7 @@ impl<B: Backend> Clone for Database<B> {
     fn clone(&self) -> Self {
         Self {
             backend: self.backend.clone(),
-            table_name: self.table_name.clone()
+            table_name: self.table_name.clone(),
         }
     }
 }
