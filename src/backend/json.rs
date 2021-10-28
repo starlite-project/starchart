@@ -172,9 +172,17 @@ impl Backend for JsonBackend {
         Box::pin(async move {
             let filename = id.to_owned() + ".json";
             let path = self.resolve_path(&[table, filename.as_str()]);
-            let file: std::fs::File = fs::File::open(path).await?.into_std().await;
+            // let file: std::fs::File = fs::File::open(path).await?.into_std().await;
+            let file: std::fs::File = {
+                let res = fs::File::open(path).await;
+                match res {
+                    Ok(file) => file.into_std().await,
+                    Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
+                    Err(e) => return Err(e.into())
+                }
+            };
             let reader = io::BufReader::new(file);
-            Ok(serde_json::from_reader(reader)?)
+            Ok(Some(serde_json::from_reader(reader)?))
         })
     }
 

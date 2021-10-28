@@ -1,12 +1,13 @@
 use crate::{backend::Backend, Database};
 use futures::executor::block_on;
-use std::{collections::HashMap, sync::Arc};
+use std::{ sync::Arc};
+use dashmap::DashMap;
 
 /// todo
 #[derive(Debug, Clone)]
 pub struct Gateway<B: Backend> {
     backend: Arc<B>,
-    databases: HashMap<String, Database<B>>,
+    databases: DashMap<String, Database<B>>,
 }
 
 impl<B: Backend> Gateway<B> {
@@ -19,7 +20,7 @@ impl<B: Backend> Gateway<B> {
         backend.init().await?;
         Ok(Self {
             backend: Arc::new(backend),
-            databases: HashMap::new(),
+            databases: DashMap::new(),
         })
     }
 }

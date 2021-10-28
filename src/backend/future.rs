@@ -27,7 +27,7 @@ pub type GetAllFuture<'a, I, E> = PinBoxFuture<'a, Result<I, E>>;
 pub type GetKeysFuture<'a, I, E> = PinBoxFuture<'a, Result<I, E>>;
 
 /// todo
-pub type GetFuture<'a, D, E> = PinBoxFuture<'a, Result<D, E>>;
+pub type GetFuture<'a, D, E> = PinBoxFuture<'a, Result<Option<D>, E>>;
 
 /// todo
 pub type HasFuture<'a, E> = PinBoxFuture<'a, Result<bool, E>>;

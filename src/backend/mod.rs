@@ -10,9 +10,11 @@ use std::error::Error as StdError;
 
 pub mod future;
 
+mod cache;
 #[cfg(feature = "json")]
 mod json;
 
+pub use self::cache::CacheBackend;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
 
@@ -95,20 +97,17 @@ pub trait Backend: Send + Sync {
         I: FromIterator<D>,
     {
         Box::pin(async move {
-            let keys: Vec<String> = self
-                .get_keys::<Vec<_>>(table)
-                .await?
-                .into_iter()
-                .filter(|value| entries.contains(&value.as_str()))
-                .collect();
-
             let mut output = Vec::with_capacity(entries.len());
 
-            for key in keys {
-                output.push(self.get(table, key.as_str()).await);
+            for key in entries.iter().copied() {
+                let value = self.get(table, key).await?;
+                if value.is_none() {
+                    continue;
+                }
+                output.push(unsafe { value.unwrap_unchecked() });
             }
 
-            output.into_iter().collect::<Result<I, Self::Error>>()
+            Ok(output.into_iter().collect())
         })
     }
 

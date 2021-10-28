@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+dashmap = "4.0"
 thiserror = "1.0.30"
+
 
 [dependencies.futures]
 default-features = false
@@ -40,8 +42,9 @@ version = "0.1"
 optional = true
 
 [features]
-default = ["json", "serial"]
+default = ["json"]
 json = ["serde_json", "serial"]
+cache = ["serde_json"]
 serial = ["tokio", "tokio-stream"]
 
 [workspace]
