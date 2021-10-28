@@ -7,23 +7,32 @@ use super::{
 };
 use dashmap::{mapref::one::Ref, DashMap};
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
+use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
 
+/// todo
+#[doc(cfg(feature = "cache"))]
 #[derive(Debug, Error)]
 pub enum CacheError {
-    #[error("a JSON error occurred")]
-    SerdeJson(#[from] serde_json::Error),
+    /// todo
+    #[error("a serialization error occurred")]
+    Serialization(#[from] SerializerError),
+    /// todo
+    #[error("a deserialization error occurred")]
+    DeserializationError(#[from] DeserializerError),
+    /// todo
     #[error("the table {0} does not exist")]
     TableDoesntExist(String),
+    /// todo
     #[error("value already exists")]
     ValueAlreadyExists,
 }
 
 /// todo
+#[doc(cfg(feature = "cache"))]
 #[derive(Debug, Default, Clone)]
 pub struct CacheBackend {
-    tables: DashMap<String, DashMap<String, String>>,
+    tables: DashMap<String, DashMap<String, Value>>,
 }
 
 impl CacheBackend {
@@ -36,7 +45,7 @@ impl CacheBackend {
     unsafe fn get_table<'a>(
         &'a self,
         table: &'a str,
-    ) -> Result<Ref<'a, String, DashMap<String, String>>, CacheError> {
+    ) -> Result<Ref<'a, String, DashMap<String, Value>>, CacheError> {
         let temp = self.tables.get(table);
 
         if temp.is_none() {
@@ -99,8 +108,9 @@ impl Backend for CacheBackend {
 
                 entry.unwrap_unchecked()
             };
+            let value = json.value().clone();
 
-            Ok(Some(from_str(json.value().as_str())?))
+            Ok(value.deserialize_into()?)
         })
     }
 
@@ -130,7 +140,7 @@ impl Backend for CacheBackend {
                 return Err(CacheError::ValueAlreadyExists);
             }
 
-            let serialized = to_string(value)?;
+            let serialized = to_value(value)?;
 
             table_value.insert(id.to_owned(), serialized);
 
@@ -150,7 +160,7 @@ impl Backend for CacheBackend {
         Box::pin(async move {
             let table_value = unsafe { self.get_table(table)? };
 
-            table_value.insert(id.to_owned(), to_string(value)?);
+            table_value.insert(id.to_owned(), to_value(value)?);
 
             Ok(())
         })

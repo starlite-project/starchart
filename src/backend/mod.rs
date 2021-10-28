@@ -10,10 +10,12 @@ use std::error::Error as StdError;
 
 pub mod future;
 
+#[cfg(feature = "cache")]
 mod cache;
 #[cfg(feature = "json")]
 mod json;
 
+#[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
@@ -21,6 +23,10 @@ pub use self::json::JsonBackend;
 #[cfg(feature = "json")]
 #[cfg_attr(feature = "json", doc(hidden))]
 pub use self::json::JsonError;
+
+#[cfg(feature = "cache")]
+#[cfg_attr(feature = "cache", doc(hidden))]
+pub use self::cache::CacheError;
 
 /// The backend to be used with a [`Database`].
 ///

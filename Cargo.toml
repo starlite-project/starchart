@@ -9,7 +9,6 @@ edition = "2021"
 dashmap = "4.0"
 thiserror = "1.0.30"
 
-
 [dependencies.futures]
 default-features = false
 features = ["executor"]
@@ -29,6 +28,10 @@ version = "1"
 version = "1"
 optional = true
 
+[dependencies.serde-value]
+version = "0.7"
+optional = true
+
 [dependencies.tokio]
 default-features = false
 features = ["fs"]
@@ -44,7 +47,7 @@ optional = true
 [features]
 default = ["json"]
 json = ["serde_json", "serial"]
-cache = ["serde_json"]
+cache = ["serde-value"]
 serial = ["tokio", "tokio-stream"]
 
 [workspace]

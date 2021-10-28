@@ -178,7 +178,7 @@ impl Backend for JsonBackend {
                 match res {
                     Ok(file) => file.into_std().await,
                     Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
-                    Err(e) => return Err(e.into())
+                    Err(e) => return Err(e.into()),
                 }
             };
             let reader = io::BufReader::new(file);

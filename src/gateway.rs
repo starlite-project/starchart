@@ -1,7 +1,7 @@
 use crate::{backend::Backend, Database};
-use futures::executor::block_on;
-use std::{ sync::Arc};
 use dashmap::DashMap;
+use futures::executor::block_on;
+use std::sync::Arc;
 
 /// todo
 #[derive(Debug, Clone)]

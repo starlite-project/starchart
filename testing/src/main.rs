@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use starchart::backend::{Backend, JsonBackend};
+use starchart::backend::{Backend, CacheBackend};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct Settings {
@@ -18,15 +18,17 @@ impl Settings {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-    let json_backend = JsonBackend::new("../target/db")?;
+    let backend = CacheBackend::new();
 
-    json_backend.init().await?;
+    backend.init().await?;
 
-    json_backend.ensure_table("guilds").await?;
+    backend.ensure_table("guilds").await?;
 
-    json_backend
+    backend
         .create("guilds", "hey", &Settings::new("hey".to_string()))
         .await?;
+
+    dbg!(backend);
 
     Ok(())
 }
