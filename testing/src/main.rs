@@ -1,18 +1,15 @@
 use serde::{Deserialize, Serialize};
 use starchart::backend::{Backend, CacheBackend};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct Settings {
-    id: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Person {
     name: String,
+    age: u8,
 }
 
-impl Settings {
-    fn new(id: String) -> Self {
-        Self {
-            id,
-            ..Self::default()
-        }
+impl Person {
+    const fn new(name: String, age: u8) -> Self {
+        Self { name, age }
     }
 }
 
@@ -22,10 +19,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     backend.init().await?;
 
-    backend.ensure_table("guilds").await?;
+    backend.ensure_table("people").await?;
+
+    let person = Person::new("Ferris".to_string(), 19);
 
     backend
-        .create("guilds", "hey", &Settings::new("hey".to_string()))
+        .create("people",&person.name, &person)
         .await?;
 
     dbg!(backend);
