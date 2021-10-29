@@ -1,4 +1,4 @@
-//! todo
+//! The different errors within the crate.
 
 use thiserror::Error;
 
@@ -12,28 +12,28 @@ pub use crate::backend::CacheError;
 
 pub use crate::database::DatabaseError;
 
-/// todo
+/// An unknown error has occurred, this is an ease of use type and should not be relied on.
 #[derive(Debug, Default, Error, Clone, Copy)]
 #[error("an unknown error has occurred")]
 pub struct UnknownError;
 
-/// todo
+/// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
 pub enum ChartError {
-    /// todo
+    /// A [`JsonError`] has occurred.
     #[cfg(feature = "json")]
     #[doc(cfg(feature = "json"))]
     #[error(transparent)]
     Json(#[from] JsonError),
-    /// todo
+    /// A [`CacheError`] has occurred.
     #[cfg(feature = "cache")]
     #[doc(cfg(feature = "cache"))]
     #[error(transparent)]
     Cache(#[from] CacheError),
-    /// todo
+    /// A [`DatabaseError`] has occurred.
     #[error(transparent)]
     Database(DatabaseError),
-    /// todo
+    /// A custom error has occurred, this is useful for [`Result`] return types.
     #[error(transparent)]
     Custom(Box<dyn std::error::Error + Send + Sync>),
 }

@@ -1,4 +1,6 @@
-//! todo
+//! The backend that fetches and provides data for a [`Database`].
+//! 
+//! [`Database`]: crate::database::Database
 
 use self::future::{
     CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,

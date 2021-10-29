@@ -1,4 +1,4 @@
-//! todo
+//! The base structure to use for starchart.
 
 use crate::{backend::Backend, database::DatabaseError, Database};
 use dashmap::{mapref::one::Ref, DashMap};
@@ -10,16 +10,16 @@ use std::{
     sync::Arc,
 };
 
-/// todo
+/// An immutable reference to a [`Database`].
 #[must_use]
-pub struct Storage<'a, B>
+pub struct DbRef<'a, B>
 where
     B: Backend,
 {
     inner: Ref<'a, String, Database<B>>,
 }
 
-impl<'a, B> Storage<'a, B>
+impl<'a, B> DbRef<'a, B>
 where
     B: Backend,
 {
@@ -27,31 +27,31 @@ where
         Self { inner }
     }
 
-    /// todo
+    /// Returns the key of the [`Database`].
     #[must_use]
     pub fn key(&'a self) -> &'a String {
         self.inner.key()
     }
 
-    /// todo
+    /// Returns the [`Database`].
     #[must_use]
     pub fn value(&'a self) -> &'a Database<B> {
         self.inner.value()
     }
 }
 
-impl<B> Debug for Storage<'_, B>
+impl<B> Debug for DbRef<'_, B>
 where
     B: Backend + Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("Storage")
+        f.debug_struct("DbRef")
             .field("inner", self.value())
             .finish()
     }
 }
 
-impl<'a, B> Deref for Storage<'a, B>
+impl<'a, B> Deref for DbRef<'a, B>
 where
     B: Backend,
 {
@@ -62,36 +62,41 @@ where
     }
 }
 
-/// todo
-#[derive(Debug, Clone)]
+/// The base structure for managing [`Database`]s.
+/// 
+/// The inner data is wrapped in an [`Arc`], so cloning
+/// is cheap and will allow multiple accesses to the data.
+#[derive(Debug)]
 pub struct Gateway<B: Backend> {
     backend: Arc<B>,
-    databases: DashMap<String, Database<B>>,
+    databases: Arc<DashMap<String, Database<B>>>,
 }
 
 impl<B: Backend> Gateway<B> {
-    /// todo
+    /// Creates a new [`Gateway`], and initializes the [`Backend`].
     ///
     /// # Errors
     ///
-    /// todo
+    /// Any errors that [`Backend::init`] can raise.
     pub async fn new(backend: B) -> Result<Self, B::Error> {
         backend.init().await?;
         Ok(Self {
             backend: Arc::new(backend),
-            databases: DashMap::new(),
+            databases: Arc::default(),
         })
     }
 
-    /// todo
+    /// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
+    /// if a [`Database`] was not found
     ///
     /// # Errors
     ///
-    /// todo
+    /// An error will be raised if the type provided is not the same as the type provided
+    /// when the database was created.
     pub async fn acquire<'a, S>(
         &'a self,
         table_name: String,
-    ) -> Result<Storage<'a, B>, DatabaseError<B::Error>>
+    ) -> Result<DbRef<'a, B>, DatabaseError<B::Error>>
     where
         S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
     {
@@ -104,18 +109,14 @@ impl<B: Backend> Gateway<B> {
         self.create::<S>(table_name).await
     }
 
-    /// todo
-    ///
-    /// # Errors
-    ///
-    /// todo
+    #[allow(clippy::missing_errors_doc)]
+    /// Creates a new [`Database`].
     pub async fn create<'a, S>(
         &'a self,
         table_name: String,
-    ) -> Result<Storage<'a, B>, DatabaseError<B::Error>>
+    ) -> Result<DbRef<'a, B>, DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
-        B: 'a,
+        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static
     {
         let mut database = Database::new(table_name.clone(), Arc::clone(&self.backend));
 
@@ -126,15 +127,15 @@ impl<B: Backend> Gateway<B> {
         Ok(unsafe { self.get_unchecked::<S>(&table_name) })
     }
 
-    /// todo
+    /// Gets a [`Database`] from the cache.
     ///
     /// # Errors
     ///
-    /// todo
+    /// Returns an error if the passed type does not match the one the database was created with.
     pub fn get<'a, S>(
         &'a self,
         table_name: &str,
-    ) -> Result<Option<Storage<'a, B>>, DatabaseError<B::Error>>
+    ) -> Result<Option<DbRef<'a, B>>, DatabaseError<B::Error>>
     where
         S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
     {
@@ -150,15 +151,18 @@ impl<B: Backend> Gateway<B> {
 
         map_ref.value().check::<S>()?;
 
-        Ok(Some(Storage::new(map_ref)))
+        Ok(Some(DbRef::new(map_ref)))
     }
 
-    /// todo
+    /// Gets a [`Database`] from the cache without verifying that it exists.
     ///
     /// # Safety
     ///
-    /// todo
-    pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> Storage<'a, B>
+    /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
+    /// 
+    /// [`Result::unwrapped_unchecked`]: std::result::Result::unwrap_unchecked
+    /// [`Option::unwrap_unchecked`]: std::option::Option::unwrap_unchecked
+    pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
         S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
     {
@@ -166,7 +170,16 @@ impl<B: Backend> Gateway<B> {
 
         map_ref.value().check::<S>().unwrap_unchecked();
 
-        Storage::new(map_ref)
+        DbRef::new(map_ref)
+    }
+}
+
+impl<B: Backend> Clone for Gateway<B> {
+    fn clone(&self) -> Self {
+        Self {
+            backend: self.backend.clone(),
+            databases: self.databases.clone(),
+        }
     }
 }
 

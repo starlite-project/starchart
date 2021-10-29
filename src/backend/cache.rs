@@ -10,25 +10,27 @@ use serde::{Deserialize, Serialize};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
 
-/// todo
+/// An error returned from the [`CacheBackend`].
 #[doc(cfg(feature = "cache"))]
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum CacheError {
-    /// todo
+    /// A serialization error occurred.
     #[error("a serialization error occurred")]
     Serialization(#[from] SerializerError),
-    /// todo
+    /// A deserialization error occurred.
     #[error("a deserialization error occurred")]
     DeserializationError(#[from] DeserializerError),
-    /// todo
+    /// The specified table doesn't exist
     #[error("the table {0} does not exist")]
     TableDoesntExist(String),
-    /// todo
+    /// The value already exists
     #[error("value already exists")]
     ValueAlreadyExists,
 }
 
-/// todo
+/// A memory-based backend, uses a [`DashMap`] of [`Value`]s
+/// to represent data.
 #[doc(cfg(feature = "cache"))]
 #[derive(Debug, Default, Clone)]
 pub struct CacheBackend {
@@ -36,7 +38,7 @@ pub struct CacheBackend {
 }
 
 impl CacheBackend {
-    /// todo
+    /// Creates a new [`CacheBackend`].
     #[must_use]
     pub fn new() -> Self {
         Self::default()

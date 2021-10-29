@@ -16,28 +16,31 @@ use thiserror::Error;
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 
-/// todo
+/// An error returned from the [`JsonBackend`].
+/// 
+/// [`JsonBackend`]: crate::backend::JsonBackend
 #[doc(cfg(feature = "json"))]
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum JsonError {
-    /// todo
+    /// The path provided was not a directory.
     #[error("path {0} is not a directory")]
     PathNotDirectory(PathBuf),
-    /// todo
+    /// An IO error occurred.
     #[error("an IO error occurred: {0}")]
     Io(#[from] io::Error),
-    /// todo
+    /// An error occurred serializing data.
     #[error("a JSON error occurred")]
     SerdeJson(#[from] serde_json::Error),
-    /// todo
+    /// A file was found to be invalid.
     #[error("file {} is invalid", .0.display())]
     InvalidFile(PathBuf),
-    /// todo
+    /// The file already exists
     #[error("file {} already exists", .0.display())]
     FileAlreadyExists(PathBuf),
 }
 
-/// todo
+/// A JSON based backend, uses [`serde_json`] to read and write files.
 #[doc(cfg(feature = "json"))]
 #[derive(Debug, Default, Clone)]
 pub struct JsonBackend {
@@ -45,11 +48,11 @@ pub struct JsonBackend {
 }
 
 impl JsonBackend {
-    /// todo
+    /// Creates a new [`JsonBackend`].
     ///
     /// # Errors
     ///
-    /// todo
+    /// Returns a [`JsonError::Io`] if the path appears to be a file.
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, JsonError> {
         let path = path.as_ref().to_path_buf();
 
@@ -172,7 +175,6 @@ impl Backend for JsonBackend {
         Box::pin(async move {
             let filename = id.to_owned() + ".json";
             let path = self.resolve_path(&[table, filename.as_str()]);
-            // let file: std::fs::File = fs::File::open(path).await?.into_std().await;
             let file: std::fs::File = {
                 let res = fs::File::open(path).await;
                 match res {
