@@ -19,11 +19,11 @@
 pub mod backend;
 mod database;
 pub mod error;
-mod gateway;
+pub mod gateway;
 
+pub use self::database::Database;
 #[doc(inline)]
-pub use self::error::ChartError as Error;
-pub use self::{database::Database, gateway::Gateway};
+pub use self::{error::ChartError as Error, gateway::Gateway};
 
 /// todo
 pub type ChartResult<T> = Result<T, Error>;

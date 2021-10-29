@@ -10,6 +10,13 @@ pub use crate::backend::JsonError;
 #[doc(cfg(feature = "cache"))]
 pub use crate::backend::CacheError;
 
+pub use crate::database::DatabaseError;
+
+/// todo
+#[derive(Debug, Default, Error, Clone, Copy)]
+#[error("an unknown error has occurred")]
+pub struct UnknownError;
+
 /// todo
 #[derive(Debug, Error)]
 pub enum ChartError {
@@ -23,6 +30,9 @@ pub enum ChartError {
     #[doc(cfg(feature = "cache"))]
     #[error(transparent)]
     Cache(#[from] CacheError),
+    /// todo
+    #[error(transparent)]
+    Database(DatabaseError),
     /// todo
     #[error(transparent)]
     Custom(Box<dyn std::error::Error + Send + Sync>),
