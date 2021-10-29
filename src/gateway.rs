@@ -84,9 +84,9 @@ impl<B: Backend> Gateway<B> {
     }
 
     /// todo
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// todo
     pub async fn acquire<'a, S>(
         &'a self,

@@ -41,7 +41,7 @@ impl<B: Backend> Database<B> {
         }
     }
 
-    pub (crate) async fn setup<S>(&mut self) -> Result<(), DatabaseError<B::Error>>
+    pub(crate) async fn setup<S>(&mut self) -> Result<(), DatabaseError<B::Error>>
     where
         S: Serialize + for<'de> Deserialize<'de> + 'static,
     {

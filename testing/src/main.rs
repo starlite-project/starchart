@@ -23,9 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     let person = Person::new("Ferris".to_string(), 19);
 
-    backend
-        .create("people",&person.name, &person)
-        .await?;
+    backend.create("people", &person.name, &person).await?;
 
     dbg!(backend);
 
