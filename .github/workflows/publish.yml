@@ -1,0 +1,22 @@
+name: Publish
+
+on: [push]
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Publish to crates.io
+        uses: katyo/publish-crates@v1
+        with:
+          dry-run: true
