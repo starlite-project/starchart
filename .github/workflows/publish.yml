@@ -20,3 +20,4 @@ jobs:
         uses: katyo/publish-crates@v1
         with:
           dry-run: true
+          path: './'
