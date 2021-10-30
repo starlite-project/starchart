@@ -27,6 +27,18 @@ pub struct Database<B: Backend> {
 }
 
 impl<B: Backend> Database<B> {
+    /// Gives access to the raw [`Backend`] instance.
+    /// 
+    /// # Safety
+    /// 
+    /// Accessing the backend functions directly isn't inheritly unsafe, however
+    /// care must be taken to ensure the data isn't modified directly, and
+    /// that [`Backend::shutdown`] isn't directly called.
+    #[must_use]
+    pub unsafe fn backend(&self) -> &B {
+        &*self.backend
+    }
+
     pub(crate) async fn new(
         table_name: String,
         backend: Arc<B>,

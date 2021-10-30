@@ -73,6 +73,18 @@ pub struct Gateway<B: Backend> {
 }
 
 impl<B: Backend> Gateway<B> {
+    /// Gives access to the raw [`Backend`] instance.
+    ///
+    /// # Safety
+    ///
+    /// Accessing the backend functions directly isn't inheritly unsafe, however
+    /// care must be taken to ensure the data isn't modified directly, and
+    /// that [`Backend::shutdown`] isn't directly called.
+    #[must_use]
+    pub unsafe fn backend(&self) -> &B {
+        &*self.backend
+    }
+
     /// Creates a new [`Gateway`], and initializes the [`Backend`].
     ///
     /// # Errors
