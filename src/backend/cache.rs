@@ -11,7 +11,7 @@ use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
 
 /// An error returned from the [`CacheBackend`].
-#[doc(cfg(feature = "cache"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum CacheError {
@@ -31,7 +31,7 @@ pub enum CacheError {
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
 /// to represent data.
-#[doc(cfg(feature = "cache"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 #[derive(Debug, Default, Clone)]
 pub struct CacheBackend {
     tables: DashMap<String, DashMap<String, Value>>,

@@ -1,4 +1,4 @@
-#![feature(doc_cfg, option_result_unwrap_unchecked)]
+#![feature(option_result_unwrap_unchecked)]
 #![warn(
     clippy::pedantic,
     clippy::nursery,
@@ -14,6 +14,7 @@
     clippy::no_effect_underscore_binding,
     dead_code
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! todo
 
 pub mod backend;
