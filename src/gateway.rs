@@ -4,7 +4,12 @@ use crate::{backend::Backend, database::DatabaseError, Database};
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
-use std::{any::TypeId, fmt::{Debug, Formatter, Result as FmtResult}, ops::Deref, sync::Arc};
+use std::{
+    any::TypeId,
+    fmt::{Debug, Formatter, Result as FmtResult},
+    ops::Deref,
+    sync::Arc,
+};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -59,7 +64,7 @@ where
 }
 
 /// The base structure for managing [`Database`]s.
-/// 
+///
 /// The inner data is wrapped in an [`Arc`], so cloning
 /// is cheap and will allow multiple accesses to the data.
 #[derive(Debug)]
@@ -112,11 +117,12 @@ impl<B: Backend> Gateway<B> {
         table_name: String,
     ) -> Result<DbRef<'a, B>, DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static
+        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
     {
         let type_id = TypeId::of::<S>();
 
-        let database = Database::new(table_name.clone(), Arc::clone(&self.backend), type_id).await?;
+        let database =
+            Database::new(table_name.clone(), Arc::clone(&self.backend), type_id).await?;
 
         self.databases.insert(table_name.clone(), database);
 
@@ -155,7 +161,7 @@ impl<B: Backend> Gateway<B> {
     /// # Safety
     ///
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
-    /// 
+    ///
     /// [`Result::unwrapped_unchecked`]: std::result::Result::unwrap_unchecked
     /// [`Option::unwrap_unchecked`]: std::option::Option::unwrap_unchecked
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>

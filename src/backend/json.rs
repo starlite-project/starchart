@@ -17,7 +17,7 @@ use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 
 /// An error returned from the [`JsonBackend`].
-/// 
+///
 /// [`JsonBackend`]: crate::backend::JsonBackend
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 #[derive(Debug, Error)]

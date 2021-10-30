@@ -1,7 +1,7 @@
 //! Futures for [`Backend`] functions to return, for easier documentation.
-//! 
+//!
 //! [`Backend`]: crate::backend::Backend
-//! 
+//!
 #[cfg(doc)]
 use crate::backend::Backend;
 
