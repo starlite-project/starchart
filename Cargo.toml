@@ -57,9 +57,6 @@ default = ["json"]
 json = ["serde_json", "serial"]
 serial = ["tokio", "tokio-stream"]
 
-[workspace]
-members = ["./testing"]
-
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
