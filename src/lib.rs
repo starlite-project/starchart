@@ -1,4 +1,4 @@
-#![feature(option_result_unwrap_unchecked)]
+#![feature(option_result_unwrap_unchecked, never_type)]
 #![warn(
     clippy::pedantic,
     clippy::nursery,
@@ -15,7 +15,7 @@
     dead_code
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! todo
+//! A simple database system that allows the use of multiple different backends.
 
 pub mod backend;
 mod database;
@@ -26,5 +26,5 @@ pub use self::database::Database;
 #[doc(inline)]
 pub use self::{error::ChartError as Error, gateway::Gateway};
 
-/// todo
+/// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T> = Result<T, Error>;

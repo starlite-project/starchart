@@ -12,11 +12,6 @@ pub use crate::backend::CacheError;
 
 pub use crate::database::DatabaseError;
 
-/// An unknown error has occurred, this is an ease of use type and should not be relied on.
-#[derive(Debug, Default, Error, Clone, Copy)]
-#[error("an unknown error has occurred")]
-pub struct UnknownError;
-
 /// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
 pub enum ChartError {

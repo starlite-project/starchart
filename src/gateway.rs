@@ -4,11 +4,7 @@ use crate::{backend::Backend, database::DatabaseError, Database};
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::{Debug, Formatter, Result as FmtResult},
-    ops::Deref,
-    sync::Arc,
-};
+use std::{any::TypeId, fmt::{Debug, Formatter, Result as FmtResult}, ops::Deref, sync::Arc};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -118,9 +114,9 @@ impl<B: Backend> Gateway<B> {
     where
         S: Debug + Serialize + for<'de> Deserialize<'de> + 'static
     {
-        let mut database = Database::new(table_name.clone(), Arc::clone(&self.backend));
+        let type_id = TypeId::of::<S>();
 
-        database.setup::<S>().await?;
+        let database = Database::new(table_name.clone(), Arc::clone(&self.backend), type_id).await?;
 
         self.databases.insert(table_name.clone(), database);
 

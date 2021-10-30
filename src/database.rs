@@ -1,76 +1,54 @@
 #![allow(dead_code)]
 use crate::backend::Backend;
+#[cfg(doc)]
+use crate::Gateway;
 use serde::{Deserialize, Serialize};
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
 use thiserror::Error;
 
-/// todo
+/// An error that can be returned when setting up a [`Database`].
 #[derive(Debug, Error)]
-pub enum DatabaseError<E: Error = crate::error::UnknownError> {
-    /// todo
+pub enum DatabaseError<E: Error = !> {
+    /// An invalid generic type was passed to [`Gateway::get`].
     #[error("an invalid type was passed")]
     InvalidType,
-    /// todo
+    /// An error occurred from the [`Backend`].
+    ///
+    /// This will match the error type of the backend.
     #[error(transparent)]
     Backend(#[from] E),
-    /// todo
-    #[error("the value this database holds has not been set")]
-    ValueNotSet,
-    /// todo
-    #[error("this database has already been setup")]
-    DatabaseSetup,
 }
 
-/// todo
+/// A database for easily interacting with a [`Backend`].
 #[derive(Debug)]
 pub struct Database<B: Backend> {
     table_name: String,
     backend: Arc<B>,
-    type_id: Option<TypeId>,
-    setup: bool,
+    type_id: TypeId,
 }
 
 impl<B: Backend> Database<B> {
-    /// todo
-    pub(crate) fn new(table_name: String, backend: Arc<B>) -> Self {
-        Self {
+    pub(crate) async fn new(
+        table_name: String,
+        backend: Arc<B>,
+        type_id: TypeId,
+    ) -> Result<Self, B::Error> {
+        backend.ensure_table(&table_name).await?;
+
+        Ok(Self {
             table_name,
             backend,
-            type_id: None,
-            setup: false,
-        }
-    }
-
-    pub(crate) async fn setup<S>(&mut self) -> Result<(), DatabaseError<B::Error>>
-    where
-        S: Serialize + for<'de> Deserialize<'de> + 'static,
-    {
-        if self.setup {
-            return Err(DatabaseError::DatabaseSetup);
-        }
-
-        let type_id = TypeId::of::<S>();
-
-        self.type_id = Some(type_id);
-
-        self.backend.ensure_table(&self.table_name).await?;
-
-        Ok(())
+            type_id,
+        })
     }
 
     pub(crate) fn check<S>(&self) -> Result<(), DatabaseError<B::Error>>
     where
         S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
     {
-        if self.type_id.is_none() {
-            return Err(DatabaseError::ValueNotSet);
-        }
-
-        let held_type = unsafe { self.type_id.unwrap_unchecked() };
-
         let type_of_val = TypeId::of::<S>();
 
-        if type_of_val != held_type {
+        if type_of_val != self.type_id {
             return Err(DatabaseError::InvalidType);
         }
 
@@ -84,7 +62,6 @@ impl<B: Backend> Clone for Database<B> {
             backend: self.backend.clone(),
             table_name: self.table_name.clone(),
             type_id: self.type_id,
-            setup: self.setup,
         }
     }
 }
