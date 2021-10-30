@@ -1,8 +1,7 @@
 #![allow(dead_code)]
-use crate::backend::Backend;
 #[cfg(doc)]
 use crate::Gateway;
-use serde::{Deserialize, Serialize};
+use crate::{backend::Backend, Settings};
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
 use thiserror::Error;
 
@@ -44,7 +43,7 @@ impl<B: Backend> Database<B> {
 
     pub(crate) fn check<S>(&self) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
+        S: Settings + 'static,
     {
         let type_of_val = TypeId::of::<S>();
 

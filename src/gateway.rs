@@ -1,9 +1,8 @@
 //! The base structure to use for starchart.
 
-use crate::{backend::Backend, database::DatabaseError, Database};
+use crate::{backend::Backend, database::DatabaseError, Database, Settings};
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
-use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
     fmt::{Debug, Formatter, Result as FmtResult},
@@ -94,12 +93,12 @@ impl<B: Backend> Gateway<B> {
     ///
     /// An error will be raised if the type provided is not the same as the type provided
     /// when the database was created.
-    pub async fn acquire<'a, S>(
-        &'a self,
+    pub async fn acquire<S>(
+        &self,
         table_name: String,
-    ) -> Result<DbRef<'a, B>, DatabaseError<B::Error>>
+    ) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
+        S: Settings + 'static,
     {
         let exists = self.get::<S>(&table_name)?;
 
@@ -112,12 +111,12 @@ impl<B: Backend> Gateway<B> {
 
     #[allow(clippy::missing_errors_doc)]
     /// Creates a new [`Database`].
-    pub async fn create<'a, S>(
-        &'a self,
+    pub async fn create<S>(
+        &self,
         table_name: String,
-    ) -> Result<DbRef<'a, B>, DatabaseError<B::Error>>
+    ) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
+        S: Settings + 'static,
     {
         let type_id = TypeId::of::<S>();
 
@@ -139,7 +138,7 @@ impl<B: Backend> Gateway<B> {
         table_name: &str,
     ) -> Result<Option<DbRef<'a, B>>, DatabaseError<B::Error>>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
+        S: Settings + 'static,
     {
         let map_ref = unsafe {
             let temp = self.databases.get(table_name);
@@ -166,7 +165,7 @@ impl<B: Backend> Gateway<B> {
     /// [`Option::unwrap_unchecked`]: std::option::Option::unwrap_unchecked
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
-        S: Debug + Serialize + for<'de> Deserialize<'de> + 'static,
+        S: Settings + 'static,
     {
         let map_ref = self.databases.get(table_name).unwrap_unchecked();
 

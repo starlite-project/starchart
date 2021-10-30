@@ -19,7 +19,7 @@ use tokio_stream::wrappers::ReadDirStream;
 /// An error returned from the [`JsonBackend`].
 ///
 /// [`JsonBackend`]: crate::backend::JsonBackend
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+#[doc(cfg(feature = "json"))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum JsonError {
@@ -41,7 +41,7 @@ pub enum JsonError {
 }
 
 /// A JSON based backend, uses [`serde_json`] to read and write files.
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+#[doc(cfg(feature = "json"))]
 #[derive(Debug, Default, Clone)]
 pub struct JsonBackend {
     base_directory: PathBuf,

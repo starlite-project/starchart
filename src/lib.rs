@@ -1,4 +1,4 @@
-#![feature(option_result_unwrap_unchecked, never_type)]
+#![feature(option_result_unwrap_unchecked, never_type, doc_cfg)]
 #![warn(
     clippy::pedantic,
     clippy::nursery,
@@ -14,13 +14,22 @@
     clippy::no_effect_underscore_binding,
     dead_code
 )]
-#![cfg_attr(docsrs, feature(doc_cfg))]
 //! A simple database system that allows the use of multiple different backends.
+
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
 pub mod backend;
 mod database;
 pub mod error;
 pub mod gateway;
+
+/// A marker trait for use within the [`Database`].
+///
+/// This signifies that the type can be stored within a [`Database`].
+pub trait Settings {}
+
+impl<T> Settings for T where T: Serialize + for<'de> Deserialize<'de> + Debug {}
 
 pub use self::database::Database;
 #[doc(inline)]
