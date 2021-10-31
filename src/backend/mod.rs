@@ -16,11 +16,15 @@ pub mod future;
 mod cache;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "simd")]
+mod simd;
 
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(feature = "simd")]
+pub use self::simd::SimdBackend;
 
 #[cfg(feature = "json")]
 #[cfg_attr(feature = "json", doc(hidden))]
