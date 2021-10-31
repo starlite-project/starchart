@@ -173,7 +173,7 @@ impl<B: Backend> Gateway<B> {
     ///
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
     ///
-    /// [`Result::unwrapped_unchecked`]: std::result::Result::unwrap_unchecked
+    /// [`Result::unwrap_unchecked`]: std::result::Result::unwrap_unchecked
     /// [`Option::unwrap_unchecked`]: std::option::Option::unwrap_unchecked
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
