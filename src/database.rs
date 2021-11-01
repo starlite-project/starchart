@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum DatabaseError<E: Error = !> {
     /// An invalid generic type was passed to [`Gateway::get`].
-    /// 
+    ///
     /// [`Gateway::get`]: crate::gateway::Gateway::get
     #[error("an invalid type was passed")]
     InvalidType,
@@ -42,9 +42,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// Gets a value from the [`Database`].
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::get`] returned an error.
     pub async fn get<S>(&self, key: &str) -> Result<Option<S>, DatabaseError<B::Error>>
@@ -59,9 +59,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// Sets a value in the [`Database`], overwriting whatever was there before.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::replace`] or [`Backend::create`] returned an error.
     pub async fn set<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
@@ -80,9 +80,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// Updates a value in place.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// if the value doesn't exist in the [`Database`], or if [`Backend::update`] returned an error.
     pub async fn update<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
@@ -101,9 +101,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// Replaces a value in place.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::replace`] returned an error.
     pub async fn replace<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
@@ -122,9 +122,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// Deletes a value from the [`Database`].
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::delete`] returned an error.
     pub async fn delete<S>(&self, key: &str) -> Result<(), DatabaseError<B::Error>>
