@@ -27,8 +27,8 @@ pub enum ChartError {
     Cache(#[from] CacheError),
     /// A [`DatabaseError`] has occurred.
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(#[from] DatabaseError),
     /// A custom error has occurred, this is useful for [`Result`] return types.
     #[error(transparent)]
-    Custom(Box<dyn std::error::Error + Send + Sync>),
+    Custom(#[from] Box<dyn std::error::Error + Send + Sync>),
 }

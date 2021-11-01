@@ -29,7 +29,7 @@ where
 
     /// Returns the key of the [`Database`].
     #[must_use]
-    pub fn key(&'a self) -> &'a String {
+    pub fn key(&'a self) -> &'a str {
         self.inner.key()
     }
 
