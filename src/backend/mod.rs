@@ -16,8 +16,6 @@ pub mod future;
 mod cache;
 #[cfg(feature = "json")]
 mod json;
-#[cfg(feature = "simd")]
-mod simd;
 
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
