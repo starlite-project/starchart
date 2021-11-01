@@ -61,11 +61,11 @@ pub trait Backend: Send + Sync {
     /// which isn't inherintly UB however it should still be documented.
     ///
     /// [`Gateway`]: crate::Gateway
-    /// 
+    ///
     /// # Tips
-    /// 
+    ///
     /// If you're worried that your impl could panic, a simple way to avoid that is the [`no_panic`] crate.
-    /// 
+    ///
     /// [`no_panic`]: no_panic
     unsafe fn shutdown(&self) -> ShutdownFuture {
         Box::pin(async {})

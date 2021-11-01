@@ -28,9 +28,9 @@ pub struct Database<B: Backend> {
 
 impl<B: Backend> Database<B> {
     /// Gives access to the raw [`Backend`] instance.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Accessing the backend functions directly isn't inheritly unsafe, however
     /// care must be taken to ensure the data isn't modified directly, and
     /// that [`Backend::shutdown`] isn't directly called.
@@ -40,9 +40,9 @@ impl<B: Backend> Database<B> {
     }
 
     /// todo
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// todo
     pub async fn delete(&self) -> Result<(), DatabaseError<B::Error>> {
         self.backend.delete_table(&self.table_name).await?;
