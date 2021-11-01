@@ -39,12 +39,6 @@ impl<B: Backend> Database<B> {
         &*self.backend
     }
 
-    pub async fn delete(&self) -> Result<(), DatabaseError<B::Error>> {
-        self.backend.delete_table(&self.table_name).await?;
-
-        Ok(())
-    }
-
     pub(crate) async fn new(
         table_name: String,
         backend: Arc<B>,
