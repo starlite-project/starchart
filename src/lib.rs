@@ -28,13 +28,13 @@ pub mod gateway;
 /// A marker trait for use within the [`Database`].
 ///
 /// This signifies that the type can be stored within a [`Database`].
-pub trait Settings: Serialize + DeserializeOwned + Debug {}
+pub trait Settings: Serialize + DeserializeOwned + Debug + Send + Sync {}
 
-impl<T> Settings for T where T: Serialize + DeserializeOwned + Debug {}
+impl<T> Settings for T where T: Serialize + DeserializeOwned + Debug + Send + Sync {}
 
 pub use self::database::Database;
 #[doc(inline)]
 pub use self::{error::ChartError as Error, gateway::Gateway};
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
-pub type ChartResult<T> = Result<T, Error>;
+pub type ChartResult<T, B> = Result<T, Error<B>>;
