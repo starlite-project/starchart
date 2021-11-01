@@ -39,11 +39,6 @@ impl<B: Backend> Database<B> {
         &*self.backend
     }
 
-    /// todo
-    ///
-    /// # Errors
-    ///
-    /// todo
     pub async fn delete(&self) -> Result<(), DatabaseError<B::Error>> {
         self.backend.delete_table(&self.table_name).await?;
 
