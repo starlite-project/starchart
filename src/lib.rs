@@ -6,9 +6,10 @@
     clippy::str_to_string,
     clippy::string_to_string,
     clippy::panic_in_result_fn,
-    missing_copy_implementations
+    missing_copy_implementations,
+    missing_docs
 )]
-#![deny(clippy::all, missing_docs)]
+#![deny(clippy::all)]
 #![allow(
     clippy::module_name_repetitions,
     clippy::no_effect_underscore_binding,
