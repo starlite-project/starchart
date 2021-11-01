@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, missing_docs, clippy::missing_errors_doc)]
 #[cfg(doc)]
 use crate::Gateway;
 use crate::{backend::Backend, Settings};
@@ -16,6 +16,9 @@ pub enum DatabaseError<E: Error = !> {
     /// This will match the error type of the backend.
     #[error(transparent)]
     Backend(#[from] E),
+    /// An expected value wasn't found in the database.
+    #[error("the expected value doesn't exist in the database")]
+    ValueDoesntExist,
 }
 
 /// A database for easily interacting with a [`Backend`].
@@ -37,6 +40,73 @@ impl<B: Backend> Database<B> {
     #[must_use]
     pub unsafe fn backend(&self) -> &B {
         &*self.backend
+    }
+
+    pub async fn get<S>(&self, key: &str) -> Result<Option<S>, DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        self.check::<S>()?;
+
+        let value = self.backend.get(&self.name, key).await?;
+
+        Ok(value)
+    }
+
+    pub async fn set<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        self.check::<S>()?;
+
+        if self.backend.has(&self.name, key).await? {
+            self.backend.replace(&self.name, key, value).await?;
+        } else {
+            self.backend.create(&self.name, key, value).await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn update<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        self.check::<S>()?;
+
+        if self.backend.has(&self.name, key).await? {
+            self.backend.update(&self.name, key, value).await?;
+        } else {
+            return Err(DatabaseError::ValueDoesntExist);
+        }
+
+        Ok(())
+    }
+
+    pub async fn replace<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        self.check::<S>()?;
+
+        if self.backend.has(&self.name, key).await? {
+            self.backend.update(&self.name, key, value).await?;
+        } else {
+            return Err(DatabaseError::ValueDoesntExist);
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete<S>(&self, key: &str) -> Result<(), DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        self.check::<S>()?;
+
+        self.backend.delete(&self.name, key).await?;
+
+        Ok(())
     }
 
     pub(crate) async fn new(

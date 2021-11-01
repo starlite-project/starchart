@@ -1,5 +1,6 @@
 //! The different errors within the crate.
 
+use crate::backend::Backend;
 use thiserror::Error;
 
 #[cfg(feature = "json")]
@@ -12,9 +13,13 @@ pub use crate::backend::CacheError;
 
 pub use crate::database::DatabaseError;
 
+// NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
+// error struct.
+// It would also cause Generic Hell.
+
 /// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
-pub enum ChartError {
+pub enum ChartError<B: Backend> {
     /// A [`JsonError`] has occurred.
     #[cfg(feature = "json")]
     #[doc(cfg(feature = "json"))]
@@ -27,7 +32,7 @@ pub enum ChartError {
     Cache(#[from] CacheError),
     /// A [`DatabaseError`] has occurred.
     #[error(transparent)]
-    Database(#[from] DatabaseError),
+    Database(#[from] DatabaseError<B::Error>),
     /// A custom error has occurred, this is useful for [`Result`] return types.
     #[error(transparent)]
     Custom(#[from] Box<dyn std::error::Error + Send + Sync>),
