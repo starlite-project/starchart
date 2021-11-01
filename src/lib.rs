@@ -17,22 +17,16 @@
 )]
 //! A simple database system that allows the use of multiple different backends.
 
-use serde::{de::DeserializeOwned, Serialize};
-use std::fmt::Debug;
-
 pub mod backend;
 mod database;
+mod entry;
 pub mod error;
 pub mod gateway;
 
-/// A marker trait for use within the [`Database`].
-///
-/// This signifies that the type can be stored within a [`Database`].
-pub trait Settings: Serialize + DeserializeOwned + Debug + Send + Sync {}
-
-impl<T> Settings for T where T: Serialize + DeserializeOwned + Debug + Send + Sync {}
-
-pub use self::database::Database;
+pub use self::{
+    database::Database,
+    entry::{Key, Settings},
+};
 #[doc(inline)]
 pub use self::{error::ChartError as Error, gateway::Gateway};
 
