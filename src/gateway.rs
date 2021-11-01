@@ -99,7 +99,12 @@ impl<B: Backend> Gateway<B> {
     }
 
     /// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
-    /// if a [`Database`] was not found
+    /// if a [`Database`] was not found.
+    ///
+    /// # Generics
+    ///
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     ///
     /// # Errors
     ///
@@ -123,6 +128,11 @@ impl<B: Backend> Gateway<B> {
 
     #[allow(clippy::missing_errors_doc)]
     /// Creates a new [`Database`].
+    ///
+    /// # Generics
+    ///
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     pub async fn create<S>(
         &self,
         table_name: String,
@@ -141,6 +151,11 @@ impl<B: Backend> Gateway<B> {
     }
 
     /// Gets a [`Database`] from the cache.
+    /// 
+    /// # Generics
+    /// 
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     ///
     /// # Errors
     ///
@@ -168,6 +183,11 @@ impl<B: Backend> Gateway<B> {
     }
 
     /// Deletes a [`Database`], uses [`Backend::delete_table`] under the hood.
+    /// 
+    /// # Generics
+    /// 
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     ///
     /// # Errors
     ///
@@ -192,6 +212,11 @@ impl<B: Backend> Gateway<B> {
 
     /// Deletes a [`Database`] from the [`Gateway`] without checking if it
     /// exists first.
+    /// 
+    /// # Generics
+    /// 
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     ///
     /// # Safety
     ///
@@ -211,6 +236,11 @@ impl<B: Backend> Gateway<B> {
     }
 
     /// Gets a [`Database`] from the cache without verifying that it exists.
+    /// 
+    /// # Generics
+    /// 
+    /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
+    /// passing an incorrect type will create a runtime error.
     ///
     /// # Safety
     ///
