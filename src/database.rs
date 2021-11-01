@@ -1,6 +1,3 @@
-#![allow(dead_code, missing_docs, clippy::missing_errors_doc)]
-#[cfg(doc)]
-use crate::Gateway;
 use crate::{backend::Backend, Settings};
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
 use thiserror::Error;
@@ -9,6 +6,8 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum DatabaseError<E: Error = !> {
     /// An invalid generic type was passed to [`Gateway::get`].
+    /// 
+    /// [`Gateway::get`]: crate::gateway::Gateway::get
     #[error("an invalid type was passed")]
     InvalidType,
     /// An error occurred from the [`Backend`].
@@ -42,6 +41,12 @@ impl<B: Backend> Database<B> {
         &*self.backend
     }
 
+    /// Gets a value from the [`Database`].
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the passed type does not match the type this [`Database`] was created with,
+    /// or if [`Backend::get`] returned an error.
     pub async fn get<S>(&self, key: &str) -> Result<Option<S>, DatabaseError<B::Error>>
     where
         S: Settings + 'static,
@@ -53,6 +58,12 @@ impl<B: Backend> Database<B> {
         Ok(value)
     }
 
+    /// Sets a value in the [`Database`], overwriting whatever was there before.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the passed type does not match the type this [`Database`] was created with,
+    /// or if [`Backend::replace`] or [`Backend::create`] returned an error.
     pub async fn set<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Settings + 'static,
@@ -68,6 +79,12 @@ impl<B: Backend> Database<B> {
         Ok(())
     }
 
+    /// Updates a value in place.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the passed type does not match the type this [`Database`] was created with,
+    /// if the value doesn't exist in the [`Database`], or if [`Backend::update`] returned an error.
     pub async fn update<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Settings + 'static,
@@ -83,6 +100,12 @@ impl<B: Backend> Database<B> {
         Ok(())
     }
 
+    /// Replaces a value in place.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the passed type does not match the type this [`Database`] was created with,
+    /// or if [`Backend::replace`] returned an error.
     pub async fn replace<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Settings + 'static,
@@ -90,7 +113,7 @@ impl<B: Backend> Database<B> {
         self.check::<S>()?;
 
         if self.backend.has(&self.name, key).await? {
-            self.backend.update(&self.name, key, value).await?;
+            self.backend.replace(&self.name, key, value).await?;
         } else {
             return Err(DatabaseError::ValueDoesntExist);
         }
@@ -98,6 +121,12 @@ impl<B: Backend> Database<B> {
         Ok(())
     }
 
+    /// Deletes a value from the [`Database`].
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the passed type does not match the type this [`Database`] was created with,
+    /// or if [`Backend::delete`] returned an error.
     pub async fn delete<S>(&self, key: &str) -> Result<(), DatabaseError<B::Error>>
     where
         S: Settings + 'static,
