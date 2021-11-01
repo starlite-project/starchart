@@ -44,17 +44,14 @@ impl CacheBackend {
         Self::default()
     }
 
-    unsafe fn get_table<'a>(
+    fn get_table<'a>(
         &'a self,
         table: &'a str,
     ) -> Result<Ref<'a, String, DashMap<String, Value>>, CacheError> {
-        let temp = self.tables.get(table);
-
-        if temp.is_none() {
-            return Err(CacheError::TableDoesntExist(table.to_owned()));
+        match self.tables.get(table) {
+            Some(table) => Ok(table),
+            None => Err(CacheError::TableDoesntExist(table.to_owned())),
         }
-
-        Ok(temp.unwrap_unchecked())
     }
 }
 
@@ -86,7 +83,7 @@ impl Backend for CacheBackend {
         I: FromIterator<String>,
     {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
             let keys = table_value.clone().into_iter().map(|(key, _)| key);
 
@@ -99,18 +96,12 @@ impl Backend for CacheBackend {
         D: for<'de> Deserialize<'de> + Send + Sync,
     {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
-            let json = unsafe {
-                let entry = table_value.get(id);
-
-                if entry.is_none() {
-                    return Ok(None);
-                }
-
-                entry.unwrap_unchecked()
+            let value = match table_value.get(id) {
+                None => return Ok(None),
+                Some(json) => json.value().clone(),
             };
-            let value = json.value().clone();
 
             Ok(value.deserialize_into()?)
         })
@@ -118,7 +109,7 @@ impl Backend for CacheBackend {
 
     fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
             Ok(table_value.value().contains_key(id))
         })
@@ -134,11 +125,9 @@ impl Backend for CacheBackend {
         S: Serialize + Send + Sync,
     {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
-            let exists = table_value.get(id);
-
-            if exists.is_some() {
+            if table_value.contains_key(id) {
                 return Err(CacheError::ValueAlreadyExists);
             }
 
@@ -160,7 +149,7 @@ impl Backend for CacheBackend {
         S: Serialize + Send + Sync,
     {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
             table_value.insert(id.to_owned(), to_value(value)?);
 
@@ -186,7 +175,7 @@ impl Backend for CacheBackend {
 
     fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
         Box::pin(async move {
-            let table_value = unsafe { self.get_table(table)? };
+            let table_value = self.get_table(table)?;
 
             table_value.remove(id);
 

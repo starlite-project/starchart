@@ -39,12 +39,6 @@ version = "1"
 optional = true
 version = "0.7"
 
-[dependencies.simd-json]
-default-features = false
-features = ["serde_impl"]
-optional = true
-version = "0.4.8"
-
 [dependencies.tokio]
 default-features = false
 features = ["fs"]
@@ -62,7 +56,6 @@ cache = ["serde-value"]
 default = ["json"]
 fs = ["tokio", "tokio-stream"]
 json = ["serde_json", "fs"]
-simd = ["simd-json"]
 
 [package.metadata.docs.rs]
 all-features = true

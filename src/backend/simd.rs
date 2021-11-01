@@ -1,2 +1,0 @@
-/// todo
-pub struct SimdBackend {}

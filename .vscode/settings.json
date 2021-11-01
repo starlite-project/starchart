@@ -8,8 +8,5 @@
     "rust-analyzer.assist.importEnforceGranularity": true,
     "rust-analyzer.assist.importGranularity": "crate",
     "rust-analyzer.cargo.runBuildScripts": true,
-    "rust-analyzer.server.extraEnv": {
-        "rustflags": "-C target-cpu=native"
-    },
     "rust-analyzer.checkOnSave.command": "clippy"
 }

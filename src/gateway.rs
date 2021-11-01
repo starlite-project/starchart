@@ -167,6 +167,36 @@ impl<B: Backend> Gateway<B> {
         Ok(Some(DbRef::new(map_ref)))
     }
 
+    pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
+    where
+        S: Settings + 'static,
+    {
+        let table = match self.get::<S>(table_name)? {
+            Some(db) => db,
+            None => return Ok(()),
+        };
+
+        self.backend.delete_table(table_name).await?;
+
+        self.databases.remove(table_name);
+
+        Ok(())
+    }
+
+    pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
+    where
+        S: Settings + 'static,
+    {
+        let table = self.get_unchecked::<S>(table_name);
+
+        self.backend
+            .delete_table(table_name)
+            .await
+            .unwrap_unchecked();
+
+        self.databases.remove(table_name);
+    }
+
     /// Gets a [`Database`] from the cache without verifying that it exists.
     ///
     /// # Safety
