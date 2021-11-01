@@ -21,8 +21,8 @@ pub enum DatabaseError<E: Error = !> {
 /// A database for easily interacting with a [`Backend`].
 #[derive(Debug)]
 pub struct Database<B: Backend> {
-    table_name: String,
-    backend: Arc<B>,
+    pub(crate) name: String,
+    pub(crate) backend: Arc<B>,
     type_id: TypeId,
 }
 
@@ -47,7 +47,7 @@ impl<B: Backend> Database<B> {
         backend.ensure_table(&table_name).await?;
 
         Ok(Self {
-            table_name,
+            name: table_name,
             backend,
             type_id,
         })
@@ -71,7 +71,7 @@ impl<B: Backend> Clone for Database<B> {
     fn clone(&self) -> Self {
         Self {
             backend: self.backend.clone(),
-            table_name: self.table_name.clone(),
+            name: self.name.clone(),
             type_id: self.type_id,
         }
     }

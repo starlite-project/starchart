@@ -167,6 +167,13 @@ impl<B: Backend> Gateway<B> {
         Ok(Some(DbRef::new(map_ref)))
     }
 
+    /// Deletes a [`Database`], uses [`Backend::delete_table`] under the hood.
+    ///
+    /// # Errors
+    ///
+    /// Can return errors from [`Gateway::get`], as well as from [`Backend::delete_table`].
+    ///
+    /// [`Gateway::get`]: Self::get
     pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
     where
         S: Settings + 'static,
@@ -176,13 +183,19 @@ impl<B: Backend> Gateway<B> {
             None => return Ok(()),
         };
 
-        self.backend.delete_table(table_name).await?;
+        self.backend.delete_table(&table.name).await?;
 
-        self.databases.remove(table_name);
+        self.databases.remove(&table.name);
 
         Ok(())
     }
 
+    /// Deletes a [`Database`] from the [`Gateway`] without checking if it
+    /// exists first.
+    ///
+    /// # Safety
+    ///
+    /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
     pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
     where
         S: Settings + 'static,
@@ -190,11 +203,11 @@ impl<B: Backend> Gateway<B> {
         let table = self.get_unchecked::<S>(table_name);
 
         self.backend
-            .delete_table(table_name)
+            .delete_table(&table.name)
             .await
             .unwrap_unchecked();
 
-        self.databases.remove(table_name);
+        self.databases.remove(&table.name);
     }
 
     /// Gets a [`Database`] from the cache without verifying that it exists.
@@ -202,9 +215,6 @@ impl<B: Backend> Gateway<B> {
     /// # Safety
     ///
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
-    ///
-    /// [`Result::unwrap_unchecked`]: std::result::Result::unwrap_unchecked
-    /// [`Option::unwrap_unchecked`]: std::option::Option::unwrap_unchecked
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
         S: Settings + 'static,
