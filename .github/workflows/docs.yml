@@ -1,0 +1,30 @@
+name: Check documentation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+      
+      - name: Build docs
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --workspace --all-features
+
