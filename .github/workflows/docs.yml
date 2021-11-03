@@ -41,7 +41,7 @@ jobs:
     name: Deploy docs
     runs-on: ubuntu-latest
     needs: build-docs
-    if: "github.event == 'push' && github.ref == 'refs/heads/main'"
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout sources
