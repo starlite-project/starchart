@@ -57,7 +57,7 @@ jobs:
 
       - name: Prepare docs
         run: |
-          echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > ${{ steps.download.outputs.download-path }}
+          echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > ${{ steps.download.outputs.download-path }}/index.html
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v3
         with:
