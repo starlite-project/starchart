@@ -22,7 +22,10 @@ const ID_IDENT: &str = "id";
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
-use syn::{Attribute, Data, DeriveInput, Error, Field, Fields, Ident, Result, Type, parse_macro_input, spanned::Spanned};
+use syn::{
+    parse_macro_input, spanned::Spanned, Attribute, Data, DeriveInput, Error, Field, Fields, Ident,
+    Result, Type,
+};
 
 #[proc_macro_derive(Key, attributes(key))]
 pub fn derive_key(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
