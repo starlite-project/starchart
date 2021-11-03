@@ -52,6 +52,9 @@ jobs:
       - name: Echo artifact
         run: echo ${{ steps.download.outputs.download-path }}
 
+      - name: Echo artifact content
+        run: ls ${{ steps.download.outputs.download-path }}
+
       - name: Prepare docs
         run: |
           echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
