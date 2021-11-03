@@ -1,0 +1,12 @@
+{
+    "rust-analyzer.cargo.allFeatures": true,
+    "rust-analyzer.updates.channel": "stable",
+    "rust-analyzer.procMacro.enable": false,
+    "rust-analyzer.diagnostics.disabled": [
+        "unresolved-proc-macro"
+    ],
+    "rust-analyzer.assist.importEnforceGranularity": true,
+    "rust-analyzer.assist.importGranularity": "crate",
+    "rust-analyzer.cargo.runBuildScripts": true,
+    "rust-analyzer.checkOnSave.command": "clippy"
+}
