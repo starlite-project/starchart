@@ -31,3 +31,9 @@ jobs:
         if: "github.event == 'push' && github.ref == 'refs/heads/main'"
         run: |
           echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
+      - name: Deploy docs
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/doc
+          allow_empty_commit: true
