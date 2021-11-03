@@ -27,16 +27,11 @@ jobs:
         with:
           command: doc
           args: --workspace --no-deps --all-features
-      # - name: Prepare docs
-      #   if: "github.event == 'push' && github.ref == 'refs/heads/main'"
-      #   run: |
-      #     echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
-      # - name: Deploy docs
-      #   uses: peaceiris/actions-gh-pages@v3
-        # with:
-        #   github_token: ${{ secrets.GITHUB_TOKEN }}
-        #   publish_dir: target/doc
-        #   allow_empty_commit: true
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v1
+        with:
+          name: docs-artifact
   deploy-docs:
     name: Deploy docs
     runs-on: ubuntu-latest
