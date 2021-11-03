@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["cfg_if","dashmap","futures","futures_channel","futures_core","futures_executor","futures_io","futures_sink","futures_task","futures_util","itoa","libc","memchr","num_cpus","num_traits","ordered_float","pin_project_lite","pin_utils","proc_macro2","quote","ryu","serde","serde_derive","serde_json","serde_value","slab","starchart","starchart_derive","syn","thiserror","thiserror_impl","tokio","tokio_stream","unicode_xid"];
+window.ALL_CRATES = ["starchart","starchart_derive"];
