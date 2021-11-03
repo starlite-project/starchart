@@ -21,9 +21,10 @@ const KEY_IDENT: &str = "key";
 const ID_IDENT: &str = "id";
 
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::{
-    parse_macro_input, Attribute, Data, DeriveInput, Error, Field, Fields, Ident, Result, Type,
+    parse_macro_input, spanned::Spanned, Attribute, Data, DeriveInput, Error, Field, Fields, Ident,
+    Result, Type,
 };
 
 #[proc_macro_derive(Key, attributes(key))]
@@ -69,18 +70,20 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
         }
     };
 
-    let id_field_ident = match &id_field.ident {
+    let id_ident = match &id_field.ident {
         None => return Err(Error::new_spanned(id_field, "expected a named field")),
         Some(f) => f,
     };
 
     let id_type = &id_field.ty;
 
-    let implementation = quote! {
+    let id_span = id_field.span();
+
+    let implementation = quote_spanned! {id_span=>
         #[automatically_derived]
         impl ::starchart::Key for #ident {
             fn to_key(&self) -> std::string::String {
-                <#id_type as ::std::string::ToString>::to_string(&self.#id_field_ident)
+                <#id_type as ::std::string::ToString>::to_string(&self.#id_ident)
             }
         }
     };
