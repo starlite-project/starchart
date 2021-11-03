@@ -27,4 +27,7 @@ jobs:
         with:
           command: doc
           args: --workspace --all-features
-
+      - name: Prepare docs
+        if: "github.event == 'push' && github.ref == 'refs/heads/main'"
+        run: |
+          echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
