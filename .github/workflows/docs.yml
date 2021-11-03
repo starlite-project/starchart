@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docs-artifact
-          path: /
+          path: ./target/doc
   deploy-docs:
     name: Deploy docs
     runs-on: ubuntu-latest
