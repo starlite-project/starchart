@@ -24,7 +24,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --workspace --all-features
+          args: --workspace --no-deps --all-features
       - name: Prepare docs
         run: |
           echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
