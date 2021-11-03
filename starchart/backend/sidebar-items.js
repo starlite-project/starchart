@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["future","Futures for `Backend` functions to return, for easier documentation."]],"struct":[["CacheBackend","A memory-based backend, uses a [`DashMap`] of [`Value`]s to represent data."],["JsonBackend","A JSON based backend, uses [`serde_json`] to read and write files."]],"trait":[["Backend","The backend to be used with a `Database`."]]});

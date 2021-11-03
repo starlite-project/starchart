@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["DbRef","An immutable reference to a [`Database`]."],["Gateway","The base structure for managing [`Database`]s."]]});
