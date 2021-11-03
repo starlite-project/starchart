@@ -34,7 +34,7 @@ jobs:
           RUSTFLAGS: "-C target-cpu=haswell"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --tests
+          args: --tests --workspace
 
   rustfmt:
     name: Format
@@ -56,7 +56,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: -- --check
+          args: --all -- --check
 
   codespell:
     name: Spelling
