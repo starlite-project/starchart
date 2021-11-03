@@ -32,3 +32,10 @@ pub use self::{error::ChartError as Error, gateway::Gateway};
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;
+
+/// The helper derive macro for easily implementing [`Key`].
+///
+/// [`Key`]: crate::Key
+#[cfg(feature = "derive")]
+#[doc(cfg(feature = "derive"))]
+pub use starchart_derive::Key;
