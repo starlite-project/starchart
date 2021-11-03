@@ -43,7 +43,9 @@ pub trait Backend: Send + Sync {
     ///
     /// The default impl does nothing
     fn init(&self) -> InitFuture<'_, Self::Error> {
-        Box::pin(async { Ok(()) })
+        Box::pin(async {
+            Ok(()) 
+        })
     }
 
     /// An optional shutdown function, useful for disconnecting from databases gracefully.
