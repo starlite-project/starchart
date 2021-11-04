@@ -1,3 +1,0 @@
-[codespell]
-skip = target
-ignore-words-list = crate,serde
