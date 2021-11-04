@@ -51,18 +51,12 @@ jobs:
           path: ./*
           key: ${{ github.sha }}
 
-      - name: Echo artifact
-        run: echo ${{ steps.download.outputs.download-path }}
-
-      - name: Echo artifact content
-        run: ls ${{ steps.download.outputs.download-path }}
-
       - name: Prepare docs
         run: |
-          echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > ${{ steps.download.outputs.download-path }}/index.html
+          echo '<meta http-equiv="refresh" content="0;url=starchart/index.html">' > target/doc/index.html
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ steps.download.outputs.download-path }}
+          publish_dir: target/doc
           allow_empty_commit: true
