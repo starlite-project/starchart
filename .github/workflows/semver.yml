@@ -22,7 +22,6 @@ jobs:
           toolchain: nightly-2021-09-30
           components: rustc-dev, llvm-tools-preview
           profile: minimal
-          override: true
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
