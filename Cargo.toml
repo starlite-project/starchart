@@ -54,6 +54,9 @@ features = ["fs"]
 optional = true
 version = "0.1"
 
+[dev-dependencies]
+static_assertions = "1.0.0"
+
 [features]
 cache = ["serde-value"]
 default = ["json"]

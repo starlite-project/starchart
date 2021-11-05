@@ -183,3 +183,11 @@ impl Backend for CacheBackend {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::CacheBackend;
+    use static_assertions::assert_impl_all;
+
+    assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+}
