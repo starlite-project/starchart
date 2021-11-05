@@ -188,6 +188,7 @@ impl Backend for CacheBackend {
 mod tests {
     use super::CacheBackend;
     use static_assertions::assert_impl_all;
+    use std::fmt::Debug;
 
     assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
 
