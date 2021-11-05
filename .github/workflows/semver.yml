@@ -1,0 +1,23 @@
+name: Semver check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  semver:
+    name: Semver
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-09-30
+          components: rustc-dev llvm-tools-preview
