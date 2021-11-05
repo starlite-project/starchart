@@ -196,6 +196,6 @@ mod tests {
     fn new() {
         let backend = CacheBackend::new();
 
-        assert_eq!(backend.0, CacheBackend::default().0);
+        assert_eq!(backend.tables, CacheBackend::default().tables);
     }
 }
