@@ -190,4 +190,11 @@ mod tests {
     use static_assertions::assert_impl_all;
 
     assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+
+    #[test]
+    fn new() {
+        let backend = CacheBackend::new();
+
+        assert_eq!(backend.0, CacheBackend::default().0);
+    }
 }
