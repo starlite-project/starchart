@@ -52,6 +52,9 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Remove default problem matchers
+        run: echo "::remove-matcher owner=rust::"
+
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
