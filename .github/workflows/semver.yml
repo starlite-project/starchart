@@ -20,6 +20,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2021-09-30
-          components: rustc-dev llvm-tools-preview
+          components: rustc-dev, llvm-tools-preview
           profile: minimal
           override: true
