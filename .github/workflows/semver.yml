@@ -19,7 +19,7 @@ jobs:
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-09-30
+          toolchain: nightly
           components: rustc-dev, llvm-tools-preview
           profile: minimal
 
@@ -27,7 +27,7 @@ jobs:
         uses: Swatinem/rust-cache@v1
 
       - name: Install rust semver
-        run: cargo +nightly-2021-09-30 install --git https://github.com/rust-lang/rust-semverver
+        run: cargo +nightly install --git https://github.com/rust-lang/rust-semverver
 
       - name: Run rust semver
         uses: actions-rs/cargo@v1
