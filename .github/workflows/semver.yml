@@ -27,5 +27,10 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
 
-      - name: Install rust-semverver
+      - name: Install rust semver
         run: cargo +nightly-2021-09-30 install --git https://github.com/rust-lang/rust-semverver
+
+      - name: Run rust semver
+        uses: actions-rs/cargo@v1
+        with:
+          command: semver
