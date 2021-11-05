@@ -30,4 +30,4 @@ jobs:
         run: cargo +nightly-2021-09-30 install --git https://github.com/rust-lang/rust-semverver
 
       - name: Run rust semver
-        run: cargo +nightly-2021-09-30 run semver
+        run: cargo +nightly-2021-09-30 semver
