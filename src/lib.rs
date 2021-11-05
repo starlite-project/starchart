@@ -28,7 +28,9 @@ pub use self::{
     entry::{Key, Settings},
 };
 #[doc(inline)]
-pub use self::{error::ChartError as Error, gateway::Gateway};
+pub use self::{
+    error::ChartError as Error, gateway::Gateway
+};
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;

@@ -55,6 +55,9 @@ jobs:
       - name: Remove default problem matchers
         run: echo "::remove-matcher owner=rust::"
 
+      - name: Add custom problem matchers
+        run: echo "::add-matcher ./.github/problemMatchers/fmt.json"
+
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
