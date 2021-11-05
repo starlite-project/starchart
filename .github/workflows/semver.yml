@@ -24,5 +24,8 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
       - name: Install rust-semverver
         run: cargo +nightly-2021-09-30 install --git https://github.com/rust-lang/rust-semverver
