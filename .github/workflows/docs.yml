@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v2
         id: restore-docs
         with:
-          path: ./*
+          path: ./target/doc/
           key: ${{ github.sha }}
 
       - name: Remove examples
