@@ -43,6 +43,6 @@ jobs:
           crate: semverver
 
       - name: Run SemVerVer
-        uses: actions-rs/cargo
+        uses: actions-rs/cargo@v1
         with:
           command: semver
