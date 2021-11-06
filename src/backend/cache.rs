@@ -190,11 +190,18 @@ mod tests {
     use super::{CacheBackend, CacheError};
     use crate::{backend::Backend, test_utils::SyncFuture};
     use dashmap::DashMap;
+    use serde::{Deserialize, Serialize};
     use serde_value::to_value;
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
 
     assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    struct Settings {
+        option: bool,
+        times: u32,
+    }
 
     #[test]
     fn new() {
@@ -270,6 +277,32 @@ mod tests {
         let keys = cache_backend.get_keys::<Vec<_>>("test").wait()?;
 
         assert_eq!(keys, vec!["key".to_owned()]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn get() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        let settings = Settings {
+            option: true,
+            times: 42,
+        };
+
+        cache_backend.create_table("test").wait()?;
+
+        cache_backend.create("test", "foo", &settings).wait()?;
+
+        let settings = cache_backend.get::<Settings>("test", "foo").wait()?;
+
+        assert_eq!(
+            settings,
+            Some(Settings {
+                option: true,
+                times: 42
+            })
+        );
 
         Ok(())
     }
