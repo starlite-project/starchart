@@ -304,6 +304,10 @@ mod tests {
             })
         );
 
+        let not_existing = cache_backend.get::<Settings>("test", "bar").wait()?;
+
+        assert_eq!(not_existing, None);
+
         Ok(())
     }
 }
