@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsString,
     io::{self, ErrorKind},
+    iter::FromIterator,
     path::{Path, PathBuf},
 };
 use thiserror::Error;

@@ -13,7 +13,8 @@
 #![allow(
     clippy::module_name_repetitions,
     clippy::no_effect_underscore_binding,
-    dead_code
+    dead_code,
+    stable_features
 )]
 //! A simple database system that allows the use of multiple different backends.
 

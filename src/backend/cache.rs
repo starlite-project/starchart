@@ -9,6 +9,7 @@ use dashmap::{mapref::one::Ref, DashMap};
 use serde::{Deserialize, Serialize};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
+use std::iter::FromIterator;
 
 /// An error returned from the [`CacheBackend`].
 #[doc(cfg(feature = "cache"))]
