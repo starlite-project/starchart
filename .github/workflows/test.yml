@@ -55,6 +55,9 @@ jobs:
           args: --all-features -- --test-threads 1
           out-type: html
 
+      - name: Echo files
+        run: ls ./
+
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1
         with:
