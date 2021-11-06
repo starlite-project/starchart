@@ -52,8 +52,7 @@ jobs:
       - name: Collect coverage
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: --all-features -- --test-threads 1
-          out-type: html
+          args: --out html,xml --all-features -- --test-threads 1
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1

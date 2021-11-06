@@ -60,6 +60,7 @@ static_assertions = "1.0.0"
 [dev-dependencies.futures]
 default-features = false
 features = ["executor"]
+version = "0.3"
 
 [features]
 cache = ["serde-value"]
