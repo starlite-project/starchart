@@ -1,10 +1,8 @@
-cargo-features = ["edition2021"]
-
 [package]
 authors = ["Gryffon Bellish <owenbellish@gmail.com>"]
 description = "A database tool that allows for multiple backend implementations"
 documentation = "https://docs.rs/starchart"
-edition = "2021"
+edition = "2018"
 homepage = "https://github.com/starlite-project/starchart"
 license = "MIT"
 name = "starchart"
