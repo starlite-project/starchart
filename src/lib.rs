@@ -1,4 +1,4 @@
-#![feature(never_type, doc_cfg)]
+#![feature(never_type, doc_cfg, option_result_unwrap_unchecked)]
 #![warn(
     clippy::pedantic,
     clippy::nursery,
