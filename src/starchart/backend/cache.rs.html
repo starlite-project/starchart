@@ -183,6 +183,7 @@
 <span id="183">183</span>
 <span id="184">184</span>
 <span id="185">185</span>
+<span id="186">186</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{
     <span class="ident">future</span>::{
         <span class="ident">CreateFuture</span>, <span class="ident">CreateTableFuture</span>, <span class="ident">DeleteFuture</span>, <span class="ident">DeleteTableFuture</span>, <span class="ident">GetFuture</span>, <span class="ident">GetKeysFuture</span>,
@@ -193,6 +194,7 @@
 <span class="kw">use</span> <span class="ident">dashmap</span>::{<span class="ident">mapref::one::Ref</span>, <span class="ident">DashMap</span>};
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">serde_value</span>::{<span class="ident">to_value</span>, <span class="ident">DeserializerError</span>, <span class="ident">SerializerError</span>, <span class="ident">Value</span>};
+<span class="kw">use</span> <span class="ident">std::iter::FromIterator</span>;
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
 <span class="doccomment">/// An error returned from the [`CacheBackend`].</span>

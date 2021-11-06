@@ -194,7 +194,7 @@
     <span class="ident">InitFuture</span>, <span class="ident">ReplaceFuture</span>, <span class="ident">ShutdownFuture</span>, <span class="ident">UpdateFuture</span>,
 };
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">std::error::Error</span> <span class="kw">as</span> <span class="ident">StdError</span>;
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error::Error</span> <span class="kw">as</span> <span class="ident">StdError</span>, <span class="ident">iter::FromIterator</span>};
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">future</span>;
 

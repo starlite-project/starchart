@@ -275,6 +275,7 @@
 <span id="275">275</span>
 <span id="276">276</span>
 <span id="277">277</span>
+<span id="278">278</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{
     <span class="ident">future</span>::{
         <span class="ident">CreateFuture</span>, <span class="ident">CreateTableFuture</span>, <span class="ident">DeleteFuture</span>, <span class="ident">DeleteTableFuture</span>, <span class="ident">GetFuture</span>, <span class="ident">GetKeysFuture</span>,
@@ -287,6 +288,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">ffi::OsString</span>,
     <span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">ErrorKind</span>},
+    <span class="ident">iter::FromIterator</span>,
     <span class="ident">path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>},
 };
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
