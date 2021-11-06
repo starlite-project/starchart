@@ -190,6 +190,7 @@ mod tests {
     use super::{CacheBackend, CacheError};
     use crate::{backend::Backend, test_utils::SyncFuture};
     use dashmap::DashMap;
+    use serde_value::to_value;
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
 
@@ -235,6 +236,40 @@ mod tests {
         cache_backend.create_table("test").wait()?;
 
         assert!(cache_backend.tables.contains_key("test"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn delete_table() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.create_table("test").wait()?;
+
+        assert!(cache_backend.tables.contains_key("test"));
+
+        cache_backend.delete_table("test").wait()?;
+
+        assert!(!cache_backend.tables.contains_key("test"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn get_keys() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.create_table("test").wait()?;
+
+        cache_backend
+            .tables
+            .get("test")
+            .unwrap()
+            .insert("key".to_owned(), to_value("value")?);
+
+        let keys = cache_backend.get_keys::<Vec<_>>("test").wait()?;
+
+        assert_eq!(keys, vec!["key".to_owned()]);
 
         Ok(())
     }
