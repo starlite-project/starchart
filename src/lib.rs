@@ -25,7 +25,10 @@ pub mod gateway;
 #[cfg(test)]
 mod test_utils;
 
-pub use self::{database::Database, entry::{Key, Settings}};
+pub use self::{
+    database::Database,
+    entry::{Key, Settings},
+};
 #[doc(inline)]
 pub use self::{error::ChartError as Error, gateway::Gateway};
 
