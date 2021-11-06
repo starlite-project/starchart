@@ -5,7 +5,6 @@
     clippy::suspicious,
     clippy::str_to_string,
     clippy::string_to_string,
-    clippy::panic_in_result_fn,
     missing_copy_implementations,
     missing_docs
 )]
@@ -15,6 +14,8 @@
     clippy::no_effect_underscore_binding,
     dead_code
 )]
+
+#![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! A simple database system that allows the use of multiple different backends.
 
 pub mod backend;

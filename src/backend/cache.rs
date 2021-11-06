@@ -188,6 +188,7 @@ impl Backend for CacheBackend {
 #[cfg(test)]
 mod tests {
     use super::CacheBackend;
+    use dashmap::DashMap;
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
 
@@ -198,5 +199,18 @@ mod tests {
         let cache_backend = CacheBackend::new();
 
         assert_eq!(cache_backend.tables.len(), 0);
+    }
+
+    #[test]
+    fn get_table() -> Result<(), super::CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.tables.insert("test".to_owned(), DashMap::new());
+
+        let table = cache_backend.get_table("test")?;
+
+        assert_eq!(table.key(), "test");
+
+        Ok(())
     }
 }
