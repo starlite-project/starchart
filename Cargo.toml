@@ -8,7 +8,7 @@ license = "MIT"
 name = "starchart"
 readme = "README.md"
 repository = "https://github.com/starlite-project/starchart"
-version = "0.2.3"
+version = "0.2.4"
 
 [dependencies]
 dashmap = "4.0"
