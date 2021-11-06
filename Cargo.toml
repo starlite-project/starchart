@@ -40,7 +40,7 @@ version = "0.7"
 [dependencies.starchart-derive]
 path = "./starchart-derive"
 optional = true
-version = "0.2"
+version = "^0.3"
 
 [dependencies.tokio]
 default-features = false
