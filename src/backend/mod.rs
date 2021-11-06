@@ -8,7 +8,7 @@ use self::future::{
     InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
 use serde::{Deserialize, Serialize};
-use std::error::Error as StdError;
+use std::{error::Error as StdError, iter::FromIterator};
 
 pub mod future;
 

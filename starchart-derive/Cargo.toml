@@ -1,7 +1,7 @@
 [package]
 name = "starchart-derive"
 version = "0.2.1"
-edition = "2021"
+edition = "2018"
 description = "Derive macros used by the starchart crate"
 authors = ["Gryffon Bellish <owenbellish@gmail.com>"]
 repository = "https://github.com/starlite-project/starchart"

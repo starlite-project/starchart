@@ -8,6 +8,7 @@ use super::{
 use dashmap::{mapref::one::Ref, DashMap};
 use serde::{Deserialize, Serialize};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
+use std::iter::FromIterator;
 use thiserror::Error;
 
 /// An error returned from the [`CacheBackend`].
