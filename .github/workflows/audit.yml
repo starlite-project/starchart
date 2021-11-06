@@ -38,4 +38,11 @@ jobs:
         uses: Swatinem/rust-cache@v1
 
       - name: Install SemVerVer
-        run: cargo install semverver
+        uses: actions-rs/install@v0.1
+        with:
+          crate: semverver
+
+      - name: Run SemVerVer
+        uses: actions-rs/cargo
+        with:
+          command: semver
