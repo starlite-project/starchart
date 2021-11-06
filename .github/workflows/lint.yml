@@ -52,15 +52,18 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Remove old matchers
+        run: echo "::remove-matcher owner=rust"
+
       - name: Add problem matchers
-        run: echo "::add-matcher::.github/problemMatchers/fmt.json"
+        run: echo "::add-matcher::.github/problemMatchers/rust.json"
 
       - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-        # uses: actions-rs/cargo@v1
-        # with:
-        #   command: fmt
-        #   args: --all -- --check
+        # run: cargo fmt --all -- --check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
   codespell:
     name: Spelling
