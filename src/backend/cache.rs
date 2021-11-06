@@ -205,11 +205,15 @@ mod tests {
     fn get_table() -> Result<(), super::CacheError> {
         let cache_backend = CacheBackend::new();
 
-        cache_backend.tables.insert("test".to_owned(), DashMap::new());
+        cache_backend
+            .tables
+            .insert("test".to_owned(), DashMap::new());
 
         let table = cache_backend.get_table("test")?;
 
         assert_eq!(table.key(), "test");
+
+        assert!(cache_backend.get_table("test2").is_err());
 
         Ok(())
     }
