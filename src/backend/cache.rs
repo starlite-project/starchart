@@ -190,8 +190,12 @@ mod tests {
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
 
+    assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+
     #[test]
-    fn assert_impl() {
-        assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+    fn new() {
+        let cache_backend = CacheBackend::new();
+
+        assert_eq!(cache_backend.tables.len(), 0);
     }
 }
