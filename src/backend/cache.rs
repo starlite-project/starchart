@@ -187,10 +187,11 @@ impl Backend for CacheBackend {
 
 #[cfg(test)]
 mod tests {
-    use super::CacheBackend;
+    use super::{CacheBackend, CacheError};
     use dashmap::DashMap;
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
+    use crate::{backend::Backend, test_utils::SyncFuture};
 
     assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
 
@@ -202,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn get_table() -> Result<(), super::CacheError> {
+    fn get_table() -> Result<(), CacheError> {
         let cache_backend = CacheBackend::new();
 
         cache_backend
@@ -214,6 +215,15 @@ mod tests {
         assert_eq!(table.key(), "test");
 
         assert!(cache_backend.get_table("test2").is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn has_table() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        assert!(!cache_backend.has_table("test").wait()?);
 
         Ok(())
     }

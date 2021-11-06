@@ -23,6 +23,8 @@ mod database;
 mod entry;
 pub mod error;
 pub mod gateway;
+#[cfg(test)]
+mod test_utils;
 
 pub use self::{
     database::Database,
