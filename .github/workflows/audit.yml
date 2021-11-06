@@ -1,9 +1,10 @@
 name: Audit
+
 on:
   push:
-    paths:
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+    branches:
+      - main
+  pull_request:
 
 jobs:
   security-audit:
@@ -12,7 +13,29 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+
       - name: Run security audit
         uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  semver-audit:
+    name: SemVer audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install specified nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-09-30
+          profile: minimal
+          override: true
+          components: rustc-dev, llvm-tools-preview
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install SemVerVer
+        run: cargo install semverver
