@@ -397,4 +397,30 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn delete() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.create_table("test").wait()?;
+
+        cache_backend
+            .create(
+                "test",
+                "foo",
+                &Settings {
+                    option: true,
+                    times: 42,
+                },
+            )
+            .wait()?;
+
+        assert!(cache_backend.has("test", "foo").wait()?);
+
+        cache_backend.delete("test", "foo").wait()?;
+
+        assert!(!cache_backend.has("test", "foo").wait()?);
+
+        Ok(())
+    }
 }
