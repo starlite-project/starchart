@@ -38,8 +38,8 @@ optional = true
 version = "0.7"
 
 [dependencies.starchart-derive]
-path = "./starchart-derive"
 optional = true
+path = "./starchart-derive"
 version = "^0.3"
 
 [dependencies.tokio]
@@ -54,6 +54,14 @@ features = ["fs"]
 optional = true
 version = "0.1"
 
+[dev-dependencies]
+static_assertions = "1.0.0"
+
+[dev-dependencies.futures]
+default-features = false
+features = ["executor"]
+version = "0.3"
+
 [features]
 cache = ["serde-value"]
 default = ["json"]
@@ -63,7 +71,7 @@ json = ["serde_json", "fs"]
 
 [workspace]
 members = [
-    "./starchart-derive"
+  "./starchart-derive",
 ]
 
 [package.metadata.docs.rs]

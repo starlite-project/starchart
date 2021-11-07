@@ -26,11 +26,18 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
+
+      - name: Remove old matchers
+        run: echo "::remove-matcher owner=rust::"
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/problemMatchers/rust.json"
       
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --all-features
 
   coverage:
     name: Coverage
@@ -51,15 +58,13 @@ jobs:
       - name: Collect coverage
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: -- --test-threads 1
+          args: --all-features -- --test-threads 1
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v2
       
       - name: Archive code coverage
         uses: actions/upload-artifact@v2
         with:
           name: code-coverage-report
-          path: coverage.xml
+          path: cobertura.xml

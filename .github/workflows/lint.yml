@@ -52,6 +52,12 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Remove old matchers
+        run: echo "::remove-matcher owner=rust::"
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/problemMatchers/rust.json"
+
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
