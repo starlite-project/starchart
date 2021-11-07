@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn get() -> Result<(), CacheError> {
+    fn get_and_create() -> Result<(), CacheError> {
         let cache_backend = CacheBackend::new();
 
         let settings = Settings {
@@ -307,6 +307,26 @@ mod tests {
         let not_existing = cache_backend.get::<Settings>("test", "bar").wait()?;
 
         assert_eq!(not_existing, None);
+
+        assert!(cache_backend.create("test", "foo", &settings).wait().is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn has() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.create_table("test").wait()?;
+
+        cache_backend.create("test", "foo", &Settings {
+            option: true,
+            times: 42,
+        }).wait()?;
+
+        assert!(cache_backend.has("test", "foo").wait()?);
+
+        assert!(!cache_backend.has("test", "bar").wait()?);
 
         Ok(())
     }
