@@ -39,6 +39,8 @@
 <span id="39">39</span>
 <span id="40">40</span>
 <span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>, <span class="ident">doc_cfg</span>)]</span>
 <span class="attribute">#![<span class="ident">warn</span>(
     <span class="ident">clippy::pedantic</span>,
@@ -46,7 +48,6 @@
     <span class="ident">clippy::suspicious</span>,
     <span class="ident">clippy::str_to_string</span>,
     <span class="ident">clippy::string_to_string</span>,
-    <span class="ident">clippy::panic_in_result_fn</span>,
     <span class="ident">missing_copy_implementations</span>,
     <span class="ident">missing_docs</span>
 )]</span>
@@ -56,6 +57,7 @@
     <span class="ident">clippy::no_effect_underscore_binding</span>,
     <span class="ident">dead_code</span>
 )]</span>
+<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">test</span>), <span class="ident">warn</span>(<span class="ident">clippy::panic_in_result_fn</span>))]</span>
 <span class="doccomment">//! A simple database system that allows the use of multiple different backends.</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">backend</span>;
@@ -63,6 +65,8 @@
 <span class="kw">mod</span> <span class="ident">entry</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">error</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">gateway</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">test_utils</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{
     <span class="ident">database::Database</span>,
