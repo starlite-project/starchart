@@ -340,6 +340,7 @@ mod tests {
         Ok(())
     }
 
+    #[test]
     fn update_and_replace() -> Result<(), CacheError> {
         let cache_backend = CacheBackend::new();
 
