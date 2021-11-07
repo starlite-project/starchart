@@ -308,7 +308,10 @@ mod tests {
 
         assert_eq!(not_existing, None);
 
-        assert!(cache_backend.create("test", "foo", &settings).wait().is_err());
+        assert!(cache_backend
+            .create("test", "foo", &settings)
+            .wait()
+            .is_err());
 
         Ok(())
     }
@@ -319,14 +322,61 @@ mod tests {
 
         cache_backend.create_table("test").wait()?;
 
-        cache_backend.create("test", "foo", &Settings {
-            option: true,
-            times: 42,
-        }).wait()?;
+        cache_backend
+            .create(
+                "test",
+                "foo",
+                &Settings {
+                    option: true,
+                    times: 42,
+                },
+            )
+            .wait()?;
 
         assert!(cache_backend.has("test", "foo").wait()?);
 
         assert!(!cache_backend.has("test", "bar").wait()?);
+
+        Ok(())
+    }
+
+    fn update_and_replace() -> Result<(), CacheError> {
+        let cache_backend = CacheBackend::new();
+
+        cache_backend.create_table("test").wait()?;
+
+        cache_backend.create(
+            "test",
+            "foo",
+            &Settings {
+                option: true,
+                times: 42,
+            },
+        ).wait()?;
+
+        cache_backend.update(
+            "test",
+            "foo",
+            &Settings {
+                option: false,
+                times: 43,
+            },
+        ).wait()?;
+
+        assert_eq!(cache_backend.get::<Settings>("test", "foo").wait()?, Some(Settings {
+            option: false,
+            times: 43
+        }));
+
+        cache_backend.replace("test", "foo", &Settings {
+            option: true,
+            times: 44,
+        }).wait()?;
+
+        assert_eq!(cache_backend.get::<Settings>("test", "foo").wait()?, Some(Settings {
+            option: true,
+            times: 44
+        }));
 
         Ok(())
     }
