@@ -17,6 +17,7 @@
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! A simple database system that allows the use of multiple different backends.
 
+pub mod action;
 pub mod backend;
 mod database;
 mod entry;
