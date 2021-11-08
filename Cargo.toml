@@ -68,6 +68,7 @@ cache = ["serde-value"]
 default = ["json"]
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
+inner-atomics = []
 json = ["serde_json", "fs"]
 
 [workspace]
