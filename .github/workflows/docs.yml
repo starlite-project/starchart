@@ -1,6 +1,9 @@
 name: Documentation
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+    types: [opened, reopened]
 
 jobs:
   build-docs:

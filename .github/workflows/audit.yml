@@ -9,6 +9,7 @@ on:
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
+    types: [opened, reopened]
 
 jobs:
   security-audit:
