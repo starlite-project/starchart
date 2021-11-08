@@ -18,6 +18,7 @@
 //! A simple database system that allows the use of multiple different backends.
 
 pub mod action;
+pub(crate) mod atomics;
 pub mod backend;
 mod database;
 mod entry;
