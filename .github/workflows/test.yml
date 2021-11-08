@@ -59,6 +59,9 @@ jobs:
         with:
           args: --workspace --all-features
 
+      - name: Find html file
+        run: ls ./
+
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
       
