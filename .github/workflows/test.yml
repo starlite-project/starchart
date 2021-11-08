@@ -57,7 +57,7 @@ jobs:
       - name: Collect coverage
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: --workspace --all-features
+          args: --ignore-tests --workspace --all-features
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
