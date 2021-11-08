@@ -74,9 +74,10 @@ impl<'a> Drop for ExclusiveGuard<'a> {
 #[cfg(test)]
 mod tests {
     use super::GuardState;
+    use std::fmt::Debug;
     use static_assertions::assert_impl_all;
 
-    assert_impl_all!(GuardState: Send, Sync);
+    assert_impl_all!(GuardState: Debug, Default, Send, Sync);
 
     #[test]
     fn new_and_is_locked() {
@@ -99,5 +100,14 @@ mod tests {
         drop(guard);
 
         assert!(!state.is_locked());
+    }
+
+    #[test]
+    fn debug_and_default() {
+        let state = GuardState::default();
+
+        let formatted = format!("{:?}", state);
+
+        assert_eq!(formatted, "GuardState");
     }
 }
