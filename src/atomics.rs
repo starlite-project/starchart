@@ -74,8 +74,8 @@ impl<'a> Drop for ExclusiveGuard<'a> {
 #[cfg(test)]
 mod tests {
     use super::GuardState;
-    use std::fmt::Debug;
     use static_assertions::assert_impl_all;
+    use std::fmt::Debug;
 
     assert_impl_all!(GuardState: Debug, Default, Send, Sync);
 
