@@ -71,6 +71,7 @@ json = ["serde_json", "fs"]
 
 [workspace]
 members = [
+  "./atomics",
   "./starchart-derive",
 ]
 
