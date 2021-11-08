@@ -40,6 +40,8 @@ jobs:
 
   coverage:
     name: Coverage
+    # Don't collect coverage if tests fail
+    needs: test
     runs-on: ubuntu-latest
 
     steps: 
