@@ -1,0 +1,2 @@
+[report]
+out = ["Html", "Xml"]
