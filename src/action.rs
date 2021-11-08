@@ -2,10 +2,10 @@
 
 //! The action structs for CRUD operations.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
-/// 
+///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 /// [`Gateway`]: crate::Gateway
 #[must_use = "an action alone has no side effects"]
@@ -42,32 +42,30 @@ impl Action {
 
     /// Creates a new [`Action`] with the specified operation.
     pub const fn new(kind: ActionKind) -> Self {
-        Self {
-            kind,
-        }
+        Self { kind }
     }
 }
 
 /// The type of [`CRUD`] action to perform
-/// 
+///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 #[must_use = "getting the information on what action will be performed has no side effects"]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ActionKind {
     /// Signifies that the operation will be a Create.
-    /// 
+    ///
     /// This locks the database and allows no other reads or writes until it is complete.
     Create,
     /// Signifies that the operation will be a Read.
-    /// 
+    ///
     /// This allows multiple different readers, but doesn't allow writing until all Reads are complete.
     Read,
     /// Signifies that the operation will be an Update.
-    /// 
+    ///
     /// This locks the database and allows no other reads or writes until it is complete.
     Update,
     /// Signifies that the operation will be a Delete.
-    /// 
+    ///
     /// This locks the database and allows no other reads or writes until it is complete.
     Delete,
 }

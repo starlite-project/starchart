@@ -18,16 +18,12 @@ impl GuardState {
 
     pub fn shared(&self) -> SharedGuard {
         self.inner.lock_shared();
-        SharedGuard {
-            state: self
-        }
+        SharedGuard { state: self }
     }
 
     pub fn exclusive(&self) -> ExclusiveGuard {
         self.inner.lock_exclusive();
-        ExclusiveGuard {
-            state: self
-        }
+        ExclusiveGuard { state: self }
     }
 
     fn drop_shared(&self) {
@@ -77,8 +73,8 @@ impl<'a> Drop for ExclusiveGuard<'a> {
 
 #[cfg(test)]
 mod tests {
-    use static_assertions::assert_impl_all;
     use super::GuardState;
+    use static_assertions::assert_impl_all;
 
     assert_impl_all!(GuardState: Send, Sync);
 
