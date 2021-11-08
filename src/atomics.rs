@@ -16,6 +16,20 @@ impl GuardState {
         self.inner.is_locked()
     }
 
+    pub fn shared(&self) -> SharedGuard {
+        self.inner.lock_shared();
+        SharedGuard {
+            state: self
+        }
+    }
+
+    pub fn exclusive(&self) -> ExclusiveGuard {
+        self.inner.lock_exclusive();
+        ExclusiveGuard {
+            state: self
+        }
+    }
+
     fn drop_shared(&self) {
         unsafe {
             self.inner.unlock_shared();
@@ -58,5 +72,36 @@ pub struct ExclusiveGuard<'a> {
 impl<'a> Drop for ExclusiveGuard<'a> {
     fn drop(&mut self) {
         self.state.drop_exclusive();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use static_assertions::assert_impl_all;
+    use super::GuardState;
+
+    assert_impl_all!(GuardState: Send, Sync);
+
+    #[test]
+    fn new_and_is_locked() {
+        let state = GuardState::new();
+
+        assert!(!state.is_locked());
+
+        let guard = state.shared();
+
+        assert!(state.is_locked());
+
+        drop(guard);
+
+        assert!(!state.is_locked());
+
+        let guard = state.exclusive();
+
+        assert!(state.is_locked());
+
+        drop(guard);
+
+        assert!(!state.is_locked());
     }
 }
