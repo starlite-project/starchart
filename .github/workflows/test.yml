@@ -1,10 +1,6 @@
 name: Test
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+on: [push, pull_request]
     
 
 jobs:
@@ -58,7 +54,7 @@ jobs:
       - name: Collect coverage
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: --all-features -- --test-threads 1
+          args: --workspace --all-features
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
