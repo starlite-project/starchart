@@ -1,10 +1,9 @@
 name: Test
 
-on:
+on: 
   push:
-    branches:
-      - main
   pull_request:
+    types: [opened, reopened]
     
 
 jobs:
@@ -58,7 +57,7 @@ jobs:
       - name: Collect coverage
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: --all-features -- --test-threads 1
+          args: --workspace --all-features
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
@@ -67,4 +66,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: code-coverage-report
-          path: cobertura.xml
+          path: tarpaulin-report.html

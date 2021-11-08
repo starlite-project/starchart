@@ -1,10 +1,9 @@
 name: Documentation
 
-on:
+on: 
   push:
-    branches:
-      - main
   pull_request:
+    types: [opened, reopened]
 
 jobs:
   build-docs:
