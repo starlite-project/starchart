@@ -245,6 +245,7 @@ mod tests {
         assert_eq!(formatted, "GuardState");
     }
 
+    #[cfg(not(tarpaulin))]
     #[test]
     fn guards() {
         let state = Arc::new(GuardState::new());
