@@ -266,5 +266,15 @@ mod tests {
         assert!(action.validate().is_ok());
 
         assert!(action.is_validated());
+
+        action.validate().unwrap();
+
+        assert!(action.is_validated());
+
+        let new_action = action.set_target(OperationTarget::Entity);
+
+        assert!(!new_action.is_validated());
+
+        assert!(new_action.validate().is_ok());
     }
 }
