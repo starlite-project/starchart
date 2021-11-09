@@ -1,6 +1,6 @@
 //! The base structure to use for starchart.
 
-use crate::{backend::Backend, database::DatabaseError, Database, Settings};
+use crate::{backend::Backend, database::DatabaseError, Database, Entity};
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 use std::{
@@ -115,7 +115,7 @@ impl<B: Backend> Gateway<B> {
         table_name: String,
     ) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let exists = self.get::<S>(&table_name)?;
 
@@ -138,7 +138,7 @@ impl<B: Backend> Gateway<B> {
         table_name: String,
     ) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let type_id = TypeId::of::<S>();
 
@@ -165,7 +165,7 @@ impl<B: Backend> Gateway<B> {
         table_name: &str,
     ) -> Result<Option<DbRef<'a, B>>, DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let map_ref = unsafe {
             let temp = self.databases.get(table_name);
@@ -196,7 +196,7 @@ impl<B: Backend> Gateway<B> {
     /// [`Gateway::get`]: Self::get
     pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let table = match self.get::<S>(table_name)? {
             Some(db) => db,
@@ -223,7 +223,7 @@ impl<B: Backend> Gateway<B> {
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
     pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let table = self.get_unchecked::<S>(table_name);
 
@@ -247,7 +247,7 @@ impl<B: Backend> Gateway<B> {
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let map_ref = self.databases.get(table_name).unwrap_unchecked();
 

@@ -2,8 +2,16 @@
 
 //! The action structs for CRUD operations.
 
-use crate::Settings;
+use crate::Entity;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+#[doc(hidden)]
+pub enum ActionError {
+    #[error("an invalid operation was set")]
+    InvalidOperation,
+}
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
 ///
@@ -15,6 +23,8 @@ pub struct Action<S> {
     kind: ActionKind,
     table_name: Option<S>,
     data: Option<Box<S>>,
+    target: OperationTarget,
+    validated: bool,
 }
 
 impl<S> Action<S> {
@@ -24,6 +34,8 @@ impl<S> Action<S> {
             kind,
             table_name: None,
             data: None,
+            target: OperationTarget::Unknown,
+            validated: false,
         }
     }
 
@@ -31,9 +43,16 @@ impl<S> Action<S> {
     pub const fn kind(&self) -> ActionKind {
         self.kind
     }
+
+    /// Returns the [`OperationTarget`] we will be performing with said action.
+    pub const fn target(&self) -> OperationTarget {
+        self.target
+    }
 }
 
-impl<S: Settings> Action<S> {
+// These are two separate blocks because we don't want
+// any operations being created if `S` doesn't implement `Entity`.
+impl<S: Entity> Action<S> {
     /// Begins a Create-based action.
     pub fn create() -> Self {
         Self::new(ActionKind::Create)
@@ -52,6 +71,27 @@ impl<S: Settings> Action<S> {
     /// Begins a Delete-based action.
     pub fn delete() -> Self {
         Self::new(ActionKind::Delete)
+    }
+
+    /// Validates the [`Action`].
+    ///
+    /// This is a no-op if the [`Action`] has already been validated.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ActionError::InvalidOperation`] if the [`Action`] has not set an [`OperationTarget`].
+    pub fn validate(mut self) -> Result<Self, ActionError> {
+        if self.validated {
+            return Ok(self);
+        }
+
+        if self.target == OperationTarget::Unknown {
+            return Err(ActionError::InvalidOperation);
+        }
+
+        self.validated = true;
+
+        Ok(self)
     }
 }
 
@@ -85,15 +125,85 @@ impl Default for ActionKind {
     }
 }
 
+/// The target of the [`CRUD`] operation.
+///
+/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum OperationTarget {
+    /// The operation will be performed on a table.
     Table,
+    /// The operation will be performed on a single entity.
     Entity,
+    /// An unknown operation will occur, this raises an error if it's set when [`Action::validate`] is called.
     Unknown,
 }
 
 impl Default for OperationTarget {
     fn default() -> Self {
         Self::Unknown
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Action, ActionKind, OperationTarget};
+    use crate::{Entity, Key};
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    use static_assertions::assert_impl_all;
+    use std::fmt::Debug;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+    struct Settings {
+        key: u32,
+        value: bool,
+        test: u8,
+    }
+
+    impl Key for Settings {
+        fn to_key(&self) -> String {
+            self.key.to_string()
+        }
+    }
+
+    assert_impl_all!(
+        Settings: Debug,
+        Clone,
+        Copy,
+        PartialEq,
+        Serialize,
+        DeserializeOwned,
+        Entity
+    );
+
+    #[test]
+    fn basic() {
+        let action = Action::<Settings>::new(ActionKind::Create);
+
+        assert_eq!(action.kind(), ActionKind::Create);
+        assert_eq!(action.target(), OperationTarget::Unknown);
+
+        assert!(action.table_name.is_none());
+        assert!(action.data.is_none());
+
+        assert!(action.validate().is_err());
+    }
+
+    #[test]
+    fn crud_constructors() {
+        let create = Action::<Settings>::create();
+
+        assert_eq!(create.kind(), ActionKind::Create);
+
+        let read = Action::<Settings>::read();
+
+        assert_eq!(read.kind(), ActionKind::Read);
+
+        let update = Action::<Settings>::update();
+
+        assert_eq!(update.kind(), ActionKind::Update);
+
+        let delete = Action::<Settings>::delete();
+
+        assert_eq!(delete.kind(), ActionKind::Delete);
     }
 }

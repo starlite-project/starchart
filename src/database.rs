@@ -1,4 +1,4 @@
-use crate::{backend::Backend, Settings};
+use crate::{backend::Backend, Entity};
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
 use thiserror::Error;
 
@@ -49,7 +49,7 @@ impl<B: Backend> Database<B> {
     /// or if [`Backend::get`] returned an error.
     pub async fn get<S>(&self, key: &str) -> Result<Option<S>, DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         self.check::<S>()?;
 
@@ -66,7 +66,7 @@ impl<B: Backend> Database<B> {
     /// or if [`Backend::replace`] or [`Backend::create`] returned an error.
     pub async fn set<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         self.check::<S>()?;
 
@@ -87,7 +87,7 @@ impl<B: Backend> Database<B> {
     /// if the value doesn't exist in the [`Database`], or if [`Backend::update`] returned an error.
     pub async fn update<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         self.check::<S>()?;
 
@@ -108,7 +108,7 @@ impl<B: Backend> Database<B> {
     /// or if [`Backend::replace`] returned an error.
     pub async fn replace<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         self.check::<S>()?;
 
@@ -129,7 +129,7 @@ impl<B: Backend> Database<B> {
     /// or if [`Backend::delete`] returned an error.
     pub async fn delete<S>(&self, key: &str) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         self.check::<S>()?;
 
@@ -154,7 +154,7 @@ impl<B: Backend> Database<B> {
 
     pub(crate) fn check<S>(&self) -> Result<(), DatabaseError<B::Error>>
     where
-        S: Settings + 'static,
+        S: Entity + 'static,
     {
         let type_of_val = TypeId::of::<S>();
 

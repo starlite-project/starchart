@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 
-/// The key trait to be implemented on [`Settings`] to allow an easy way to get keys.
+/// The key trait to be implemented on [`Entity`] to allow an easy way to get keys.
 pub trait Key {
     /// The method to transform a [`Key`] into a value.
     fn to_key(&self) -> String;
@@ -12,6 +12,6 @@ pub trait Key {
 /// This signifies that the type can be stored within a [`Database`].
 ///
 /// [`Database`]: crate::Database
-pub trait Settings: Serialize + DeserializeOwned + Debug + Send + Sync {}
+pub trait Entity: Serialize + DeserializeOwned + Debug + Send + Sync {}
 
-impl<T> Settings for T where T: Serialize + DeserializeOwned + Debug + Send + Sync {}
+impl<T> Entity for T where T: Serialize + DeserializeOwned + Debug + Send + Sync {}

@@ -11,7 +11,7 @@ pub use crate::backend::JsonError;
 #[doc(cfg(feature = "cache"))]
 pub use crate::backend::CacheError;
 
-pub use crate::database::DatabaseError;
+pub use crate::{action::ActionError, database::DatabaseError};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -33,6 +33,9 @@ pub enum ChartError<B: Backend> {
     /// A [`DatabaseError`] has occurred.
     #[error(transparent)]
     Database(#[from] DatabaseError<B::Error>),
+    /// An [`ActionError`] has occurred.
+    #[error(transparent)]
+    Action(#[from] ActionError),
     /// A custom error has occurred, this is useful for [`Result`] return types.
     #[error(transparent)]
     Custom(#[from] Box<dyn std::error::Error + Send + Sync>),

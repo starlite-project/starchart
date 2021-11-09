@@ -35,7 +35,7 @@ mod test_utils;
 pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};
 pub use self::{
     database::Database,
-    entry::{Key, Settings},
+    entry::{Entity, Key},
 };
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
