@@ -197,8 +197,8 @@ mod tests {
         assert_eq!(formatted, "AtomicGuard");
     }
 
-    #[cfg(not(tarpaulin))]
     #[test]
+    // #[cfg_attr(tarpaulin, ignore)]
     fn guards() {
         let state = Arc::new(AtomicGuard::new());
 
@@ -209,7 +209,7 @@ mod tests {
         let first_shared_thread = thread::spawn(move || {
             let _guard = first_shared.shared();
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(1000));
 
             assert!(first_shared.is_locked());
             assert!(first_shared.is_shared());
@@ -219,7 +219,7 @@ mod tests {
         let second_shared_thread = thread::spawn(move || {
             let _guard = second_shared.shared();
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(750));
 
             assert!(second_shared.is_locked());
             assert!(second_shared.is_shared());
@@ -229,7 +229,7 @@ mod tests {
         let exclusive_thread = thread::spawn(move || {
             let _guard = exclusive.exclusive();
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(500));
 
             assert!(exclusive.is_locked());
             assert!(!exclusive.is_shared());
