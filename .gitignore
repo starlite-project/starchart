@@ -2,3 +2,4 @@
 Cargo.lock
 ./expanded.rs
 /foo/*
+./tarpaulin-report.html

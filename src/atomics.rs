@@ -6,45 +6,7 @@
 use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
 use std::{
     fmt::{Debug, Formatter, Result},
-    sync::atomic::{AtomicU8, Ordering},
 };
-
-/// The type of Lock the [`GuardState`] is holding.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(u8)]
-pub enum GuardKind {
-    /// The state is unlocked.
-    Unlocked,
-    /// The state is locked with a shared lock, and multiple can be acquired for shared reading.
-    Shared,
-    /// The state is locked with an exclusive lock, and cannot be read from or written to while this lock is active.
-    Exclusive,
-}
-
-impl GuardKind {
-    /// Casts the [`GuardKind`] to a [`prim@u8`].
-    ///
-    /// This is used to allow it to be held in an [`AtomicU8`].
-    #[must_use]
-    pub const fn as_u8(self) -> u8 {
-        self as u8
-    }
-
-    /// Converts the value from a [`prim@u8`].
-    ///
-    /// # Panics
-    ///
-    /// This panics if the value is not `0`, `1`, or `2`.
-    #[must_use]
-    pub const fn from_u8(value: u8) -> Self {
-        match value {
-            0 => Self::Unlocked,
-            1 => Self::Shared,
-            2 => Self::Exclusive,
-            _ => unreachable!(),
-        }
-    }
-}
 
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
@@ -55,9 +17,9 @@ impl GuardKind {
 ///
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::any::Any + std::marker::Send>> {
-/// # use starchart::atomics::GuardState;
+/// # use starchart::atomics::AtomicGuard;
 /// # use std::{sync::Arc, thread, time::Duration};
-/// let guard = Arc::new(GuardState::new());
+/// let guard = Arc::new(AtomicGuard::new());
 ///
 /// let first_shared = guard.clone();
 /// let second_shared = guard.clone();
@@ -102,53 +64,49 @@ impl GuardKind {
 ///
 /// # Ok(()) }
 #[must_use = "a guard state does nothing if left unused"]
-pub struct GuardState {
+pub struct AtomicGuard {
     inner: RawRwLock,
-    kind: AtomicU8,
 }
 
-impl GuardState {
-    /// Creates a new, unlockecd [`GuardState`].
+impl AtomicGuard {
+    /// Creates a new, unlockecd [`AtomicGuard`].
     pub const fn new() -> Self {
         Self {
             inner: RawRwLock::INIT,
-            kind: AtomicU8::new(GuardKind::Unlocked.as_u8()),
         }
     }
 
-    /// Checks whether the [`GuardState`] is currently locked in any fashion.
+    /// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
     pub fn is_locked(&self) -> bool {
         self.inner.is_locked()
     }
 
-    /// Checks whether the [`GuardState`] is currently locked exclusively.
+    /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
     pub fn is_exclusive(&self) -> bool {
-        matches!(self.kind(), GuardKind::Exclusive)
+        let acquired_lock = self.inner.try_lock_shared();
+        if acquired_lock {
+            unsafe {
+                self.inner.unlock_shared();
+            }
+        }
+
+        !acquired_lock
     }
 
-    /// Checks whether the [`GuardState`] is currently locked in a shared fashion.
+    /// Checks whether the [`AtomicGuard`] is currently locked in a shared fashion.
     pub fn is_shared(&self) -> bool {
-        matches!(self.kind(), GuardKind::Shared)
-    }
-
-    /// Returns the [`GuardKind`] of the current state.
-    pub fn kind(&self) -> GuardKind {
-        GuardKind::from_u8(self.kind.load(Ordering::Relaxed))
+        self.inner.is_locked() && !self.is_exclusive()
     }
 
     /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
         self.inner.lock_shared();
-        self.kind
-            .store(GuardKind::Shared.as_u8(), Ordering::Relaxed);
         SharedGuard { state: self }
     }
 
     /// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
     pub fn exclusive(&self) -> ExclusiveGuard {
         self.inner.lock_exclusive();
-        self.kind
-            .store(GuardKind::Exclusive.as_u8(), Ordering::Relaxed);
         ExclusiveGuard { state: self }
     }
 
@@ -156,36 +114,30 @@ impl GuardState {
         unsafe {
             self.inner.unlock_shared();
         }
-        if !self.is_locked() {
-            self.kind
-                .store(GuardKind::Unlocked.as_u8(), Ordering::Relaxed);
-        }
     }
 
     fn drop_exclusive(&self) {
         unsafe {
             self.inner.unlock_exclusive();
         }
-        self.kind
-            .store(GuardKind::Unlocked.as_u8(), Ordering::Relaxed);
     }
 }
 
-impl Default for GuardState {
+impl Default for AtomicGuard {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Debug for GuardState {
+impl Debug for AtomicGuard {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        f.debug_struct("GuardState").finish()
+        f.debug_struct("AtomicGuard").finish()
     }
 }
 
 /// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
-    state: &'a GuardState,
+    state: &'a AtomicGuard,
 }
 
 impl<'a> Drop for SharedGuard<'a> {
@@ -196,7 +148,7 @@ impl<'a> Drop for SharedGuard<'a> {
 
 /// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
-    state: &'a GuardState,
+    state: &'a AtomicGuard,
 }
 
 impl<'a> Drop for ExclusiveGuard<'a> {
@@ -207,15 +159,15 @@ impl<'a> Drop for ExclusiveGuard<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::GuardState;
+    use super::AtomicGuard;
     use static_assertions::assert_impl_all;
     use std::{fmt::Debug, sync::Arc, thread, time::Duration};
 
-    assert_impl_all!(GuardState: Debug, Default, Send, Sync);
+    assert_impl_all!(AtomicGuard: Debug, Default, Send, Sync);
 
     #[test]
     fn new_and_is_locked() {
-        let state = GuardState::new();
+        let state = AtomicGuard::new();
 
         assert!(!state.is_locked());
 
@@ -238,17 +190,17 @@ mod tests {
 
     #[test]
     fn debug_and_default() {
-        let state = GuardState::default();
+        let state = AtomicGuard::default();
 
         let formatted = format!("{:?}", state);
 
-        assert_eq!(formatted, "GuardState");
+        assert_eq!(formatted, "AtomicGuard");
     }
 
     #[cfg(not(tarpaulin))]
     #[test]
     fn guards() {
-        let state = Arc::new(GuardState::new());
+        let state = Arc::new(AtomicGuard::new());
 
         let first_shared = state.clone();
         let second_shared = state.clone();
