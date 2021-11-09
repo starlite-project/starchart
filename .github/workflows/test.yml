@@ -42,22 +42,19 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
 
+    container:
+        image: xd009642/tarpaulin:develop-nightly
+        options: --security-opt seccomp=unconfined
+
     steps: 
       - name: Checkout sources
         uses: actions/checkout@v2
-
-      - name: Install nightly toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
-          override: true
       
       - name: Collect coverage
-        uses: actions-rs/tarpaulin@v0.1
+        uses: actions-rs/cargo@v1
         with:
-          args: --ignore-tests --workspace --all-features -- --test-threads 1
+          command: tarpaulin
+          args: -- --test-threads 1
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2

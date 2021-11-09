@@ -1,0 +1,11 @@
+[all_features_coverage]
+workspace = true
+all-features = true
+ignore-tests = true
+test-threads = 1
+
+[report]
+out = ["Html", "Xml"]
+# workspace = true
+# all-features = true
+# ignore-tests = true

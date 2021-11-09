@@ -4,9 +4,7 @@
 //! any time, and should not be relied upon.
 
 use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
-use std::{
-    fmt::{Debug, Formatter, Result},
-};
+use std::fmt::{Debug, Formatter, Result};
 
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
@@ -82,6 +80,7 @@ impl AtomicGuard {
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
+    #[cfg(not(tarpaulin_include))]
     pub fn is_exclusive(&self) -> bool {
         let acquired_lock = self.inner.try_lock_shared();
         if acquired_lock {
@@ -94,6 +93,7 @@ impl AtomicGuard {
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked in a shared fashion.
+    #[cfg(not(tarpaulin_include))]
     pub fn is_shared(&self) -> bool {
         self.inner.is_locked() && !self.is_exclusive()
     }
@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    // #[cfg_attr(tarpaulin, ignore)]
+    #[cfg_attr(tarpaulin, ignore)]
     fn guards() {
         let state = Arc::new(AtomicGuard::new());
 
@@ -219,7 +219,7 @@ mod tests {
         let second_shared_thread = thread::spawn(move || {
             let _guard = second_shared.shared();
 
-            thread::sleep(Duration::from_millis(750));
+            thread::sleep(Duration::from_millis(2000));
 
             assert!(second_shared.is_locked());
             assert!(second_shared.is_shared());
