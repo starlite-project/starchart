@@ -48,7 +48,7 @@ impl<S> Action<S> {
     pub const fn target(&self) -> OperationTarget {
         self.target
     }
-    
+
     /// Whether the [`Action`] has been validated.
     pub const fn is_validated(&self) -> bool {
         self.validated
@@ -79,12 +79,15 @@ impl<S: Entity> Action<S> {
     }
 
     /// Sets an [`OperationTarget`] for the action.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the [`OperationTarget`] is an [`OperationTarget::Unknown`].
     pub fn set_target(&mut self, target: OperationTarget) -> &mut Self {
-        assert!(!(target == OperationTarget::Unknown), "an unknown operation target was set");
+        assert!(
+            !(target == OperationTarget::Unknown),
+            "an unknown operation target was set"
+        );
         self.target = target;
 
         self.validated = false;
@@ -117,11 +120,11 @@ impl<S: Entity> Action<S> {
 impl<S: Entity> Default for Action<S> {
     fn default() -> Self {
         Self {
-            kind: ActionKind::Read,
-            table_name: None,
-            data: None,
-            target: OperationTarget::Unknown,
-            validated: false,
+            kind: ActionKind::default(),
+            table_name: Option::default(),
+            data: Option::default(),
+            target: OperationTarget::default(),
+            validated: bool::default(),
         }
     }
 }
