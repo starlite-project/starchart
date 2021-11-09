@@ -1,4 +1,7 @@
-#![allow(missing_docs)]
+//! Atomics crate used to allow for atomic operations on a database system.
+//!
+//! Anything within this module is a private implementation detail that can be changed at
+//! any time, and should not be relied upon.
 
 use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
 use std::{
@@ -6,20 +9,32 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
 };
 
+/// The type of Lock the [`GuardState`] is holding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum GuardKind {
+    /// The state is unlocked.
     Unlocked,
+    /// The state is locked with a shared lock, and multiple can be acquired for shared reading.
     Shared,
+    /// The state is locked with an exclusive lock, and cannot be read from or written to while this lock is active.
     Exclusive,
 }
 
 impl GuardKind {
+    /// Casts the [`GuardKind`] to a [`prim@u8`].
+    ///
+    /// This is used to allow it to be held in an [`AtomicU8`].
     #[must_use]
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
 
+    /// Converts the value from a [`prim@u8`].
+    ///
+    /// # Panics
+    ///
+    /// This panics if the value is not `0`, `1`, or `2`.
     #[must_use]
     pub const fn from_u8(value: u8) -> Self {
         match value {
@@ -31,6 +46,62 @@ impl GuardKind {
     }
 }
 
+/// The mechanism used to allow multiple readers and only one writer
+/// to access a shared database.
+///
+/// This uses [`parking_lot`]'s [`RawRwLock`] internally.
+///
+/// # Examples
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::any::Any + std::marker::Send>> {
+/// # use starchart::atomics::GuardState;
+/// # use std::{sync::Arc, thread, time::Duration};
+/// 
+/// let guard = Arc::new(GuardState::new());
+/// 
+/// let first_shared = guard.clone();
+/// let second_shared = guard.clone();
+/// let exclusive = guard.clone();
+/// 
+/// let first_shared = thread::spawn(move || {
+///    let guard = first_shared.shared();
+/// 
+///     println!("doing work with the first shared lock");
+/// 
+///     /* ... */
+///    # thread::sleep(Duration::from_millis(1000));
+/// 
+///     println!("done with the first lock");
+/// });
+/// 
+/// let second_shared = thread::spawn(move || {
+///     let guard = second_shared.shared();
+/// 
+///    println!("doing work with the second shared lock");
+/// 
+///    /* ... */
+///     # thread::sleep(Duration::from_millis(750)); 
+/// 
+///    println!("done with the second lock");
+/// });
+/// 
+/// let exclusive = thread::spawn(move || {
+///     let guard = exclusive.exclusive();
+/// 
+///    println!("doing work with the exclusive lock");
+/// 
+///    /* ... */
+///    # thread::sleep(Duration::from_millis(500));
+/// 
+///   println!("done with the exclusive lock");
+/// });
+/// 
+/// first_shared.join()?;
+/// second_shared.join()?;
+/// exclusive.join()?;
+///
+/// # Ok(()) }
 #[must_use = "a guard state does nothing if left unused"]
 pub struct GuardState {
     inner: RawRwLock,
@@ -38,6 +109,7 @@ pub struct GuardState {
 }
 
 impl GuardState {
+    /// Creates a new, unlockecd [`GuardState`].
     pub const fn new() -> Self {
         Self {
             inner: RawRwLock::INIT,
@@ -45,22 +117,27 @@ impl GuardState {
         }
     }
 
+    /// Checks whether the [`GuardState`] is currently locked in any fashion.
     pub fn is_locked(&self) -> bool {
         self.inner.is_locked()
     }
 
+    /// Checks whether the [`GuardState`] is currently locked exclusively.
     pub fn is_exclusive(&self) -> bool {
         matches!(self.kind(), GuardKind::Exclusive)
     }
 
+    /// Checks whether the [`GuardState`] is currently locked in a shared fashion.
     pub fn is_shared(&self) -> bool {
         matches!(self.kind(), GuardKind::Shared)
     }
 
+    /// Returns the [`GuardKind`] of the current state.
     pub fn kind(&self) -> GuardKind {
         GuardKind::from_u8(self.kind.load(Ordering::Relaxed))
     }
 
+    /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
         self.inner.lock_shared();
         self.kind
@@ -68,6 +145,7 @@ impl GuardState {
         SharedGuard { state: self }
     }
 
+    /// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
     pub fn exclusive(&self) -> ExclusiveGuard {
         self.inner.lock_exclusive();
         self.kind
@@ -106,6 +184,7 @@ impl Debug for GuardState {
     }
 }
 
+/// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
     state: &'a GuardState,
 }
@@ -116,6 +195,7 @@ impl<'a> Drop for SharedGuard<'a> {
     }
 }
 
+/// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
     state: &'a GuardState,
 }
