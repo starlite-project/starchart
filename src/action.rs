@@ -18,7 +18,7 @@ pub enum ActionError {
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 /// [`Gateway`]: crate::Gateway
 #[must_use = "an action alone has no side effects"]
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Action<S> {
     kind: ActionKind,
     table_name: Option<S>,
@@ -48,6 +48,11 @@ impl<S> Action<S> {
     pub const fn target(&self) -> OperationTarget {
         self.target
     }
+    
+    /// Whether the [`Action`] has been validated.
+    pub const fn is_validated(&self) -> bool {
+        self.validated
+    }
 }
 
 // These are two separate blocks because we don't want
@@ -73,6 +78,20 @@ impl<S: Entity> Action<S> {
         Self::new(ActionKind::Delete)
     }
 
+    /// Sets an [`OperationTarget`] for the action.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the [`OperationTarget`] is an [`OperationTarget::Unknown`].
+    pub fn set_target(&mut self, target: OperationTarget) -> &mut Self {
+        assert!(!(target == OperationTarget::Unknown), "an unknown operation target was set");
+        self.target = target;
+
+        self.validated = false;
+
+        self
+    }
+
     /// Validates the [`Action`].
     ///
     /// This is a no-op if the [`Action`] has already been validated.
@@ -80,9 +99,9 @@ impl<S: Entity> Action<S> {
     /// # Errors
     ///
     /// Returns an [`ActionError::InvalidOperation`] if the [`Action`] has not set an [`OperationTarget`].
-    pub fn validate(mut self) -> Result<Self, ActionError> {
+    pub fn validate(&mut self) -> Result<(), ActionError> {
         if self.validated {
-            return Ok(self);
+            return Ok(());
         }
 
         if self.target == OperationTarget::Unknown {
@@ -91,7 +110,19 @@ impl<S: Entity> Action<S> {
 
         self.validated = true;
 
-        Ok(self)
+        Ok(())
+    }
+}
+
+impl<S: Entity> Default for Action<S> {
+    fn default() -> Self {
+        Self {
+            kind: ActionKind::Read,
+            table_name: None,
+            data: None,
+            target: OperationTarget::Unknown,
+            validated: false,
+        }
     }
 }
 
@@ -177,7 +208,7 @@ mod tests {
 
     #[test]
     fn basic() {
-        let action = Action::<Settings>::new(ActionKind::Create);
+        let mut action = Action::<Settings>::new(ActionKind::Create);
 
         assert_eq!(action.kind(), ActionKind::Create);
         assert_eq!(action.target(), OperationTarget::Unknown);
@@ -205,5 +236,35 @@ mod tests {
         let delete = Action::<Settings>::delete();
 
         assert_eq!(delete.kind(), ActionKind::Delete);
+    }
+
+    #[test]
+    fn default() {
+        let mut action = Action::<Settings>::default();
+
+        assert_eq!(action.kind(), ActionKind::Read);
+
+        assert!(action.table_name.is_none());
+
+        assert!(action.data.is_none());
+
+        assert!(action.validate().is_err());
+
+        assert_eq!(action.target(), OperationTarget::Unknown);
+    }
+
+    #[test]
+    fn validate() {
+        let mut action = Action::<Settings>::new(ActionKind::Create);
+
+        assert!(action.validate().is_err());
+
+        assert!(!action.is_validated());
+
+        action.set_target(OperationTarget::Table);
+
+        assert!(action.validate().is_ok());
+
+        assert!(action.is_validated());
     }
 }
