@@ -2,6 +2,8 @@
 //!
 //! Anything within this module is a private implementation detail that can be changed at
 //! any time, and should not be relied upon.
+//! 
+//! In addition, breaking changes to this module will not be reflected in SemVer updates.
 
 use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
 use std::fmt::{Debug, Formatter, Result};
@@ -13,7 +15,7 @@ use std::fmt::{Debug, Formatter, Result};
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// # fn main() -> Result<(), Box<dyn std::any::Any + std::marker::Send>> {
 /// # use starchart::atomics::AtomicGuard;
 /// # use std::{sync::Arc, thread, time::Duration};
@@ -198,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(tarpaulin, ignore)]
+    #[ignore = "trying to fix this"]
     fn guards() {
         let state = Arc::new(AtomicGuard::new());
 

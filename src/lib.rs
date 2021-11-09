@@ -18,10 +18,10 @@
 //! A simple database system that allows the use of multiple different backends.
 
 pub mod action;
-#[cfg(not(feature = "inner-atomics"))]
+#[cfg(not(feature = "unstable-atomics"))]
 pub(crate) mod atomics;
-#[cfg(feature = "inner-atomics")]
-#[doc(cfg(feature = "inner-atomics"))]
+#[cfg(feature = "unstable-atomics")]
+#[doc(cfg(feature = "unstable-atomics"))]
 pub mod atomics;
 pub mod backend;
 mod database;

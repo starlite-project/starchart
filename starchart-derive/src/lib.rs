@@ -1,3 +1,4 @@
+#![cfg(not(tarpaulin_include))]
 #![feature(never_type, doc_cfg)]
 #![warn(
     clippy::pedantic,
