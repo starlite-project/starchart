@@ -31,12 +31,12 @@ pub mod gateway;
 #[cfg(test)]
 mod test_utils;
 
+#[doc(inline)]
+pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};
 pub use self::{
     database::Database,
     entry::{Key, Settings},
 };
-#[doc(inline)]
-pub use self::{error::ChartError as Error, gateway::Gateway, action::Action};
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;
