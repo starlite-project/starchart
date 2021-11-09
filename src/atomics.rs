@@ -57,46 +57,45 @@ impl GuardKind {
 /// # fn main() -> Result<(), Box<dyn std::any::Any + std::marker::Send>> {
 /// # use starchart::atomics::GuardState;
 /// # use std::{sync::Arc, thread, time::Duration};
-/// 
 /// let guard = Arc::new(GuardState::new());
-/// 
+///
 /// let first_shared = guard.clone();
 /// let second_shared = guard.clone();
 /// let exclusive = guard.clone();
-/// 
+///
 /// let first_shared = thread::spawn(move || {
 ///    let guard = first_shared.shared();
-/// 
+///
 ///     println!("doing work with the first shared lock");
-/// 
+///
 ///     /* ... */
 ///    # thread::sleep(Duration::from_millis(1000));
-/// 
+///
 ///     println!("done with the first lock");
 /// });
-/// 
+///
 /// let second_shared = thread::spawn(move || {
 ///     let guard = second_shared.shared();
-/// 
+///
 ///    println!("doing work with the second shared lock");
-/// 
+///
 ///    /* ... */
-///     # thread::sleep(Duration::from_millis(750)); 
-/// 
+///     # thread::sleep(Duration::from_millis(750));
+///
 ///    println!("done with the second lock");
 /// });
-/// 
+///
 /// let exclusive = thread::spawn(move || {
 ///     let guard = exclusive.exclusive();
-/// 
+///
 ///    println!("doing work with the exclusive lock");
-/// 
+///
 ///    /* ... */
 ///    # thread::sleep(Duration::from_millis(500));
-/// 
+///
 ///   println!("done with the exclusive lock");
 /// });
-/// 
+///
 /// first_shared.join()?;
 /// second_shared.join()?;
 /// exclusive.join()?;
