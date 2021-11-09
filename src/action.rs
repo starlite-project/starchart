@@ -2,6 +2,7 @@
 
 //! The action structs for CRUD operations.
 
+use crate::Settings;
 use serde::{Deserialize, Serialize};
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
@@ -10,39 +11,47 @@ use serde::{Deserialize, Serialize};
 /// [`Gateway`]: crate::Gateway
 #[must_use = "an action alone has no side effects"]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Action {
+pub struct Action<S> {
     kind: ActionKind,
+    table_name: Option<S>,
+    data: Option<Box<S>>,
 }
 
-impl Action {
+impl<S> Action<S> {
+    /// Creates a new [`Action`] with the specified operation.
+    pub const fn new(kind: ActionKind) -> Self {
+        Self {
+            kind,
+            table_name: None,
+            data: None,
+        }
+    }
+
     /// Returns the [`ActionKind`] we will be performing with said action.
     pub const fn kind(&self) -> ActionKind {
         self.kind
     }
+}
 
+impl<S: Settings> Action<S> {
     /// Begins a Create-based action.
-    pub const fn create() -> Self {
+    pub fn create() -> Self {
         Self::new(ActionKind::Create)
     }
 
     /// Begins a Read-based action.
-    pub const fn read() -> Self {
+    pub fn read() -> Self {
         Self::new(ActionKind::Read)
     }
 
     /// Begins an Update-based action.
-    pub const fn update() -> Self {
+    pub fn update() -> Self {
         Self::new(ActionKind::Update)
     }
 
     /// Begins a Delete-based action.
-    pub const fn delete() -> Self {
+    pub fn delete() -> Self {
         Self::new(ActionKind::Delete)
-    }
-
-    /// Creates a new [`Action`] with the specified operation.
-    pub const fn new(kind: ActionKind) -> Self {
-        Self { kind }
     }
 }
 
