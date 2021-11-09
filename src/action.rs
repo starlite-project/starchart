@@ -20,10 +20,7 @@ pub enum ActionError {
 #[must_use = "an action alone has no side effects"]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Action<S> {
-    kind: ActionKind,
-    table_name: Option<S>,
-    data: Option<Box<S>>,
-    target: OperationTarget,
+    inner: InternalAction<S>,
     validated: bool,
 }
 
@@ -31,25 +28,24 @@ impl<S> Action<S> {
     /// Creates a new [`Action`] with the specified operation.
     pub const fn new(kind: ActionKind) -> Self {
         Self {
-            kind,
-            table_name: None,
-            data: None,
-            target: OperationTarget::Unknown,
+            inner: InternalAction::new(kind),
             validated: false,
         }
     }
 
     /// Returns the [`ActionKind`] we will be performing with said action.
     pub const fn kind(&self) -> ActionKind {
-        self.kind
+        self.inner.kind()
     }
 
     /// Returns the [`OperationTarget`] we will be performing with said action.
+    #[must_use]
     pub const fn target(&self) -> OperationTarget {
-        self.target
+        self.inner.target()
     }
 
     /// Whether the [`Action`] has been validated.
+    #[must_use]
     pub const fn is_validated(&self) -> bool {
         self.validated
     }
@@ -88,7 +84,7 @@ impl<S: Entity> Action<S> {
             !(target == OperationTarget::Unknown),
             "an unknown operation target was set"
         );
-        self.target = target;
+        self.inner.set_target(target);
 
         self.validated = false;
 
@@ -107,7 +103,7 @@ impl<S: Entity> Action<S> {
             return Ok(());
         }
 
-        if self.target == OperationTarget::Unknown {
+        if self.target() == OperationTarget::Unknown {
             return Err(ActionError::InvalidOperation);
         }
 
@@ -120,11 +116,69 @@ impl<S: Entity> Action<S> {
 impl<S: Entity> Default for Action<S> {
     fn default() -> Self {
         Self {
+            inner: InternalAction::default(),
+            validated: bool::default(),
+        }
+    }
+}
+
+// This struct is used for database creation and interaction
+// within the crate, and performs no validation
+// to ensure optimizations, and SHOULD NOT be exposed to public API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct InternalAction<S> {
+    kind: ActionKind,
+    table_name: Option<String>,
+    data: Option<Box<S>>,
+    target: OperationTarget,
+}
+
+impl<S> InternalAction<S> {
+    pub(crate) const fn new(kind: ActionKind) -> Self {
+        Self {
+            kind,
+            table_name: None,
+            data: None,
+            target: OperationTarget::Unknown,
+        }
+    }
+
+    pub(crate) const fn kind(&self) -> ActionKind {
+        self.kind
+    }
+
+    pub(crate) const fn target(&self) -> OperationTarget {
+        self.target
+    }
+}
+
+impl<S: Entity> InternalAction<S> {
+    pub(crate) fn set_table_name(&mut self, table_name: String) -> &mut Self {
+        self.table_name = Some(table_name);
+
+        self
+    }
+
+    pub(crate) fn set_data(&mut self, data: S) -> &mut Self {
+        self.data = Some(Box::new(data));
+
+        self
+    }
+
+    pub(crate) fn set_target(&mut self, target: OperationTarget) -> &mut Self {
+        self.target = target;
+
+        self
+    }
+}
+
+impl<S: Entity> Default for InternalAction<S> {
+    fn default() -> Self {
+        Self {
             kind: ActionKind::default(),
             table_name: Option::default(),
             data: Option::default(),
             target: OperationTarget::default(),
-            validated: bool::default(),
         }
     }
 }
@@ -216,8 +270,8 @@ mod tests {
         assert_eq!(action.kind(), ActionKind::Create);
         assert_eq!(action.target(), OperationTarget::Unknown);
 
-        assert!(action.table_name.is_none());
-        assert!(action.data.is_none());
+        assert!(action.inner.table_name.is_none());
+        assert!(action.inner.data.is_none());
 
         assert!(action.validate().is_err());
     }
@@ -247,9 +301,9 @@ mod tests {
 
         assert_eq!(action.kind(), ActionKind::Read);
 
-        assert!(action.table_name.is_none());
+        assert!(action.inner.table_name.is_none());
 
-        assert!(action.data.is_none());
+        assert!(action.inner.data.is_none());
 
         assert!(action.validate().is_err());
 
