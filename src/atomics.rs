@@ -2,7 +2,7 @@
 //!
 //! Anything within this module is a private implementation detail that can be changed at
 //! any time, and should not be relied upon.
-//! 
+//!
 //! In addition, breaking changes to this module will not be reflected in SemVer updates.
 
 use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
