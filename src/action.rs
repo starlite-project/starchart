@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 /// [`Gateway`]: crate::Gateway
 #[must_use = "an action alone has no side effects"]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Action<S> {
     kind: ActionKind,
     table_name: Option<S>,
@@ -77,4 +77,23 @@ pub enum ActionKind {
     ///
     /// This locks the database and allows no other reads or writes until it is complete.
     Delete,
+}
+
+impl Default for ActionKind {
+    fn default() -> Self {
+        Self::Read
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum OperationTarget {
+    Table,
+    Entity,
+    Unknown,
+}
+
+impl Default for OperationTarget {
+    fn default() -> Self {
+        Self::Unknown
+    }
 }
