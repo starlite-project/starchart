@@ -89,7 +89,7 @@ impl<S: Entity> Action<S> {
     /// Panics if the [`OperationTarget`] is an [`OperationTarget::Unknown`].
     pub fn set_target(&mut self, target: OperationTarget) -> &mut Self {
         assert!(
-            !(target == OperationTarget::Unknown),
+            target != OperationTarget::Unknown,
             "an unknown operation target was set"
         );
         self.inner.set_target(target);
@@ -115,13 +115,13 @@ impl<S: Entity> Action<S> {
             return Err(ActionError::InvalidOperation);
         }
 
-        if self.needs_data() && self.inner.data.is_none() {
-            return Err(ActionError::NoData);
-        }
+        // if self.needs_data() && self.inner.data.is_none() {
+        //     return Err(ActionError::NoData);
+        // }
 
-        if self.needs_key() && self.inner.key.is_none() {
-            return Err(ActionError::NoKey);
-        }
+        // if self.needs_key() && self.inner.key.is_none() {
+        //     return Err(ActionError::NoKey);
+        // }
 
         self.validated = true;
 
@@ -131,11 +131,11 @@ impl<S: Entity> Action<S> {
     fn needs_data(&self) -> bool {
         self.kind() == ActionKind::Create
             || self.kind() == ActionKind::Update
-            || self.target() == OperationTarget::Table
+            || (self.target() != OperationTarget::Table && self.target() == OperationTarget::Entity)
     }
 
     fn needs_key(&self) -> bool {
-        self.kind() == ActionKind::Delete || self.kind() == ActionKind::Read
+        self.kind() == ActionKind::Delete || self.kind() == ActionKind::Read || self.target() != OperationTarget::Table
     }
 }
 
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn validate() {
-        let mut action = Action::<Settings>::new(ActionKind::Create);
+        let mut action = Action::<Settings>::new(ActionKind::Read);
 
         assert!(action.validate().is_err());
 
