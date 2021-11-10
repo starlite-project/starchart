@@ -87,12 +87,6 @@ impl AtomicGuard {
         self.inner.is_locked_exclusive()
     }
 
-    /// Checks whether the [`AtomicGuard`] is currently locked in a shared fashion.
-    // #[cfg(not(tarpaulin_include))]
-    pub fn is_shared(&self) -> bool {
-        !self.is_exclusive()
-    }
-
     /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
         let read_guard = self.inner.read();
@@ -184,7 +178,6 @@ mod tests {
             thread::sleep(Duration::from_millis(500));
 
             assert!(exclusive.is_locked());
-            assert!(!exclusive.is_shared());
             assert!(exclusive.is_exclusive());
         });
 
@@ -194,7 +187,6 @@ mod tests {
             thread::sleep(Duration::from_millis(1000));
 
             assert!(first_shared.is_locked());
-            assert!(first_shared.is_shared());
             assert!(!first_shared.is_exclusive());
         });
 
@@ -204,7 +196,6 @@ mod tests {
             thread::sleep(Duration::from_millis(2000));
 
             assert!(second_shared.is_locked());
-            assert!(second_shared.is_shared());
             assert!(!second_shared.is_exclusive());
         });
 
