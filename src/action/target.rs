@@ -10,6 +10,8 @@ pub enum OperationTarget {
     /// The operation will be performed on a single entity.
     Entity,
     /// An unknown operation will occur, this raises an error if it's set when [`Action::validate`] is called.
+    ///
+    /// [`Action::validate`]: crate::action::Action::validate
     Unknown,
 }
 

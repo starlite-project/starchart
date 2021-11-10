@@ -56,8 +56,6 @@ jobs:
         with:
           command: tarpaulin
           args: -- --test-threads 1
-        env:
-          RUSTFLAGS: -C target-cpu=haswell
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2

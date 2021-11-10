@@ -12,6 +12,10 @@ use std::{
 
 /// An immutable reference to a [`Database`].
 #[must_use]
+#[deprecated(
+    since = "0.3.0",
+    note = "direct database interaction is deprecated, users should use Actions instead."
+)]
 pub struct DbRef<'a, B>
 where
     B: Backend,
@@ -110,6 +114,10 @@ impl<B: Backend> Gateway<B> {
     ///
     /// An error will be raised if the type provided is not the same as the type provided
     /// when the database was created.
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub async fn acquire<S>(
         &self,
         table_name: String,
@@ -133,6 +141,10 @@ impl<B: Backend> Gateway<B> {
     ///
     /// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
     /// passing an incorrect type will create a runtime error.
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub async fn create<S>(
         &self,
         table_name: String,
@@ -160,6 +172,10 @@ impl<B: Backend> Gateway<B> {
     /// # Errors
     ///
     /// Returns an error if the passed type does not match the one the database was created with.
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub fn get<'a, S>(
         &'a self,
         table_name: &str,
@@ -194,6 +210,10 @@ impl<B: Backend> Gateway<B> {
     /// Can return errors from [`Gateway::get`], as well as from [`Backend::delete_table`].
     ///
     /// [`Gateway::get`]: Self::get
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
     where
         S: Entity + 'static,
@@ -221,6 +241,10 @@ impl<B: Backend> Gateway<B> {
     /// # Safety
     ///
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
     where
         S: Entity + 'static,
@@ -245,6 +269,10 @@ impl<B: Backend> Gateway<B> {
     /// # Safety
     ///
     /// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
+    #[deprecated(
+        since = "0.3.0",
+        note = "direct database interaction is deprecated, users should use Actions instead."
+    )]
     pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
     where
         S: Entity + 'static,
