@@ -2,7 +2,6 @@
 workspace = true
 all-features = true
 ignore-tests = true
-test-threads = 1
 
 [report]
 out = ["Html", "Xml"]
