@@ -2,7 +2,12 @@
 
 //! The action structs for CRUD operations.
 
-use crate::{Entity, Key};
+mod kind;
+mod target;
+
+pub use self::{kind::ActionKind, target::OperationTarget};
+
+use crate::Entity;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -115,35 +120,23 @@ impl<S: Entity> Action<S> {
             return Err(ActionError::InvalidOperation);
         }
 
-        // if self.needs_data() && self.inner.data.is_none() {
-        //     return Err(ActionError::NoData);
-        // }
+        if self.needs_data() && self.inner.data.is_none() {
+            return Err(ActionError::NoData);
+        }
 
-        // if self.needs_key() && self.inner.key.is_none() {
-        //     return Err(ActionError::NoKey);
-        // }
+        if self.needs_key() && self.inner.key.is_none() {
+            return Err(ActionError::NoKey);
+        }
 
         self.validated = true;
 
         Ok(())
     }
 
-    fn needs_data(&self) -> bool {
-        self.kind() == ActionKind::Create
-            || self.kind() == ActionKind::Update
-            || (self.target() != OperationTarget::Table && self.target() == OperationTarget::Entity)
-    }
-
-    fn needs_key(&self) -> bool {
-        self.kind() == ActionKind::Delete || self.kind() == ActionKind::Read || self.target() != OperationTarget::Table
-    }
-}
-
-impl<S> Action<S>
-where
-    S: Entity + Key,
-{
-    /// Sets the [`Key`] for the action.
+    /// Sets the key for the action.
+    ///
+    /// Users should prefer to call [`Self::set_data`] over this, as setting the
+    /// data will automatically call this.
     ///
     /// This is unused on [`OperationTarget::Table`] actions.
     pub fn set_key(&mut self, key: &S) -> &mut Self {
@@ -162,6 +155,30 @@ where
         self.inner.set_entity(Box::new(entity));
 
         self
+    }
+
+    fn needs_data(&self) -> bool {
+        if self.kind() == ActionKind::Read {
+            return false;
+        }
+
+        if self.kind() == ActionKind::Delete {
+            return false;
+        }
+
+        if self.target() == OperationTarget::Table {
+            return false;
+        }
+
+        true
+    }
+
+    fn needs_key(&self) -> bool {
+        if self.target() == OperationTarget::Table {
+            return false;
+        }
+
+        true
     }
 }
 
@@ -250,59 +267,10 @@ impl<S: Entity> Default for InternalAction<S> {
     }
 }
 
-/// The type of [`CRUD`] action to perform
-///
-/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-#[must_use = "getting the information on what action will be performed has no side effects"]
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum ActionKind {
-    /// Signifies that the operation will be a Create.
-    ///
-    /// This locks the database and allows no other reads or writes until it is complete.
-    Create,
-    /// Signifies that the operation will be a Read.
-    ///
-    /// This allows multiple different readers, but doesn't allow writing until all Reads are complete.
-    Read,
-    /// Signifies that the operation will be an Update.
-    ///
-    /// This locks the database and allows no other reads or writes until it is complete.
-    Update,
-    /// Signifies that the operation will be a Delete.
-    ///
-    /// This locks the database and allows no other reads or writes until it is complete.
-    Delete,
-}
-
-impl Default for ActionKind {
-    fn default() -> Self {
-        Self::Read
-    }
-}
-
-/// The target of the [`CRUD`] operation.
-///
-/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum OperationTarget {
-    /// The operation will be performed on a table.
-    Table,
-    /// The operation will be performed on a single entity.
-    Entity,
-    /// An unknown operation will occur, this raises an error if it's set when [`Action::validate`] is called.
-    Unknown,
-}
-
-impl Default for OperationTarget {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{Action, ActionKind, OperationTarget};
-    use crate::{Entity, Key};
+    use crate::Entity;
     use serde::{de::DeserializeOwned, Deserialize, Serialize};
     use static_assertions::assert_impl_all;
     use std::fmt::Debug;
@@ -314,7 +282,7 @@ mod tests {
         test: u8,
     }
 
-    impl Key for Settings {
+    impl Entity for Settings {
         fn to_key(&self) -> String {
             self.key.to_string()
         }
@@ -398,6 +366,12 @@ mod tests {
         let new_action = action.set_target(OperationTarget::Entity);
 
         assert!(!new_action.is_validated());
+
+        new_action.set_data(Settings {
+            key: 7,
+            value: false,
+            test: 74,
+        });
 
         assert!(new_action.validate().is_ok());
     }

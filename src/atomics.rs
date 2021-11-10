@@ -5,16 +5,37 @@
 //!
 //! In addition, breaking changes to this module will not be reflected in SemVer updates.
 
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{
+    lock_api::{RawRwLock as IRawRwLock, RawRwLockFair},
+    RawRwLock,
+};
 use std::{
     fmt::{Debug, Formatter, Result},
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::atomic::{AtomicU8, Ordering},
 };
+
+/// The kind of lock an [`AtomicGuard`] is holding.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum GuardKind {
+    /// The [`AtomicGuard`] is unlocked.
+    Unlocked = 0,
+    /// The [`AtomicGuard`] is locked in a shared fashion.
+    Shared = 1,
+    /// The [`AtomicGuard`] is locked in an exclusive fashion.
+    Exclusive = 2,
+}
+
+impl GuardKind {
+    pub(crate) const fn as_u8(self) -> u8 {
+        self as u8
+    }
+}
 
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
 ///
-/// This uses [`parking_lot`]'s [`RwLock`] internally.
+/// This uses [`parking_lot`]'s [`RawRwLock`] internally.
 ///
 /// # Examples
 ///
@@ -68,75 +89,92 @@ use std::{
 /// # Ok(()) }
 #[must_use = "a guard state does nothing if left unused"]
 pub struct AtomicGuard {
-    inner: RwLock<()>,
-    kind: AtomicUsize,
-    amount: AtomicUsize,
+    inner: RawRwLock,
+    kind: AtomicU8,
+    amount: AtomicU8,
 }
 
 impl AtomicGuard {
     /// Creates a new, unlockecd [`AtomicGuard`].
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            inner: RwLock::new(()),
-            kind: AtomicUsize::new(0),
-            amount: AtomicUsize::new(0),
+            inner: RawRwLock::INIT,
+            kind: AtomicU8::new(GuardKind::Unlocked.as_u8()),
+            amount: AtomicU8::new(0),
         }
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
     pub fn is_locked(&self) -> bool {
-        self.kind.load(Ordering::SeqCst) != 0
+        self.kind() != GuardKind::Unlocked
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
     // #[cfg(not(tarpaulin_include))]
     pub fn is_exclusive(&self) -> bool {
-        self.kind.load(Ordering::SeqCst) == 2
+        self.kind() == GuardKind::Exclusive
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked shared.
     pub fn is_shared(&self) -> bool {
-        self.kind.load(Ordering::SeqCst) == 1
+        self.kind() == GuardKind::Shared
+    }
+
+    /// The [`GuardKind`] this [`AtomicGuard`] is holding.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner [`AtomicU8`] has been modified to be invalid.
+    pub fn kind(&self) -> GuardKind {
+        match self.kind.load(Ordering::SeqCst) {
+            0 => GuardKind::Unlocked,
+            1 => GuardKind::Shared,
+            2 => GuardKind::Exclusive,
+            _ => unreachable!(),
+        }
     }
 
     /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
-        let read_guard = self.inner.read();
+        self.inner.lock_shared();
 
-        self.kind.store(1, Ordering::SeqCst);
+        self.kind.store(GuardKind::Shared.as_u8(), Ordering::SeqCst);
 
         self.amount.fetch_add(1, Ordering::SeqCst);
 
-        SharedGuard {
-            state: read_guard,
-            atomic_guard: self,
-        }
+        SharedGuard { state: self }
     }
 
     /// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
     pub fn exclusive(&self) -> ExclusiveGuard {
-        let write_guard = self.inner.write();
+        self.inner.lock_exclusive();
 
-        self.kind.store(2, Ordering::SeqCst);
+        self.kind
+            .store(GuardKind::Exclusive.as_u8(), Ordering::SeqCst);
 
         self.amount.store(1, Ordering::SeqCst);
 
-        ExclusiveGuard {
-            state: write_guard,
-            atomic_guard: self,
-        }
+        ExclusiveGuard { state: self }
     }
 
     fn drop_shared(&self) {
+        unsafe {
+            self.inner.unlock_shared_fair();
+        }
         self.amount.fetch_sub(1, Ordering::SeqCst);
 
         if self.amount.load(Ordering::SeqCst) == 0 {
-            self.kind.store(0, Ordering::SeqCst);
+            self.kind
+                .store(GuardKind::Unlocked.as_u8(), Ordering::SeqCst);
         }
     }
 
     fn drop_exclusive(&self) {
-        self.kind.store(0, Ordering::SeqCst);
+        unsafe {
+            self.inner.unlock_exclusive_fair();
+        }
+        self.kind
+            .store(GuardKind::Unlocked.as_u8(), Ordering::SeqCst);
         self.amount.store(0, Ordering::SeqCst);
     }
 }
@@ -155,25 +193,23 @@ impl Debug for AtomicGuard {
 
 /// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
-    state: RwLockReadGuard<'a, ()>,
-    atomic_guard: &'a AtomicGuard,
+    state: &'a AtomicGuard,
 }
 
 impl Drop for SharedGuard<'_> {
     fn drop(&mut self) {
-        self.atomic_guard.drop_shared();
+        self.state.drop_shared();
     }
 }
 
 /// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
-    state: RwLockWriteGuard<'a, ()>,
-    atomic_guard: &'a AtomicGuard,
+    state: &'a AtomicGuard,
 }
 
 impl Drop for ExclusiveGuard<'_> {
     fn drop(&mut self) {
-        self.atomic_guard.drop_exclusive();
+        self.state.drop_exclusive();
     }
 }
 
