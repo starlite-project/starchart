@@ -4,8 +4,10 @@
 
 mod kind;
 mod target;
+pub mod result;
 
-pub use self::{kind::ActionKind, target::OperationTarget};
+#[doc(inline)]
+pub use self::{kind::ActionKind, target::OperationTarget, result::ActionResult};
 
 use crate::Entity;
 use serde::{Deserialize, Serialize};
@@ -24,6 +26,9 @@ pub enum ActionError {
     /// No key was passed when a key was expected.
     #[error("no key was given when a key was expected.")]
     NoKey,
+    /// Attempted to [`ActionKind::Update`] an [`OperationTarget::Table`].
+    #[error("updating an entire table is unsupported")]
+    UpdatingTable,
 }
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
@@ -128,6 +133,10 @@ impl<S: Entity> Action<S> {
             return Err(ActionError::NoKey);
         }
 
+        if self.is_updating_table() {
+            return Err(ActionError::UpdatingTable);
+        }
+
         self.validated = true;
 
         Ok(())
@@ -155,6 +164,11 @@ impl<S: Entity> Action<S> {
         self.inner.set_entity(Box::new(entity));
 
         self
+    }
+
+    // Updating tables is unsupported
+    fn is_updating_table(&self) -> bool {
+        self.kind() == ActionKind::Update && self.target() == OperationTarget::Table
     }
 
     fn needs_data(&self) -> bool {

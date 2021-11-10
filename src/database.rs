@@ -36,6 +36,10 @@ pub struct Database<B: Backend> {
     type_id: TypeId,
 }
 
+#[deprecated(
+    since = "0.3.0",
+    note = "direct database interaction is deprecated, users should use Actions instead."
+)]
 impl<B: Backend> Database<B> {
     /// Gives access to the raw [`Backend`] instance.
     ///
@@ -55,10 +59,6 @@ impl<B: Backend> Database<B> {
     ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::get`] returned an error.
-    #[deprecated(
-        since = "0.3.0",
-        note = "direct database interaction is deprecated, users should use Actions instead."
-    )]
     pub async fn get<S>(&self, key: &str) -> Result<Option<S>, DatabaseError<B::Error>>
     where
         S: Entity + 'static,
@@ -76,10 +76,6 @@ impl<B: Backend> Database<B> {
     ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::replace`] or [`Backend::create`] returned an error.
-    #[deprecated(
-        since = "0.3.0",
-        note = "direct database interaction is deprecated, users should use Actions instead."
-    )]
     pub async fn set<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Entity + 'static,
@@ -101,10 +97,6 @@ impl<B: Backend> Database<B> {
     ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// if the value doesn't exist in the [`Database`], or if [`Backend::update`] returned an error.
-    #[deprecated(
-        since = "0.3.0",
-        note = "direct database interaction is deprecated, users should use Actions instead."
-    )]
     pub async fn update<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Entity + 'static,
@@ -126,10 +118,6 @@ impl<B: Backend> Database<B> {
     ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::replace`] returned an error.
-    #[deprecated(
-        since = "0.3.0",
-        note = "direct database interaction is deprecated, users should use Actions instead."
-    )]
     pub async fn replace<S>(&self, key: &str, value: &S) -> Result<(), DatabaseError<B::Error>>
     where
         S: Entity + 'static,
@@ -151,10 +139,6 @@ impl<B: Backend> Database<B> {
     ///
     /// Returns an error if the passed type does not match the type this [`Database`] was created with,
     /// or if [`Backend::delete`] returned an error.
-    #[deprecated(
-        since = "0.3.0",
-        note = "direct database interaction is deprecated, users should use Actions instead."
-    )]
     pub async fn delete<S>(&self, key: &str) -> Result<(), DatabaseError<B::Error>>
     where
         S: Entity + 'static,

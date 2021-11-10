@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter, Result as FmtResult, Error as FmtError};
 
 /// The target of the [`CRUD`] operation.
 ///
@@ -18,5 +19,15 @@ pub enum OperationTarget {
 impl Default for OperationTarget {
     fn default() -> Self {
         Self::Unknown
+    }
+}
+
+impl Display for OperationTarget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Self::Table => f.write_str("table"),
+            Self::Entity => f.write_str("entity"),
+            Self::Unknown => Err(FmtError),
+        }
     }
 }
