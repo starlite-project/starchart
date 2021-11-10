@@ -11,6 +11,7 @@ pub use crate::backend::JsonError;
 #[doc(cfg(feature = "cache"))]
 pub use crate::backend::CacheError;
 
+#[doc(inline)]
 pub use crate::{action::ActionError, database::DatabaseError};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use

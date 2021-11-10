@@ -2,15 +2,23 @@
 
 //! The action structs for CRUD operations.
 
-use crate::Entity;
+use crate::{Entity, Key};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// An error occurred during validation of an [`Action`].
 #[derive(Debug, Error)]
-#[doc(hidden)]
+#[non_exhaustive]
 pub enum ActionError {
+    /// The [`OperationTarget`] was not set.
     #[error("an invalid operation was set")]
     InvalidOperation,
+    /// No data was passed when data was expected.
+    #[error("no data was given when data was expected")]
+    NoData,
+    /// No key was passed when a key was expected.
+    #[error("no key was given when a key was expected.")]
+    NoKey,
 }
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
@@ -107,9 +115,53 @@ impl<S: Entity> Action<S> {
             return Err(ActionError::InvalidOperation);
         }
 
+        if self.needs_data() && self.inner.data.is_none() {
+            return Err(ActionError::NoData);
+        }
+
+        if self.needs_key() && self.inner.key.is_none() {
+            return Err(ActionError::NoKey);
+        }
+
         self.validated = true;
 
         Ok(())
+    }
+
+    fn needs_data(&self) -> bool {
+        self.kind() == ActionKind::Create
+            || self.kind() == ActionKind::Update
+            || self.target() == OperationTarget::Table
+    }
+
+    fn needs_key(&self) -> bool {
+        self.kind() == ActionKind::Delete || self.kind() == ActionKind::Read
+    }
+}
+
+impl<S> Action<S> where S: Entity + Key {
+    /// Sets the [`Key`] for the action.
+    ///
+    /// This is unused on [`OperationTarget::Table`] actions.
+    pub fn set_key(&mut self, key: &S) -> &mut Self
+    {
+        self.inner.set_key(key.to_key());
+
+        self.validated = false;
+
+        self
+    }
+
+    /// Sets the data for the action.
+    /// 
+    /// This is unused on [`OperationTarget::Table`] actions.
+    pub fn set_data(&mut self, entity: S) -> &mut Self
+    {
+        self.set_key(&entity);
+        self.inner.set_entity(Box::new(entity));
+
+        self
+
     }
 }
 
@@ -130,6 +182,7 @@ pub(crate) struct InternalAction<S> {
     kind: ActionKind,
     table_name: Option<String>,
     data: Option<Box<S>>,
+    key: Option<String>,
     target: OperationTarget,
 }
 
@@ -139,6 +192,7 @@ impl<S> InternalAction<S> {
             kind,
             table_name: None,
             data: None,
+            key: None,
             target: OperationTarget::Unknown,
         }
     }
@@ -155,6 +209,18 @@ impl<S> InternalAction<S> {
 impl<S: Entity> InternalAction<S> {
     pub(crate) fn set_table_name(&mut self, table_name: String) -> &mut Self {
         self.table_name = Some(table_name);
+
+        self
+    }
+
+    pub(crate) fn set_key(&mut self, key: String) -> &mut Self {
+        self.key = Some(key);
+
+        self
+    }
+
+    pub(crate) fn set_entity(&mut self, entity: Box<S>) -> &mut Self {
+        self.data = Some(entity);
 
         self
     }
@@ -178,6 +244,7 @@ impl<S: Entity> Default for InternalAction<S> {
             kind: ActionKind::default(),
             table_name: Option::default(),
             data: Option::default(),
+            key: Option::default(),
             target: OperationTarget::default(),
         }
     }

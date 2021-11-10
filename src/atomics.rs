@@ -14,7 +14,7 @@ use std::{
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
 ///
-/// This uses [`parking_lot`]'s [`RawRwLock`] internally.
+/// This uses [`parking_lot`]'s [`RwLock`] internally.
 ///
 /// # Examples
 ///
