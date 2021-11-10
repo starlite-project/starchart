@@ -139,12 +139,14 @@ impl<S: Entity> Action<S> {
     }
 }
 
-impl<S> Action<S> where S: Entity + Key {
+impl<S> Action<S>
+where
+    S: Entity + Key,
+{
     /// Sets the [`Key`] for the action.
     ///
     /// This is unused on [`OperationTarget::Table`] actions.
-    pub fn set_key(&mut self, key: &S) -> &mut Self
-    {
+    pub fn set_key(&mut self, key: &S) -> &mut Self {
         self.inner.set_key(key.to_key());
 
         self.validated = false;
@@ -153,15 +155,13 @@ impl<S> Action<S> where S: Entity + Key {
     }
 
     /// Sets the data for the action.
-    /// 
+    ///
     /// This is unused on [`OperationTarget::Table`] actions.
-    pub fn set_data(&mut self, entity: S) -> &mut Self
-    {
+    pub fn set_data(&mut self, entity: S) -> &mut Self {
         self.set_key(&entity);
         self.inner.set_entity(Box::new(entity));
 
         self
-
     }
 }
 
