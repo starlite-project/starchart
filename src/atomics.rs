@@ -6,7 +6,10 @@
 //! In addition, breaking changes to this module will not be reflected in SemVer updates.
 
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::fmt::{Debug, Formatter, Result};
+use std::{
+    fmt::{Debug, Formatter, Result},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
@@ -66,6 +69,8 @@ use std::fmt::{Debug, Formatter, Result};
 #[must_use = "a guard state does nothing if left unused"]
 pub struct AtomicGuard {
     inner: RwLock<()>,
+    kind: AtomicUsize,
+    amount: AtomicUsize,
 }
 
 impl AtomicGuard {
@@ -73,32 +78,66 @@ impl AtomicGuard {
     pub fn new() -> Self {
         Self {
             inner: RwLock::new(()),
+            kind: AtomicUsize::new(0),
+            amount: AtomicUsize::new(0),
         }
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
     pub fn is_locked(&self) -> bool {
-        self.inner.is_locked()
+        self.kind.load(Ordering::SeqCst) != 0
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
     // #[cfg(not(tarpaulin_include))]
     pub fn is_exclusive(&self) -> bool {
-        self.inner.is_locked_exclusive()
+        self.kind.load(Ordering::SeqCst) == 2
+    }
+
+    /// Checks whether the [`AtomicGuard`] is currently locked shared.
+    pub fn is_shared(&self) -> bool {
+        self.kind.load(Ordering::SeqCst) == 1
     }
 
     /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
         let read_guard = self.inner.read();
 
-        SharedGuard { state: read_guard }
+        self.kind.store(1, Ordering::SeqCst);
+
+        self.amount.fetch_add(1, Ordering::SeqCst);
+
+        SharedGuard {
+            state: read_guard,
+            atomic_guard: self,
+        }
     }
 
     /// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
     pub fn exclusive(&self) -> ExclusiveGuard {
         let write_guard = self.inner.write();
 
-        ExclusiveGuard { state: write_guard }
+        self.kind.store(2, Ordering::SeqCst);
+
+        self.amount.store(1, Ordering::SeqCst);
+
+        ExclusiveGuard {
+            state: write_guard,
+            atomic_guard: self,
+        }
+    }
+
+    fn drop_shared(&self) {
+        self.amount.fetch_sub(1, Ordering::SeqCst);
+
+        if self.amount.load(Ordering::SeqCst) == 0 {
+            self.kind.store(0, Ordering::SeqCst);
+        }
+    }
+
+    fn drop_exclusive(&self) {
+        self.kind.store(0, Ordering::SeqCst);
+        self.amount.store(0, Ordering::SeqCst);
     }
 }
 
@@ -117,11 +156,25 @@ impl Debug for AtomicGuard {
 /// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
     state: RwLockReadGuard<'a, ()>,
+    atomic_guard: &'a AtomicGuard,
+}
+
+impl Drop for SharedGuard<'_> {
+    fn drop(&mut self) {
+        self.atomic_guard.drop_shared();
+    }
 }
 
 /// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
     state: RwLockWriteGuard<'a, ()>,
+    atomic_guard: &'a AtomicGuard,
+}
+
+impl Drop for ExclusiveGuard<'_> {
+    fn drop(&mut self) {
+        self.atomic_guard.drop_exclusive();
+    }
 }
 
 #[cfg(test)]
@@ -178,6 +231,7 @@ mod tests {
             thread::sleep(Duration::from_millis(500));
 
             assert!(exclusive.is_locked());
+            assert!(!exclusive.is_shared());
             assert!(exclusive.is_exclusive());
         });
 
@@ -187,6 +241,7 @@ mod tests {
             thread::sleep(Duration::from_millis(1000));
 
             assert!(first_shared.is_locked());
+            assert!(first_shared.is_shared());
             assert!(!first_shared.is_exclusive());
         });
 
@@ -196,6 +251,7 @@ mod tests {
             thread::sleep(Duration::from_millis(2000));
 
             assert!(second_shared.is_locked());
+            assert!(second_shared.is_shared());
             assert!(!second_shared.is_exclusive());
         });
 
