@@ -12,7 +12,6 @@ version = "0.3.0"
 
 [dependencies]
 dashmap = "4.0"
-parking_lot = "0.11.2"
 thiserror = "1.0.30"
 
 [dependencies.futures]
@@ -24,6 +23,10 @@ version = "0.3"
 default-features = false
 features = ["std"]
 version = "0.3"
+
+[dependencies.parking_lot]
+git = "https://github.com/Amanieu/parking_lot"
+rev = "f9e567392c43461dad4211954902f476da46e993"
 
 [dependencies.serde]
 default-features = false

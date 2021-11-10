@@ -5,7 +5,7 @@
 //!
 //! In addition, breaking changes to this module will not be reflected in SemVer updates.
 
-use parking_lot::{lock_api::RawRwLock as IRawRwLock, RawRwLock};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::fmt::{Debug, Formatter, Result};
 
 /// The mechanism used to allow multiple readers and only one writer
@@ -15,7 +15,7 @@ use std::fmt::{Debug, Formatter, Result};
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```
 /// # fn main() -> Result<(), Box<dyn std::any::Any + std::marker::Send>> {
 /// # use starchart::atomics::AtomicGuard;
 /// # use std::{sync::Arc, thread, time::Duration};
@@ -65,14 +65,14 @@ use std::fmt::{Debug, Formatter, Result};
 /// # Ok(()) }
 #[must_use = "a guard state does nothing if left unused"]
 pub struct AtomicGuard {
-    inner: RawRwLock,
+    inner: RwLock<()>,
 }
 
 impl AtomicGuard {
     /// Creates a new, unlockecd [`AtomicGuard`].
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            inner: RawRwLock::INIT,
+            inner: RwLock::new(()),
         }
     }
 
@@ -82,46 +82,29 @@ impl AtomicGuard {
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
-    #[cfg(not(tarpaulin_include))]
+    // #[cfg(not(tarpaulin_include))]
     pub fn is_exclusive(&self) -> bool {
-        let acquired_lock = self.inner.try_lock_shared();
-        if acquired_lock {
-            unsafe {
-                self.inner.unlock_shared();
-            }
-        }
-
-        !acquired_lock
+        self.inner.is_locked_exclusive()
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked in a shared fashion.
-    #[cfg(not(tarpaulin_include))]
+    // #[cfg(not(tarpaulin_include))]
     pub fn is_shared(&self) -> bool {
-        self.inner.is_locked() && !self.is_exclusive()
+        !self.is_exclusive()
     }
 
     /// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
     pub fn shared(&self) -> SharedGuard {
-        self.inner.lock_shared();
-        SharedGuard { state: self }
+        let read_guard = self.inner.read();
+
+        SharedGuard { state: read_guard }
     }
 
     /// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
     pub fn exclusive(&self) -> ExclusiveGuard {
-        self.inner.lock_exclusive();
-        ExclusiveGuard { state: self }
-    }
+        let write_guard = self.inner.write();
 
-    fn drop_shared(&self) {
-        unsafe {
-            self.inner.unlock_shared();
-        }
-    }
-
-    fn drop_exclusive(&self) {
-        unsafe {
-            self.inner.unlock_exclusive();
-        }
+        ExclusiveGuard { state: write_guard }
     }
 }
 
@@ -139,24 +122,12 @@ impl Debug for AtomicGuard {
 
 /// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
-    state: &'a AtomicGuard,
-}
-
-impl<'a> Drop for SharedGuard<'a> {
-    fn drop(&mut self) {
-        self.state.drop_shared();
-    }
+    state: RwLockReadGuard<'a, ()>,
 }
 
 /// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
-    state: &'a AtomicGuard,
-}
-
-impl<'a> Drop for ExclusiveGuard<'a> {
-    fn drop(&mut self) {
-        self.state.drop_exclusive();
-    }
+    state: RwLockWriteGuard<'a, ()>,
 }
 
 #[cfg(test)]
@@ -200,13 +171,22 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "trying to fix this"]
     fn guards() {
         let state = Arc::new(AtomicGuard::new());
 
         let first_shared = state.clone();
         let second_shared = state.clone();
         let exclusive = state.clone();
+
+        let exclusive_thread = thread::spawn(move || {
+            let _guard = exclusive.exclusive();
+
+            thread::sleep(Duration::from_millis(500));
+
+            assert!(exclusive.is_locked());
+            assert!(!exclusive.is_shared());
+            assert!(exclusive.is_exclusive());
+        });
 
         let first_shared_thread = thread::spawn(move || {
             let _guard = first_shared.shared();
@@ -226,16 +206,6 @@ mod tests {
             assert!(second_shared.is_locked());
             assert!(second_shared.is_shared());
             assert!(!second_shared.is_exclusive());
-        });
-
-        let exclusive_thread = thread::spawn(move || {
-            let _guard = exclusive.exclusive();
-
-            thread::sleep(Duration::from_millis(500));
-
-            assert!(exclusive.is_locked());
-            assert!(!exclusive.is_shared());
-            assert!(exclusive.is_exclusive());
         });
 
         first_shared_thread.join().unwrap();
