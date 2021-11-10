@@ -106,7 +106,7 @@ impl AtomicGuard {
 
     /// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
     pub fn is_locked(&self) -> bool {
-        self.kind() != GuardKind::Unlocked
+        self.inner.is_locked() || self.kind() != GuardKind::Unlocked
     }
 
     /// Checks whether the [`AtomicGuard`] is currently locked exclusively.
