@@ -3,11 +3,11 @@
 //! The action structs for CRUD operations.
 
 mod kind;
-mod target;
 pub mod result;
+mod target;
 
 #[doc(inline)]
-pub use self::{kind::ActionKind, target::OperationTarget, result::ActionResult};
+pub use self::{kind::ActionKind, result::ActionResult, target::OperationTarget};
 
 use crate::Entity;
 use serde::{Deserialize, Serialize};

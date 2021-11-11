@@ -36,7 +36,7 @@ pub enum ActionResult<T: Entity = NeverEntity> {
 
 impl ActionResult<NeverEntity> {
     /// Converts from [`ActionResult`] to [`Option`].
-    /// 
+    ///
     /// This consumes `self`, returning a [`CreateResult`] if the [`ActionResult`] is a [`CreateResult`],
     /// and [`None`] otherwise.
     pub fn create(self) -> Option<CreateResult> {
@@ -47,7 +47,7 @@ impl ActionResult<NeverEntity> {
     }
 
     /// Converts from [`ActionResult`] to [`Option`].
-    /// 
+    ///
     /// This consumes `self`, returning an [`UpdateResult`] if the [`ActionResult`] is an [`UpdateResult`],
     /// and [`None`] otherwise.
     pub fn update(self) -> Option<UpdateResult> {
@@ -60,7 +60,7 @@ impl ActionResult<NeverEntity> {
 
 impl<T: Entity> ActionResult<T> {
     /// Converts from [`ActionResult`] to [`Option`].
-    /// 
+    ///
     /// This consumes `self`, returning a [`ReadResult`] if the [`ActionResult`] is a [`ReadResult`],
     /// and [`None`] otherwise.
     pub fn read(self) -> Option<ReadResult<T>> {
@@ -94,7 +94,7 @@ impl Deref for CreateResult {
 }
 
 /// An error occurred during an [`Action::create`].
-/// 
+///
 /// [`Action::create`]: crate::action::Action::create
 #[derive(Debug, Error)]
 #[error("an error happened during {target} creation")]
@@ -116,7 +116,7 @@ pub enum ReadResult<T: Entity> {
 }
 
 /// An error occurred during an [`Action::read`].
-/// 
+///
 /// [`Action::read`]: crate::action::Action::read
 #[derive(Debug, Error)]
 #[error("an error happened during {target} read")]
@@ -148,7 +148,7 @@ impl Deref for UpdateResult {
 }
 
 /// An error occurred during an [`Action::update`].
-/// 
+///
 /// [`Action::update`]: crate::action::Action::update
 #[derive(Debug, Error)]
 #[error("an error happened during {target} update")]
@@ -180,7 +180,7 @@ impl Deref for DeleteResult {
 }
 
 /// An error occurred during an [`Action::delete`].
-/// 
+///
 /// [`Action::delete`]: crate::action::Action::delete
 #[derive(Debug, Error)]
 #[error("an error happened during {target} deletion")]

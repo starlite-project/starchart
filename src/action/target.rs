@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, Result as FmtResult, Error as FmtError};
+use std::fmt::{Display, Error as FmtError, Formatter, Result as FmtResult};
 
 /// The target of the [`CRUD`] operation.
 ///
