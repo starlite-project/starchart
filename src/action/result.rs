@@ -2,7 +2,10 @@
 
 #![allow(clippy::must_use_candidate, clippy::missing_const_for_fn)]
 
-use std::ops::Deref;
+use std::{
+	fmt::{Display, Formatter, Result as FmtResult},
+	ops::Deref,
+};
 
 use thiserror::Error;
 
@@ -136,6 +139,24 @@ impl<T: Entity> ActionResult<T> {
 			_ => None,
 		}
 	}
+
+	#[track_caller]
+	pub fn unwrap_create(self) -> CreateResult {
+		let panic_msg = format!("called `ActionResult::unwrap_create` on a `{}` value", self);
+
+		self.create().expect(&panic_msg)
+	}
+}
+
+impl<T: Entity> Display for ActionResult<T> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match self {
+			Self::Create(_) => f.write_str("Create"),
+			Self::Read(_) => f.write_str("Read"),
+			Self::Update(_) => f.write_str("Update"),
+			Self::Delete(_) => f.write_str("Delete"),
+		}
+	}
 }
 
 /// A result from an [`Action::create`].
@@ -189,6 +210,13 @@ impl Deref for CreateResult {
 pub struct CreateError {
 	source: Box<dyn std::error::Error>,
 	target: OperationTarget,
+}
+
+impl CreateError {
+	/// The target the create operation was for.
+	pub const fn target(&self) -> OperationTarget {
+		self.target
+	}
 }
 
 /// A result from an [`Action::read`].
@@ -252,6 +280,13 @@ pub struct ReadError {
 	target: OperationTarget,
 }
 
+impl ReadError {
+	/// The target the read operation was for.
+	pub const fn target(&self) -> OperationTarget {
+		self.target
+	}
+}
+
 /// A result from an [`Action::update`].
 ///
 /// [`Action::update`]: crate::action::Action::update
@@ -262,6 +297,27 @@ pub enum UpdateResult {
 	Table(Result<(), UpdateError>),
 	/// An entity update result.
 	Entity(Result<(), UpdateError>),
+}
+
+impl MultiResult for UpdateResult {
+	type EntityResult = Result<(), UpdateError>;
+	type TableResult = Result<(), UpdateError>;
+
+	fn table(self) -> Option<Self::TableResult> {
+		if let Self::Table(r) = self {
+			Some(r)
+		} else {
+			None
+		}
+	}
+
+	fn entity(self) -> Option<Self::EntityResult> {
+		if let Self::Entity(r) = self {
+			Some(r)
+		} else {
+			None
+		}
+	}
 }
 
 impl Deref for UpdateResult {
@@ -284,6 +340,13 @@ pub struct UpdateError {
 	target: OperationTarget,
 }
 
+impl UpdateError {
+	/// The target the update operation was for.
+	pub const fn target(&self) -> OperationTarget {
+		self.target
+	}
+}
+
 /// A result from an [`Action::delete`].
 ///
 /// [`Action::delete`]: crate::action::Action::delete
@@ -294,6 +357,27 @@ pub enum DeleteResult {
 	Table(Result<bool, DeleteError>),
 	/// An entity delete result.
 	Entity(Result<bool, DeleteError>),
+}
+
+impl MultiResult for DeleteResult {
+	type EntityResult = Result<bool, DeleteError>;
+	type TableResult = Result<bool, DeleteError>;
+
+	fn table(self) -> Option<Self::TableResult> {
+		if let Self::Table(r) = self {
+			Some(r)
+		} else {
+			None
+		}
+	}
+
+	fn entity(self) -> Option<Self::EntityResult> {
+		if let Self::Entity(r) = self {
+			Some(r)
+		} else {
+			None
+		}
+	}
 }
 
 impl Deref for DeleteResult {
@@ -316,7 +400,16 @@ pub struct DeleteError {
 	target: OperationTarget,
 }
 
+impl DeleteError {
+	/// The target the delete operation was for.
+	pub const fn target(&self) -> OperationTarget {
+		self.target
+	}
+}
+
 mod private {
+	use std::fmt::Debug;
+
 	use super::{CreateResult, DeleteResult, ReadResult, UpdateResult};
 	use crate::Entity;
 
