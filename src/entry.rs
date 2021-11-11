@@ -14,7 +14,7 @@ use std::fmt::Debug;
 /// This signifies that the type can be stored within a [`Database`].
 ///
 /// [`Database`]: crate::Database
-pub trait Entity: Serialize + DeserializeOwned + Debug + Send + Sync {
+pub trait Entity: Clone + Serialize + DeserializeOwned + Debug + Send + Sync {
     /// Returns a valid key for the database to index from.
     fn to_key(&self) -> String;
 }
