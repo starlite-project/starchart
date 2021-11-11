@@ -159,9 +159,9 @@ impl<S: Entity> Action<S> {
     /// Sets the data for the action.
     ///
     /// This is unused on [`OperationTarget::Table`] actions.
-    pub fn set_data(&mut self, entity: S) -> &mut Self {
-        self.set_key(&entity);
-        self.inner.set_entity(Box::new(entity));
+    pub fn set_data(&mut self, entity: &S) -> &mut Self {
+        self.set_key(entity);
+        self.inner.set_entity(Box::new(entity.clone()));
 
         self
     }
