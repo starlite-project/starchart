@@ -1,5 +1,6 @@
-use futures::executor::block_on;
 use std::future::Future;
+
+use futures::executor::block_on;
 
 pub trait SyncFuture: Future + Sized {
 	fn wait(self) -> Self::Output;

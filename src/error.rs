@@ -1,16 +1,14 @@
 //! The different errors within the crate.
 
-use crate::backend::Backend;
 use thiserror::Error;
 
-#[cfg(feature = "json")]
-#[doc(cfg(feature = "json"))]
-pub use crate::backend::JsonError;
-
+use crate::backend::Backend;
 #[cfg(feature = "cache")]
 #[doc(cfg(feature = "cache"))]
 pub use crate::backend::CacheError;
-
+#[cfg(feature = "json")]
+#[doc(cfg(feature = "json"))]
+pub use crate::backend::JsonError;
 #[doc(inline)]
 pub use crate::{action::ActionError, database::DatabaseError};
 

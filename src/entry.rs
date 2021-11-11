@@ -1,7 +1,8 @@
 #![allow(clippy::empty_enum)]
 
-use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
+
+use serde::{de::DeserializeOwned, Serialize};
 
 // /// The key trait to be implemented on [`Entity`] to allow an easy way to get keys.
 // pub trait Key {

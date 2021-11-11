@@ -1,3 +1,16 @@
+use std::{
+	ffi::OsString,
+	io::{self, ErrorKind},
+	iter::FromIterator,
+	path::{Path, PathBuf},
+};
+
+use futures_util::StreamExt;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use tokio::fs;
+use tokio_stream::wrappers::ReadDirStream;
+
 use super::{
 	future::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
@@ -5,17 +18,6 @@ use super::{
 	},
 	Backend,
 };
-use futures_util::StreamExt;
-use serde::{Deserialize, Serialize};
-use std::{
-	ffi::OsString,
-	io::{self, ErrorKind},
-	iter::FromIterator,
-	path::{Path, PathBuf},
-};
-use thiserror::Error;
-use tokio::fs;
-use tokio_stream::wrappers::ReadDirStream;
 
 /// An error returned from the [`JsonBackend`].
 ///

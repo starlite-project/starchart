@@ -1,6 +1,8 @@
-use crate::{backend::Backend, Entity};
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
+
 use thiserror::Error;
+
+use crate::{backend::Backend, Entity};
 
 /// An error that can be returned when setting up a [`Database`].
 #[derive(Debug, Error)]

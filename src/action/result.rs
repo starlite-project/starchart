@@ -2,10 +2,12 @@
 
 #![allow(clippy::must_use_candidate, clippy::missing_const_for_fn)]
 
+use std::ops::Deref;
+
+use thiserror::Error;
+
 use super::OperationTarget;
 use crate::Entity;
-use std::ops::Deref;
-use thiserror::Error;
 
 /// Trait for all the variants of [`ActionResult`] to easily convert
 /// between a table and entity [`Result`].
@@ -149,9 +151,8 @@ pub enum CreateResult {
 }
 
 impl MultiResult for CreateResult {
-	type TableResult = Result<(), CreateError>;
-
 	type EntityResult = Result<(), CreateError>;
+	type TableResult = Result<(), CreateError>;
 
 	fn table(self) -> Option<Self::TableResult> {
 		if let Self::Table(r) = self {
@@ -211,9 +212,8 @@ pub enum ReadResult<T: Entity> {
 }
 
 impl<T: Entity> MultiResult for ReadResult<T> {
-	type TableResult = Result<Vec<T>, ReadError>;
-
 	type EntityResult = Result<T, ReadError>;
+	type TableResult = Result<Vec<T>, ReadError>;
 
 	fn table(self) -> Option<Self::TableResult> {
 		if let Self::Table(r) = self {

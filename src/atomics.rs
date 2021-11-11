@@ -5,13 +5,14 @@
 //!
 //! In addition, breaking changes to this module will not be reflected in ``SemVer`` updates.
 
-use parking_lot::{
-	lock_api::{RawRwLock as IRawRwLock, RawRwLockFair},
-	RawRwLock,
-};
 use std::{
 	fmt::{Debug, Formatter, Result},
 	sync::atomic::{AtomicU8, Ordering},
+};
+
+use parking_lot::{
+	lock_api::{RawRwLock as IRawRwLock, RawRwLockFair},
+	RawRwLock,
 };
 
 /// The kind of lock an [`AtomicGuard`] is holding.
@@ -217,9 +218,11 @@ impl Drop for ExclusiveGuard<'_> {
 
 #[cfg(test)]
 mod tests {
-	use super::AtomicGuard;
-	use static_assertions::assert_impl_all;
 	use std::{fmt::Debug, sync::Arc, thread, time::Duration};
+
+	use static_assertions::assert_impl_all;
+
+	use super::AtomicGuard;
 
 	assert_impl_all!(AtomicGuard: Debug, Default, Send, Sync);
 

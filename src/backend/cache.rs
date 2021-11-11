@@ -1,3 +1,10 @@
+use std::iter::FromIterator;
+
+use dashmap::{mapref::one::Ref, DashMap};
+use serde::{Deserialize, Serialize};
+use serde_value::{to_value, DeserializerError, SerializerError, Value};
+use thiserror::Error;
+
 use super::{
 	future::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
@@ -5,11 +12,6 @@ use super::{
 	},
 	Backend,
 };
-use dashmap::{mapref::one::Ref, DashMap};
-use serde::{Deserialize, Serialize};
-use serde_value::{to_value, DeserializerError, SerializerError, Value};
-use std::iter::FromIterator;
-use thiserror::Error;
 
 /// An error returned from the [`CacheBackend`].
 #[doc(cfg(feature = "cache"))]
@@ -187,13 +189,15 @@ impl Backend for CacheBackend {
 
 #[cfg(test)]
 mod tests {
-	use super::{CacheBackend, CacheError};
-	use crate::{backend::Backend, test_utils::SyncFuture};
+	use std::fmt::Debug;
+
 	use dashmap::DashMap;
 	use serde::{Deserialize, Serialize};
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
-	use std::fmt::Debug;
+
+	use super::{CacheBackend, CacheError};
+	use crate::{backend::Backend, test_utils::SyncFuture};
 
 	assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
 

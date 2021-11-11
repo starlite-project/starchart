@@ -2,13 +2,15 @@
 //!
 //! [`Database`]: crate::database::Database
 
+use std::{error::Error as StdError, iter::FromIterator};
+
+use serde::{Deserialize, Serialize};
+
 use self::future::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
-use serde::{Deserialize, Serialize};
-use std::{error::Error as StdError, iter::FromIterator};
 
 pub mod future;
 
@@ -19,16 +21,14 @@ mod json;
 
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
-#[cfg(feature = "json")]
-pub use self::json::JsonBackend;
-
-#[cfg(feature = "json")]
-#[cfg_attr(feature = "json", doc(hidden))]
-pub use self::json::JsonError;
-
 #[cfg(feature = "cache")]
 #[cfg_attr(feature = "cache", doc(hidden))]
 pub use self::cache::CacheError;
+#[cfg(feature = "json")]
+pub use self::json::JsonBackend;
+#[cfg(feature = "json")]
+#[cfg_attr(feature = "json", doc(hidden))]
+pub use self::json::JsonError;
 
 /// The backend to be used with a [`Database`].
 ///

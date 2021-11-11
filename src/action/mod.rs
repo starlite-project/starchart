@@ -6,12 +6,12 @@ mod kind;
 pub mod result;
 mod target;
 
-#[doc(inline)]
-pub use self::{kind::ActionKind, result::ActionResult, target::OperationTarget};
-
-use crate::Entity;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+#[doc(inline)]
+pub use self::{kind::ActionKind, result::ActionResult, target::OperationTarget};
+use crate::Entity;
 
 /// An error occurred during validation of an [`Action`].
 #[derive(Debug, Error)]
@@ -283,11 +283,13 @@ impl<S: Entity> Default for InternalAction<S> {
 
 #[cfg(test)]
 mod tests {
-	use super::{Action, ActionKind, OperationTarget};
-	use crate::Entity;
+	use std::fmt::Debug;
+
 	use serde::{de::DeserializeOwned, Deserialize, Serialize};
 	use static_assertions::assert_impl_all;
-	use std::fmt::Debug;
+
+	use super::{Action, ActionKind, OperationTarget};
+	use crate::Entity;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 	struct Settings {

@@ -1,14 +1,16 @@
 //! The base structure to use for starchart.
 
-use crate::{backend::Backend, database::DatabaseError, Database, Entity};
-use dashmap::{mapref::one::Ref, DashMap};
-use futures::executor::block_on;
 use std::{
 	any::TypeId,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	ops::Deref,
 	sync::Arc,
 };
+
+use dashmap::{mapref::one::Ref, DashMap};
+use futures::executor::block_on;
+
+use crate::{backend::Backend, database::DatabaseError, Database, Entity};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
