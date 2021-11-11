@@ -10,7 +10,7 @@ use std::{
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
-use crate::{backend::Backend, database::DatabaseError, Database, Entity};
+use crate::{Action, Database, Entity, action::{ActionError, ActionResult, InternalAction}, atomics::AtomicGuard, backend::Backend, database::DatabaseError};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -76,6 +76,7 @@ where
 pub struct Gateway<B: Backend> {
 	backend: Arc<B>,
 	databases: Arc<DashMap<String, Database<B>>>,
+	guard: Arc<AtomicGuard>,
 }
 
 impl<B: Backend> Gateway<B> {
@@ -101,7 +102,23 @@ impl<B: Backend> Gateway<B> {
 		Ok(Self {
 			backend: Arc::new(backend),
 			databases: Arc::default(),
+			guard: Arc::default(),
 		})
+	}
+
+	/// Runs an [`Action`] through the [`Gateway`].
+	/// 
+	/// # Errors
+	/// 
+	/// Returns any errors that [`Action::validate`] raises.
+	pub async fn run<S: Entity>(&self, action: Action<S>) -> Result<ActionResult<S>, ActionError> {
+		action.validate()?;
+
+		Ok(self.run_inner(action.inner))
+	}
+
+	pub(crate) fn run_inner<S: Entity>(&self, inner: InternalAction<S>) -> ActionResult<S> {
+		todo!()
 	}
 
 	/// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
@@ -292,6 +309,7 @@ impl<B: Backend> Clone for Gateway<B> {
 		Self {
 			backend: self.backend.clone(),
 			databases: self.databases.clone(),
+			guard: self.guard.clone(),
 		}
 	}
 }

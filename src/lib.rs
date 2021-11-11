@@ -1,4 +1,4 @@
-#![feature(never_type, doc_cfg)]
+#![feature(never_type, doc_cfg, try_trait_v2)]
 #![warn(
 	clippy::pedantic,
 	clippy::nursery,

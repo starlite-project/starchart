@@ -6,6 +6,8 @@ mod kind;
 pub mod result;
 mod target;
 
+use std::cell::Cell;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -38,8 +40,8 @@ pub enum ActionError {
 #[must_use = "an action alone has no side effects"]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Action<S> {
-	inner: InternalAction<S>,
-	validated: bool,
+	pub(crate) inner: InternalAction<S>,
+	pub(crate) validated: Cell<bool>,
 }
 
 impl<S> Action<S> {
@@ -47,7 +49,7 @@ impl<S> Action<S> {
 	pub const fn new(kind: ActionKind) -> Self {
 		Self {
 			inner: InternalAction::new(kind),
-			validated: false,
+			validated: Cell::new(false),
 		}
 	}
 
@@ -64,8 +66,8 @@ impl<S> Action<S> {
 
 	/// Whether the [`Action`] has been validated.
 	#[must_use]
-	pub const fn is_validated(&self) -> bool {
-		self.validated
+	pub fn is_validated(&self) -> bool {
+		self.validated.get()
 	}
 }
 
@@ -104,7 +106,7 @@ impl<S: Entity> Action<S> {
 		);
 		self.inner.set_target(target);
 
-		self.validated = false;
+		self.validated.set(false);
 
 		self
 	}
@@ -116,8 +118,8 @@ impl<S: Entity> Action<S> {
 	/// # Errors
 	///
 	/// Returns an [`ActionError::InvalidOperation`] if the [`Action`] has not set an [`OperationTarget`].
-	pub fn validate(&mut self) -> Result<(), ActionError> {
-		if self.validated {
+	pub fn validate(&self) -> Result<(), ActionError> {
+		if self.is_validated() {
 			return Ok(());
 		}
 
@@ -137,7 +139,7 @@ impl<S: Entity> Action<S> {
 			return Err(ActionError::UpdatingTable);
 		}
 
-		self.validated = true;
+		self.validated.set(true);
 
 		Ok(())
 	}
@@ -151,7 +153,7 @@ impl<S: Entity> Action<S> {
 	pub fn set_key(&mut self, key: &S) -> &mut Self {
 		self.inner.set_key(key.to_key());
 
-		self.validated = false;
+		self.validated.set(false);
 
 		self
 	}
@@ -200,7 +202,7 @@ impl<S: Entity> Default for Action<S> {
 	fn default() -> Self {
 		Self {
 			inner: InternalAction::default(),
-			validated: bool::default(),
+			validated: Cell::default(),
 		}
 	}
 }
@@ -316,7 +318,7 @@ mod tests {
 
 	#[test]
 	fn basic() {
-		let mut action = Action::<Settings>::new(ActionKind::Create);
+		let action = Action::<Settings>::new(ActionKind::Create);
 
 		assert_eq!(action.kind(), ActionKind::Create);
 		assert_eq!(action.target(), OperationTarget::Unknown);
@@ -348,7 +350,7 @@ mod tests {
 
 	#[test]
 	fn default() {
-		let mut action = Action::<Settings>::default();
+		let action = Action::<Settings>::default();
 
 		assert_eq!(action.kind(), ActionKind::Read);
 

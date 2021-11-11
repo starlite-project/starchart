@@ -2,14 +2,11 @@
 
 #![allow(clippy::must_use_candidate, clippy::missing_const_for_fn)]
 
-use std::{
-	fmt::{Display, Formatter, Result as FmtResult},
-	ops::Deref,
-};
+use std::{convert::TryFrom, ops::Deref};
 
 use thiserror::Error;
 
-use super::OperationTarget;
+use super::{ActionKind, OperationTarget};
 use crate::Entity;
 
 /// Trait for all the variants of [`ActionResult`] to easily convert
@@ -140,22 +137,66 @@ impl<T: Entity> ActionResult<T> {
 		}
 	}
 
+	/// Returns the [`ActionKind`] that this [`ActionResult`] represents.
+	pub fn kind(&self) -> ActionKind {
+		match self {
+			Self::Create(_) => ActionKind::Create,
+			Self::Read(_) => ActionKind::Read,
+			Self::Update(_) => ActionKind::Update,
+			Self::Delete(_) => ActionKind::Delete,
+		}
+	}
+
+	/// Returns the [`CreateResult`] from this [`ActionResult`].
+	///
+	/// # Panics
+	///
+	/// Panics if the [`ActionResult`] is not a [`CreateResult`].
 	#[track_caller]
 	pub fn unwrap_create(self) -> CreateResult {
-		let panic_msg = format!("called `ActionResult::unwrap_create` on a `{}` value", self);
+		let kind = self.kind();
 
-		self.create().expect(&panic_msg)
+		self.create()
+			.unwrap_or_else(|| panic!("called `ActionResult::unwrap_create` on a `{}` value", kind))
 	}
-}
 
-impl<T: Entity> Display for ActionResult<T> {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		match self {
-			Self::Create(_) => f.write_str("Create"),
-			Self::Read(_) => f.write_str("Read"),
-			Self::Update(_) => f.write_str("Update"),
-			Self::Delete(_) => f.write_str("Delete"),
-		}
+	/// Returns the [`ReadResult`] from this [`ActionResult`].
+	///
+	/// # Panics
+	///
+	/// Panics if the [`ActionResult`] is not a [`ReadResult`].
+	#[track_caller]
+	pub fn unwrap_read(self) -> ReadResult<T> {
+		let kind = self.kind();
+
+		self.read()
+			.unwrap_or_else(|| panic!("called `ActionResult::unwrap_read` on a `{}` value", kind))
+	}
+
+	/// Returns the [`UpdateResult`] from this [`ActionResult`].
+	///
+	/// # Panics
+	///
+	/// Panics if the [`ActionResult`] is not a [`UpdateResult`].
+	#[track_caller]
+	pub fn unwrap_update(self) -> UpdateResult {
+		let kind = self.kind();
+
+		self.update()
+			.unwrap_or_else(|| panic!("called `ActionResult::unwrap_update` on a `{}` value", kind))
+	}
+
+	/// Returns the [`DeleteResult`] from this [`ActionResult`].
+	///
+	/// # Panics
+	///
+	/// Panics if the [`ActionResult`] is not a [`DeleteResult`].
+	#[track_caller]
+	pub fn unwrap_delete(self) -> DeleteResult {
+		let kind = self.kind();
+
+		self.delete()
+			.unwrap_or_else(|| panic!("called `ActionResult::unwrap_delete` on a `{}` value", kind))
 	}
 }
 
@@ -188,6 +229,14 @@ impl MultiResult for CreateResult {
 			Some(r)
 		} else {
 			None
+		}
+	}
+}
+
+impl From<CreateResult> for Result<(), CreateError> {
+	fn from(res: CreateResult) -> Self {
+		match res {
+			CreateResult::Entity(r) | CreateResult::Table(r) => r,
 		}
 	}
 }
@@ -270,6 +319,41 @@ impl<T: Entity> Deref for ReadResult<T> {
 	}
 }
 
+/// Represents a conversion error when using the [`TryFrom`] impls for [`ReadResult`].
+#[derive(Debug, Error, Clone, Copy)]
+pub enum InvalidTargetError {
+	/// Attempted to convert a [`ReadResult::Table`] into a [`Result<T, ReadError>`].
+	#[error("attempted conversion of entity result into table")]
+	ExpectedTable,
+	/// Attempted to convert a [`ReadResult::Entity`] into a [`Result<Vec<T>, ReadError>`].
+	#[error("attempted conversion of table result into entity")]
+	ExpectedEntity,
+}
+
+impl<T: Entity> TryFrom<ReadResult<T>> for Result<Vec<T>, ReadError> {
+	type Error = InvalidTargetError;
+
+	fn try_from(value: ReadResult<T>) -> Result<Self, Self::Error> {
+		if let ReadResult::Table(r) = value {
+			Ok(r)
+		} else {
+			Err(InvalidTargetError::ExpectedTable)
+		}
+	}
+}
+
+impl<T: Entity> TryFrom<ReadResult<T>> for Result<T, ReadError> {
+	type Error = InvalidTargetError;
+
+	fn try_from(value: ReadResult<T>) -> Result<Self, Self::Error> {
+		if let ReadResult::Entity(r) = value {
+			Ok(r.map(|v| v[0].clone()))
+		} else {
+			Err(InvalidTargetError::ExpectedEntity)
+		}
+	}
+}
+
 /// An error occurred during an [`Action::read`].
 ///
 /// [`Action::read`]: crate::action::Action::read
@@ -316,6 +400,14 @@ impl MultiResult for UpdateResult {
 			Some(r)
 		} else {
 			None
+		}
+	}
+}
+
+impl From<UpdateResult> for Result<(), UpdateError> {
+	fn from(val: UpdateResult) -> Self {
+		match val {
+			UpdateResult::Entity(r) | UpdateResult::Table(r) => r,
 		}
 	}
 }
@@ -380,6 +472,14 @@ impl MultiResult for DeleteResult {
 	}
 }
 
+impl From<DeleteResult> for Result<bool, DeleteError> {
+	fn from(value: DeleteResult) -> Self {
+		match value {
+			DeleteResult::Entity(r) | DeleteResult::Table(r) => r,
+		}
+	}
+}
+
 impl Deref for DeleteResult {
 	type Target = Result<bool, DeleteError>;
 
@@ -408,8 +508,6 @@ impl DeleteError {
 }
 
 mod private {
-	use std::fmt::Debug;
-
 	use super::{CreateResult, DeleteResult, ReadResult, UpdateResult};
 	use crate::Entity;
 

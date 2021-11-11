@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Result as FmtResult};
+
 use serde::{Deserialize, Serialize};
 
 /// The type of [`CRUD`] action to perform
@@ -22,6 +24,17 @@ pub enum ActionKind {
 	///
 	/// This locks the database and allows no other reads or writes until it is complete.
 	Delete,
+}
+
+impl Display for ActionKind {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match self {
+			Self::Create => f.write_str("Create"),
+			Self::Read => f.write_str("Read"),
+			Self::Update => f.write_str("Update"),
+			Self::Delete => f.write_str("Delete"),
+		}
+	}
 }
 
 impl Default for ActionKind {
