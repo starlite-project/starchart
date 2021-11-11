@@ -381,7 +381,7 @@ mod tests {
 
         assert!(!new_action.is_validated());
 
-        new_action.set_data(Settings {
+        new_action.set_data(&Settings {
             key: 7,
             value: false,
             test: 74,
