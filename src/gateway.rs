@@ -10,7 +10,13 @@ use std::{
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
-use crate::{Action, Database, Entity, action::{ActionError, ActionResult, InternalAction}, atomics::AtomicGuard, backend::Backend, database::DatabaseError};
+use crate::{
+	action::{ActionError, ActionResult, InternalAction},
+	atomics::AtomicGuard,
+	backend::Backend,
+	database::DatabaseError,
+	Action, Database, Entity,
+};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -107,9 +113,9 @@ impl<B: Backend> Gateway<B> {
 	}
 
 	/// Runs an [`Action`] through the [`Gateway`].
-	/// 
+	///
 	/// # Errors
-	/// 
+	///
 	/// Returns any errors that [`Action::validate`] raises.
 	pub async fn run<S: Entity>(&self, action: Action<S>) -> Result<ActionResult<S>, ActionError> {
 		action.validate()?;
