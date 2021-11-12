@@ -10,13 +10,7 @@ use std::{
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
-use crate::{
-	action::{ActionError, ActionResult, InternalAction},
-	atomics::AtomicGuard,
-	backend::Backend,
-	database::DatabaseError,
-	Action, Database, Entity,
-};
+use crate::{atomics::AtomicGuard, backend::Backend, database::DatabaseError, Database, Entry};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -133,7 +127,7 @@ impl<B: Backend> Gateway<B> {
 		table_name: String,
 	) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let exists = self.get::<S>(&table_name)?;
 
@@ -160,7 +154,7 @@ impl<B: Backend> Gateway<B> {
 		table_name: String,
 	) -> Result<DbRef<'_, B>, DatabaseError<B::Error>>
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let type_id = TypeId::of::<S>();
 
@@ -191,7 +185,7 @@ impl<B: Backend> Gateway<B> {
 		table_name: &str,
 	) -> Result<Option<DbRef<'a, B>>, DatabaseError<B::Error>>
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let map_ref = unsafe {
 			let temp = self.databases.get(table_name);
@@ -226,7 +220,7 @@ impl<B: Backend> Gateway<B> {
 	)]
 	pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let table = match self.get::<S>(table_name)? {
 			Some(db) => db,
@@ -257,7 +251,7 @@ impl<B: Backend> Gateway<B> {
 	)]
 	pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let table = self.get_unchecked::<S>(table_name);
 
@@ -285,7 +279,7 @@ impl<B: Backend> Gateway<B> {
 	)]
 	pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
 	where
-		S: Entity + 'static,
+		S: Entry + 'static,
 	{
 		let map_ref = self.databases.get(table_name).unwrap_unchecked();
 

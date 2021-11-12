@@ -28,7 +28,7 @@ use syn::{
 	Result, Type,
 };
 
-#[proc_macro_derive(Entity, attributes(key))]
+#[proc_macro_derive(Key, attributes(key))]
 pub fn derive_entity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
 	parse(input)

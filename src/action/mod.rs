@@ -5,6 +5,7 @@
 mod kind;
 pub mod result;
 mod target;
+mod r#impl;
 
 use std::cell::Cell;
 
@@ -13,7 +14,7 @@ use thiserror::Error;
 
 #[doc(inline)]
 pub use self::{kind::ActionKind, result::ActionResult, target::OperationTarget};
-use crate::Entity;
+use crate::{Entry, IndexEntry, Key};
 
 /// An error occurred during validation of an [`Action`].
 #[derive(Debug, Error)]
@@ -72,8 +73,8 @@ impl<S> Action<S> {
 }
 
 // These are two separate blocks because we don't want
-// any operations being created if `S` doesn't implement `Entity`.
-impl<S: Entity> Action<S> {
+// any operations being created if `S` doesn't implement `Entry`.
+impl<S: Entry> Action<S> {
 	/// Begins a Create-based action.
 	pub fn create() -> Self {
 		Self::new(ActionKind::Create)
@@ -146,11 +147,11 @@ impl<S: Entity> Action<S> {
 
 	/// Sets the key for the action.
 	///
-	/// Users should prefer to call [`Self::set_data`] over this, as setting the
-	/// data will automatically call this.
+	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
+	/// entry will automatically call this.
 	///
 	/// This is unused on [`OperationTarget::Table`] actions.
-	pub fn set_key(&mut self, key: &S) -> &mut Self {
+	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
 		self.inner.set_key(key.to_key());
 
 		self.validated.set(false);
@@ -162,7 +163,6 @@ impl<S: Entity> Action<S> {
 	///
 	/// This is unused on [`OperationTarget::Table`] actions.
 	pub fn set_data(&mut self, entity: &S) -> &mut Self {
-		self.set_key(entity);
 		self.inner.set_entity(Box::new(entity.clone()));
 
 		self
@@ -198,7 +198,18 @@ impl<S: Entity> Action<S> {
 	}
 }
 
-impl<S: Entity> Default for Action<S> {
+impl<S: IndexEntry> Action<S> {
+	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
+	pub fn set_entry(&mut self, entity: &S) -> &mut Self {
+		self.set_key(&entity.key());
+
+		self.set_data(entity);
+
+		self
+	}
+}
+
+impl<S: Entry> Default for Action<S> {
 	fn default() -> Self {
 		Self {
 			inner: InternalAction::default(),
@@ -239,7 +250,7 @@ impl<S> InternalAction<S> {
 	}
 }
 
-impl<S: Entity> InternalAction<S> {
+impl<S: Entry> InternalAction<S> {
 	pub(crate) fn set_table_name(&mut self, table_name: String) -> &mut Self {
 		self.table_name = Some(table_name);
 
@@ -271,7 +282,7 @@ impl<S: Entity> InternalAction<S> {
 	}
 }
 
-impl<S: Entity> Default for InternalAction<S> {
+impl<S: Entry> Default for InternalAction<S> {
 	fn default() -> Self {
 		Self {
 			kind: ActionKind::default(),
@@ -291,19 +302,13 @@ mod tests {
 	use static_assertions::assert_impl_all;
 
 	use super::{Action, ActionKind, OperationTarget};
-	use crate::Entity;
+	use crate::Entry;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 	struct Settings {
 		key: u32,
 		value: bool,
 		test: u8,
-	}
-
-	impl Entity for Settings {
-		fn to_key(&self) -> String {
-			self.key.to_string()
-		}
 	}
 
 	assert_impl_all!(
@@ -313,7 +318,7 @@ mod tests {
 		PartialEq,
 		Serialize,
 		DeserializeOwned,
-		Entity
+		Entry
 	);
 
 	#[test]

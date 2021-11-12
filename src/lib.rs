@@ -34,12 +34,15 @@ mod test_utils;
 
 #[doc(inline)]
 pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};
-pub use self::{database::Database, entry::Entity};
+pub use self::{
+	database::Database,
+	entry::{Entry, Key, IndexEntry},
+};
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;
 
-/// The helper derive macro for easily implementing [`Entity`].
+/// The helper derive macro for easily implementing [`Key`].
 #[cfg(feature = "derive")]
 #[doc(cfg(feature = "derive"))]
-pub use starchart_derive::Entity;
+pub use starchart_derive::Key;

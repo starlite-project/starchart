@@ -7,7 +7,7 @@ use std::{convert::TryFrom, ops::Deref};
 use thiserror::Error;
 
 use super::{ActionKind, OperationTarget};
-use crate::Entity;
+use crate::Entry;
 
 /// Trait for all the variants of [`ActionResult`] to easily convert
 /// between a table and entity [`Result`].
@@ -73,7 +73,7 @@ where
 /// [`Action`]: crate::action::Action
 #[derive(Debug)]
 #[must_use = "this `ActionResult` may be an Error of some kind, which should be handled"]
-pub enum ActionResult<T: Entity> {
+pub enum ActionResult<T: Entry> {
 	/// The result from an [`Action::create`].
 	///
 	/// [`Action::create`]: crate::action::Action::create
@@ -92,7 +92,7 @@ pub enum ActionResult<T: Entity> {
 	Delete(DeleteResult),
 }
 
-impl<T: Entity> ActionResult<T> {
+impl<T: Entry> ActionResult<T> {
 	/// Converts from [`ActionResult`] to [`Option`].
 	///
 	/// This consumes `self`, returning a [`CreateResult`] if the [`ActionResult`] is a [`CreateResult`],
@@ -273,10 +273,10 @@ impl CreateError {
 /// [`Action::read`]: crate::action::Action::read
 #[derive(Debug)]
 #[must_use = "this `ReadResult` may be an Error of some kind, which should be handled"]
-pub enum ReadResult<T: Entity> {
+pub enum ReadResult<T: Entry> {
 	/// A table read result.
 	Table(Result<Vec<T>, ReadError>),
-	/// An entity read result.
+	/// An entry read result.
 	///
 	/// # Note
 	///
@@ -288,7 +288,7 @@ pub enum ReadResult<T: Entity> {
 	Entity(Result<Vec<T>, ReadError>),
 }
 
-impl<T: Entity> MultiResult for ReadResult<T> {
+impl<T: Entry> MultiResult for ReadResult<T> {
 	type EntityResult = Result<T, ReadError>;
 	type TableResult = Result<Vec<T>, ReadError>;
 
@@ -309,7 +309,7 @@ impl<T: Entity> MultiResult for ReadResult<T> {
 	}
 }
 
-impl<T: Entity> Deref for ReadResult<T> {
+impl<T: Entry> Deref for ReadResult<T> {
 	type Target = Result<Vec<T>, ReadError>;
 
 	fn deref(&self) -> &Self::Target {
@@ -330,7 +330,7 @@ pub enum InvalidTargetError {
 	ExpectedEntity,
 }
 
-impl<T: Entity> TryFrom<ReadResult<T>> for Result<Vec<T>, ReadError> {
+impl<T: Entry> TryFrom<ReadResult<T>> for Result<Vec<T>, ReadError> {
 	type Error = InvalidTargetError;
 
 	fn try_from(value: ReadResult<T>) -> Result<Self, Self::Error> {
@@ -342,7 +342,7 @@ impl<T: Entity> TryFrom<ReadResult<T>> for Result<Vec<T>, ReadError> {
 	}
 }
 
-impl<T: Entity> TryFrom<ReadResult<T>> for Result<T, ReadError> {
+impl<T: Entry> TryFrom<ReadResult<T>> for Result<T, ReadError> {
 	type Error = InvalidTargetError;
 
 	fn try_from(value: ReadResult<T>) -> Result<Self, Self::Error> {
@@ -509,12 +509,12 @@ impl DeleteError {
 
 mod private {
 	use super::{CreateResult, DeleteResult, ReadResult, UpdateResult};
-	use crate::Entity;
+	use crate::Entry;
 
 	pub trait Sealed {}
 
 	impl Sealed for CreateResult {}
-	impl<T: Entity> Sealed for ReadResult<T> {}
+	impl<T: Entry> Sealed for ReadResult<T> {}
 	impl Sealed for UpdateResult {}
 	impl Sealed for DeleteResult {}
 }
