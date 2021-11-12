@@ -2,10 +2,10 @@
 
 //! The action structs for CRUD operations.
 
+mod r#impl;
 mod kind;
 pub mod result;
 mod target;
-mod r#impl;
 
 use std::cell::Cell;
 
@@ -13,7 +13,12 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[doc(inline)]
-pub use self::{kind::ActionKind, result::ActionResult, target::OperationTarget};
+pub use self::{
+	kind::ActionKind,
+	r#impl::{CreateOperation, CrudOperation, DeleteOperation, ReadOperation, UpdateOperation, OpTarget, TableTarget, EntryTarget},
+	result::ActionResult,
+	target::OperationTarget,
+};
 use crate::{Entry, IndexEntry, Key};
 
 /// An error occurred during validation of an [`Action`].
@@ -386,7 +391,7 @@ mod tests {
 
 		assert!(action.is_validated());
 
-		let new_action = action.set_target(OperationTarget::Entity);
+		let new_action = action.set_target(OperationTarget::Entry);
 
 		assert!(!new_action.is_validated());
 

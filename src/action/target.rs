@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 pub enum OperationTarget {
 	/// The operation will be performed on a table.
 	Table,
-	/// The operation will be performed on a single entity.
-	Entity,
+	/// The operation will be performed on a single entry.
+	Entry,
 	/// An unknown operation will occur, this raises an error if it's set when [`Action::validate`] is called.
 	///
 	/// [`Action::validate`]: crate::action::Action::validate
@@ -27,7 +27,7 @@ impl Display for OperationTarget {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
 			Self::Table => f.write_str("table"),
-			Self::Entity => f.write_str("entity"),
+			Self::Entry => f.write_str("entity"),
 			Self::Unknown => Err(FmtError),
 		}
 	}
