@@ -7,7 +7,7 @@ mod kind;
 pub mod result;
 mod target;
 
-use std::cell::Cell;
+use std::{cell::Cell, marker::PhantomData};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -15,7 +15,10 @@ use thiserror::Error;
 #[doc(inline)]
 pub use self::{
 	kind::ActionKind,
-	r#impl::{CreateOperation, CrudOperation, DeleteOperation, ReadOperation, UpdateOperation, OpTarget, TableTarget, EntryTarget},
+	r#impl::{
+		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
+		TableTarget, UpdateOperation,
+	},
 	result::ActionResult,
 	target::OperationTarget,
 };
@@ -45,17 +48,21 @@ pub enum ActionError {
 /// [`Gateway`]: crate::Gateway
 #[must_use = "an action alone has no side effects"]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Action<S> {
+pub struct Action<S, C: CrudOperation = ReadOperation, T: OpTarget = EntryTarget> {
 	pub(crate) inner: InternalAction<S>,
+	pub(crate) kind: PhantomData<C>,
+	pub(crate) target: PhantomData<T>,
 	pub(crate) validated: Cell<bool>,
 }
 
-impl<S> Action<S> {
+impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
-	pub const fn new(kind: ActionKind) -> Self {
+	pub const fn new() -> Self {
 		Self {
-			inner: InternalAction::new(kind),
+			inner: InternalAction::new(),
 			validated: Cell::new(false),
+			target: PhantomData,
+			kind: PhantomData,
 		}
 	}
 
@@ -74,6 +81,12 @@ impl<S> Action<S> {
 	#[must_use]
 	pub fn is_validated(&self) -> bool {
 		self.validated.get()
+	}
+}
+
+impl<S: Entry, T: OpTarget> Action<S, CreateOperation, T> {
+	pub fn create() -> Self {
+		Self::new()
 	}
 }
 
@@ -227,12 +240,12 @@ impl<S: Entry> Default for Action<S> {
 // within the crate, and performs no validation
 // to ensure optimizations, and SHOULD NOT be exposed to public API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct InternalAction<S> {
-	kind: ActionKind,
+pub(crate) struct InternalAction<S, C: CrudOperation, T: OpTarget> {
+	kind: PhantomData<C>,
 	table_name: Option<String>,
 	data: Option<Box<S>>,
 	key: Option<String>,
-	target: OperationTarget,
+	target: PhantomData<T>,
 }
 
 impl<S> InternalAction<S> {
