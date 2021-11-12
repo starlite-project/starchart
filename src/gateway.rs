@@ -112,21 +112,6 @@ impl<B: Backend> Gateway<B> {
 		})
 	}
 
-	/// Runs an [`Action`] through the [`Gateway`].
-	///
-	/// # Errors
-	///
-	/// Returns any errors that [`Action::validate`] raises.
-	pub async fn run<S: Entity>(&self, action: Action<S>) -> Result<ActionResult<S>, ActionError> {
-		action.validate()?;
-
-		Ok(self.run_inner(action.inner))
-	}
-
-	pub(crate) fn run_inner<S: Entity>(&self, inner: InternalAction<S>) -> ActionResult<S> {
-		todo!()
-	}
-
 	/// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
 	/// if a [`Database`] was not found.
 	///
