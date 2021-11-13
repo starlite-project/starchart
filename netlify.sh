@@ -1,4 +1,4 @@
-rustup toolchain install nightly
+rustup toolchain install nightly-x86_64-unknown-linux-gnu
 
 export RUSTDOCFLAGS="-D broken_intra_doc_links"
 
