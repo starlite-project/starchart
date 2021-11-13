@@ -1,6 +1,21 @@
+use std::{fmt::Debug, future::Future, pin::Pin};
+
 use serde::{Deserialize, Serialize};
 
 use super::{ActionKind, OperationTarget};
+use crate::{backend::Backend, Gateway};
+
+/// The marker trait for all action runs, this trait should not be used and is only used
+/// to make the return type of [`Gateway::run`] easily known.
+///
+/// [`Gateway::run`]: crate::Gateway::run
+pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
+	#[doc(hidden)]
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send>>;
+}
 
 /// Marker type for a Create operation.
 #[derive(
@@ -93,8 +108,10 @@ impl OpTarget for EntryTarget {
 
 mod private {
 	use super::{
-		CreateOperation, DeleteOperation, EntryTarget, ReadOperation, TableTarget, UpdateOperation,
+		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
+		TableTarget, UpdateOperation,
 	};
+	use crate::{Action, Entry};
 
 	pub trait Sealed {}
 
@@ -104,4 +121,5 @@ mod private {
 	impl Sealed for DeleteOperation {}
 	impl Sealed for TableTarget {}
 	impl Sealed for EntryTarget {}
+	impl<S: Entry, C: CrudOperation, T: OpTarget> Sealed for Action<S, C, T> {}
 }

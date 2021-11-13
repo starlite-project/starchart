@@ -10,7 +10,13 @@ use std::{
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
-use crate::{atomics::AtomicGuard, backend::Backend, database::DatabaseError, Database, Entry};
+use crate::{
+	action::{ActionRunner, CrudOperation, OpTarget},
+	atomics::AtomicGuard,
+	backend::Backend,
+	database::DatabaseError,
+	Action, Database, Entry,
+};
 
 /// An immutable reference to a [`Database`].
 #[must_use]
@@ -104,6 +110,18 @@ impl<B: Backend> Gateway<B> {
 			databases: Arc::default(),
 			guard: Arc::default(),
 		})
+	}
+
+	/// Runs an [`Action`], returning whatever the possible [`ActionRunner`] implementation is declared as.
+	///
+	/// # Errors
+	///
+	/// Anything that the [`Action`] could return while running.
+	pub async fn run<Success, Failure>(
+		&self,
+		action: impl ActionRunner<Success, Failure>,
+	) -> Result<Success, Failure> {
+		unsafe { action.__run(self).await }
 	}
 
 	/// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]

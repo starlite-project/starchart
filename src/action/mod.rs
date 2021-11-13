@@ -9,8 +9,11 @@ mod target;
 
 use std::{
 	cell::Cell,
+	error::Error,
 	fmt::{Debug, Formatter, Result as FmtResult},
+	future::Future,
 	marker::PhantomData,
+	pin::Pin,
 };
 
 use serde::{Deserialize, Serialize};
@@ -20,31 +23,95 @@ use thiserror::Error;
 pub use self::{
 	kind::ActionKind,
 	r#impl::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
-		TableTarget, UpdateOperation,
+		ActionRunner, CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget,
+		ReadOperation, TableTarget, UpdateOperation,
 	},
 	result::ActionResult,
 	target::OperationTarget,
 };
-use crate::{Entry, IndexEntry, Key};
+use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
+impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+	for Action<S, CreateOperation, EntryTarget>
+{
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
+
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
+
+impl<S: Entry, E: Error> ActionRunner<S, ActionError<E>> for Action<S, ReadOperation, EntryTarget> {
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<S, ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
+impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+	for Action<S, UpdateOperation, EntryTarget>
+{
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
+
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
+
+impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
+	for Action<S, DeleteOperation, EntryTarget>
+{
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
+impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+	for Action<S, CreateOperation, TableTarget>
+{
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
+
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
+
+// this is only here to satisfy the `clippy::type_complexity` lint
+type ReadTableResult<S, E> = Pin<Box<dyn Future<Output = Result<Vec<S>, ActionError<E>>> + Send>>;
+
+impl<S: Entry, E: Error> ActionRunner<Vec<S>, ActionError<E>>
+	for Action<S, ReadOperation, TableTarget>
+{
+	unsafe fn __run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S, E> {
+		Box::pin(async move { todo!() })
+	}
+}
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
 pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
@@ -52,10 +119,21 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
+impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
+	for Action<S, DeleteOperation, TableTarget>
+{
+	unsafe fn __run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
+		Box::pin(async move { todo!() })
+	}
+}
+
 /// An error occurred during validation of an [`Action`].
 #[derive(Debug, Error)]
 #[non_exhaustive]
-pub enum ActionError {
+pub enum ActionError<E: Error = !> {
 	/// The [`OperationTarget`] was not set.
 	#[error("an invalid operation was set")]
 	InvalidOperation,
@@ -68,6 +146,14 @@ pub enum ActionError {
 	/// Attempted to [`ActionKind::Update`] an [`OperationTarget::Table`].
 	#[error("updating an entire table is unsupported")]
 	UpdatingTable,
+	/// An error occurred from the [`Backend`].
+	///
+	/// [`Backend`]: crate::backend::Backend
+	#[error(transparent)]
+	Backend(#[from] E),
+	/// No table was provided.
+	#[error("no table was provided")]
+	NoTable,
 }
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
@@ -231,6 +317,10 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 
 		if self.is_updating_table() {
 			return Err(ActionError::UpdatingTable);
+		}
+
+		if self.inner.key.is_none() {
+			return Err(ActionError::NoTable);
 		}
 
 		self.validated.set(true);
