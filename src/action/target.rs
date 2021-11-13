@@ -26,8 +26,8 @@ impl Default for OperationTarget {
 impl Display for OperationTarget {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
-			Self::Table => f.write_str("table"),
-			Self::Entry => f.write_str("entity"),
+			Self::Table => f.write_str("Table"),
+			Self::Entry => f.write_str("Entry"),
 			Self::Unknown => Err(FmtError),
 		}
 	}

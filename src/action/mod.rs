@@ -7,9 +7,15 @@ mod kind;
 pub mod result;
 mod target;
 
-use std::{cell::Cell, marker::PhantomData};
+use std::{
+	cell::Cell,
+	fmt::{Debug, Formatter, Result as FmtResult},
+	marker::PhantomData,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::{
+	Serialize, Deserialize
+};
 use thiserror::Error;
 
 #[doc(inline)]
@@ -23,6 +29,30 @@ pub use self::{
 	target::OperationTarget,
 };
 use crate::{Entry, IndexEntry, Key};
+
+/// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
+pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
+
+/// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
+pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
+
+/// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
+pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
+
+/// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
+pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
+
+/// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
+pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
+
+/// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
+pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
+
+/// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
+pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
+
+/// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
+pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
 /// An error occurred during validation of an [`Action`].
 #[derive(Debug, Error)]
@@ -46,34 +76,30 @@ pub enum ActionError {
 ///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 /// [`Gateway`]: crate::Gateway
+#[derive(Serialize, Deserialize)]
 #[must_use = "an action alone has no side effects"]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Action<S, C: CrudOperation = ReadOperation, T: OpTarget = EntryTarget> {
-	pub(crate) inner: InternalAction<S>,
-	pub(crate) kind: PhantomData<C>,
-	pub(crate) target: PhantomData<T>,
+pub struct Action<S, C: CrudOperation, T: OpTarget> {
+	pub(crate) inner: InternalAction<S, C, T>,
 	pub(crate) validated: Cell<bool>,
 }
 
 impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			inner: InternalAction::new(),
 			validated: Cell::new(false),
-			target: PhantomData,
-			kind: PhantomData,
 		}
 	}
 
 	/// Returns the [`ActionKind`] we will be performing with said action.
-	pub const fn kind(&self) -> ActionKind {
+	pub fn kind(&self) -> ActionKind {
 		self.inner.kind()
 	}
 
 	/// Returns the [`OperationTarget`] we will be performing with said action.
 	#[must_use]
-	pub const fn target(&self) -> OperationTarget {
+	pub fn target(&self) -> OperationTarget {
 		self.inner.target()
 	}
 
@@ -85,49 +111,100 @@ impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 }
 
 impl<S: Entry, T: OpTarget> Action<S, CreateOperation, T> {
+	/// Begins a [`CreateOperation`] action.
 	pub fn create() -> Self {
 		Self::new()
 	}
 }
 
-// These are two separate blocks because we don't want
-// any operations being created if `S` doesn't implement `Entry`.
-impl<S: Entry> Action<S> {
-	/// Begins a Create-based action.
-	pub fn create() -> Self {
-		Self::new(ActionKind::Create)
-	}
-
-	/// Begins a Read-based action.
+impl<S: Entry, T: OpTarget> Action<S, ReadOperation, T> {
+	/// Begins a [`ReadOperation`] action.
 	pub fn read() -> Self {
-		Self::new(ActionKind::Read)
+		Self::new()
 	}
+}
 
-	/// Begins an Update-based action.
+impl<S: Entry, T: OpTarget> Action<S, UpdateOperation, T> {
+	/// Begins an [`UpdateOperation`] action.
 	pub fn update() -> Self {
-		Self::new(ActionKind::Update)
+		Self::new()
 	}
+}
 
-	/// Begins a Delete-based action.
+impl<S: Entry, T: OpTarget> Action<S, DeleteOperation, T> {
+	/// Begins a [`DeleteOperation`] action.
 	pub fn delete() -> Self {
-		Self::new(ActionKind::Delete)
+		Self::new()
+	}
+}
+
+impl<S: Entry, C: CrudOperation> Action<S, C, TableTarget> {
+	/// Creates a new [`TableTarget`] based operation.
+	pub fn table() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
+	/// Creates a new [`EntryTarget`] based operation.
+	pub fn entry() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
+	/// Changes the [`CrudOperation`] of this [`Action`].
+	pub fn into_operation<O: CrudOperation>(self) -> Action<S, O, T> {
+		Action {
+			inner: self.inner.into_operation(),
+			validated: self.validated,
+		}
 	}
 
-	/// Sets an [`OperationTarget`] for the action.
-	///
-	/// # Panics
-	///
-	/// Panics if the [`OperationTarget`] is an [`OperationTarget::Unknown`].
-	pub fn set_target(&mut self, target: OperationTarget) -> &mut Self {
-		assert!(
-			target != OperationTarget::Unknown,
-			"an unknown operation target was set"
-		);
-		self.inner.set_target(target);
+	/// Changes the [`OpTarget`] of this [`Action`].
+	pub fn into_target<T2: OpTarget>(self) -> Action<S, C, T2> {
+		Action {
+			inner: self.inner.into_target(),
+			validated: self.validated,
+		}
+	}
 
-		self.validated.set(false);
+	/// Sets the [`CrudOperation`] of this [`Action`] to [`CreateOperation`].
+	pub fn into_create(self) -> Action<S, CreateOperation, T> {
+		self.into_operation()
+	}
 
-		self
+	/// Sets the [`CrudOperation`] of this [`Action`] to [`ReadOperation`].
+	pub fn into_read(self) -> Action<S, ReadOperation, T> {
+		self.into_operation()
+	}
+
+	/// Sets the [`CrudOperation`] of this [`Action`] to [`UpdateOperation`].
+	pub fn into_update(self) -> Action<S, UpdateOperation, T> {
+		self.into_operation()
+	}
+
+	/// Sets the [`CrudOperation`] of this [`Action`] to [`DeleteOperation`].
+	pub fn into_delete(self) -> Action<S, DeleteOperation, T> {
+		self.into_operation()
+	}
+
+	/// Sets the [`OpTarget`] of this [`Action`] to [`TableTarget`].
+	pub fn into_table(self) -> Action<S, C, TableTarget> {
+		self.into_target()
+	}
+
+	/// Sets the [`OpTarget`] of this [`Action`] to [`EntryTarget`].
+	pub fn into_entry(self) -> Action<S, C, EntryTarget> {
+		self.into_target()
+	}
+
+	/// Sets the target [`Entry`] of this [`Action`].
+	pub fn with_entry<S2>(self) -> Action<S2, C, T> {
+		Action {
+			inner: self.inner.with_entry(),
+			validated: self.validated,
+		}
 	}
 
 	/// Validates the [`Action`].
@@ -181,7 +258,7 @@ impl<S: Entry> Action<S> {
 	///
 	/// This is unused on [`OperationTarget::Table`] actions.
 	pub fn set_data(&mut self, entity: &S) -> &mut Self {
-		self.inner.set_entity(Box::new(entity.clone()));
+		self.inner.set_entry(Box::new(entity.clone()));
 
 		self
 	}
@@ -216,7 +293,7 @@ impl<S: Entry> Action<S> {
 	}
 }
 
-impl<S: IndexEntry> Action<S> {
+impl<S: IndexEntry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
 	pub fn set_entry(&mut self, entity: &S) -> &mut Self {
 		self.set_key(&entity.key());
@@ -227,7 +304,28 @@ impl<S: IndexEntry> Action<S> {
 	}
 }
 
-impl<S: Entry> Default for Action<S> {
+impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("Action")
+			.field("kind", &self.kind())
+			.field("table_name", &self.inner.table_name)
+			.field("data", &self.inner.data)
+			.field("key", &self.inner.key)
+			.field("target", &self.target())
+			.finish()
+	}
+}
+
+impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
+	fn clone(&self) -> Self {
+		Self {
+			inner: self.inner.clone(),
+			validated: self.validated.clone(),
+		}
+	}
+}
+
+impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	fn default() -> Self {
 		Self {
 			inner: InternalAction::default(),
@@ -239,7 +337,7 @@ impl<S: Entry> Default for Action<S> {
 // This struct is used for database creation and interaction
 // within the crate, and performs no validation
 // to ensure optimizations, and SHOULD NOT be exposed to public API.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub(crate) struct InternalAction<S, C: CrudOperation, T: OpTarget> {
 	kind: PhantomData<C>,
 	table_name: Option<String>,
@@ -248,27 +346,59 @@ pub(crate) struct InternalAction<S, C: CrudOperation, T: OpTarget> {
 	target: PhantomData<T>,
 }
 
-impl<S> InternalAction<S> {
-	pub(crate) const fn new(kind: ActionKind) -> Self {
+impl<S, C: CrudOperation, T: OpTarget> InternalAction<S, C, T> {
+	pub(crate) fn new() -> Self {
 		Self {
-			kind,
+			kind: PhantomData,
 			table_name: None,
 			data: None,
 			key: None,
-			target: OperationTarget::Unknown,
+			target: PhantomData,
 		}
 	}
 
-	pub(crate) const fn kind(&self) -> ActionKind {
-		self.kind
+	#[allow(clippy::unused_self)]
+	pub(crate) fn kind(&self) -> ActionKind {
+		C::kind()
 	}
 
-	pub(crate) const fn target(&self) -> OperationTarget {
-		self.target
+	#[allow(clippy::unused_self)]
+	pub(crate) fn target(&self) -> OperationTarget {
+		T::target()
+	}
+
+	pub(crate) fn into_target<New: OpTarget>(self) -> InternalAction<S, C, New> {
+		InternalAction {
+			kind: PhantomData,
+			table_name: self.table_name,
+			data: self.data,
+			key: self.key,
+			target: PhantomData,
+		}
+	}
+
+	pub(crate) fn into_operation<New: CrudOperation>(self) -> InternalAction<S, New, T> {
+		InternalAction {
+			kind: PhantomData,
+			table_name: self.table_name,
+			data: self.data,
+			key: self.key,
+			target: PhantomData,
+		}
+	}
+
+	pub(crate) fn with_entry<S2>(self) -> InternalAction<S2, C, T> {
+		InternalAction {
+			kind: self.kind,
+			table_name: self.table_name,
+			data: None,
+			key: None,
+			target: self.target,
+		}
 	}
 }
 
-impl<S: Entry> InternalAction<S> {
+impl<S: Entry, C: CrudOperation, O: OpTarget> InternalAction<S, C, O> {
 	pub(crate) fn set_table_name(&mut self, table_name: String) -> &mut Self {
 		self.table_name = Some(table_name);
 
@@ -281,7 +411,7 @@ impl<S: Entry> InternalAction<S> {
 		self
 	}
 
-	pub(crate) fn set_entity(&mut self, entity: Box<S>) -> &mut Self {
+	pub(crate) fn set_entry(&mut self, entity: Box<S>) -> &mut Self {
 		self.data = Some(entity);
 
 		self
@@ -292,128 +422,28 @@ impl<S: Entry> InternalAction<S> {
 
 		self
 	}
-
-	pub(crate) fn set_target(&mut self, target: OperationTarget) -> &mut Self {
-		self.target = target;
-
-		self
-	}
 }
 
-impl<S: Entry> Default for InternalAction<S> {
-	fn default() -> Self {
+impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for InternalAction<S, C, T> {
+	fn clone(&self) -> Self {
 		Self {
-			kind: ActionKind::default(),
-			table_name: Option::default(),
-			data: Option::default(),
-			key: Option::default(),
-			target: OperationTarget::default(),
+			kind: PhantomData,
+			table_name: self.table_name.clone(),
+			data: self.data.clone(),
+			key: self.key.clone(),
+			target: PhantomData,
 		}
 	}
 }
 
-#[cfg(test)]
-mod tests {
-	use std::fmt::Debug;
-
-	use serde::{de::DeserializeOwned, Deserialize, Serialize};
-	use static_assertions::assert_impl_all;
-
-	use super::{Action, ActionKind, OperationTarget};
-	use crate::Entry;
-
-	#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-	struct Settings {
-		key: u32,
-		value: bool,
-		test: u8,
-	}
-
-	assert_impl_all!(
-		Settings: Debug,
-		Clone,
-		Copy,
-		PartialEq,
-		Serialize,
-		DeserializeOwned,
-		Entry
-	);
-
-	#[test]
-	fn basic() {
-		let action = Action::<Settings>::new(ActionKind::Create);
-
-		assert_eq!(action.kind(), ActionKind::Create);
-		assert_eq!(action.target(), OperationTarget::Unknown);
-
-		assert!(action.inner.table_name.is_none());
-		assert!(action.inner.data.is_none());
-
-		assert!(action.validate().is_err());
-	}
-
-	#[test]
-	fn crud_constructors() {
-		let create = Action::<Settings>::create();
-
-		assert_eq!(create.kind(), ActionKind::Create);
-
-		let read = Action::<Settings>::read();
-
-		assert_eq!(read.kind(), ActionKind::Read);
-
-		let update = Action::<Settings>::update();
-
-		assert_eq!(update.kind(), ActionKind::Update);
-
-		let delete = Action::<Settings>::delete();
-
-		assert_eq!(delete.kind(), ActionKind::Delete);
-	}
-
-	#[test]
-	fn default() {
-		let action = Action::<Settings>::default();
-
-		assert_eq!(action.kind(), ActionKind::Read);
-
-		assert!(action.inner.table_name.is_none());
-
-		assert!(action.inner.data.is_none());
-
-		assert!(action.validate().is_err());
-
-		assert_eq!(action.target(), OperationTarget::Unknown);
-	}
-
-	#[test]
-	fn validate() {
-		let mut action = Action::<Settings>::new(ActionKind::Read);
-
-		assert!(action.validate().is_err());
-
-		assert!(!action.is_validated());
-
-		action.set_target(OperationTarget::Table);
-
-		assert!(action.validate().is_ok());
-
-		assert!(action.is_validated());
-
-		action.validate().unwrap();
-
-		assert!(action.is_validated());
-
-		let new_action = action.set_target(OperationTarget::Entry);
-
-		assert!(!new_action.is_validated());
-
-		new_action.set_data(&Settings {
-			key: 7,
-			value: false,
-			test: 74,
-		});
-
-		assert!(new_action.validate().is_ok());
+impl<S: Entry, C: CrudOperation, T: OpTarget> Default for InternalAction<S, C, T> {
+	fn default() -> Self {
+		Self {
+			kind: PhantomData,
+			table_name: Option::default(),
+			data: Option::default(),
+			key: Option::default(),
+			target: PhantomData,
+		}
 	}
 }
