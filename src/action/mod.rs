@@ -13,9 +13,7 @@ use std::{
 	marker::PhantomData,
 };
 
-use serde::{
-	Serialize, Deserialize
-};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[doc(inline)]
