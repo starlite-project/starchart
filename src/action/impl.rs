@@ -15,6 +15,10 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 		self,
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send>>;
+
+	// TODO: move `Action::validate` logic into this function.
+	#[doc(hidden)]
+	unsafe fn __validate(&self) -> Result<(), super::ActionError>;
 }
 
 /// Marker type for a Create operation.

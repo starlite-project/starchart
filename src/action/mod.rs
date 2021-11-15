@@ -34,14 +34,25 @@ use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+impl<S: Entry + 'static, E: Error> ActionRunner<(), ActionError<E>>
 	for Action<S, CreateOperation, EntryTarget>
 {
 	unsafe fn __run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
-		Box::pin(async move { todo!() })
+		Box::pin(async move { 
+			// SAFETY: table_name is asserted to be true in `Action::validate`
+			let table_name = self.inner.table_name.unwrap_unchecked();
+
+			let entry = self.inner.data.unwrap_unchecked();
+
+			todo!()
+		 })
+	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
 	}
 }
 
@@ -54,6 +65,10 @@ impl<S: Entry, E: Error> ActionRunner<S, ActionError<E>> for Action<S, ReadOpera
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<S, ActionError<E>>> + Send>> {
 		Box::pin(async move { todo!() })
+	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
 	}
 }
 
@@ -69,6 +84,10 @@ impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
+	}
 }
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
@@ -82,6 +101,10 @@ impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
 		Box::pin(async move { todo!() })
+	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
 	}
 }
 
@@ -97,6 +120,10 @@ impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
+	}
 }
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
@@ -110,6 +137,10 @@ impl<S: Entry, E: Error> ActionRunner<Vec<S>, ActionError<E>>
 {
 	unsafe fn __run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S, E> {
 		Box::pin(async move { todo!() })
+	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
 	}
 }
 
@@ -127,6 +158,10 @@ impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
 		Box::pin(async move { todo!() })
+	}
+
+	unsafe fn __validate(&self) -> Result<(), ActionError> {
+		self.validate()
 	}
 }
 

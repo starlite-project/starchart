@@ -11,11 +11,11 @@ use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
 use crate::{
-	action::{ActionRunner, CrudOperation, OpTarget},
+	action::{ActionError, ActionRunner},
 	atomics::AtomicGuard,
 	backend::Backend,
 	database::DatabaseError,
-	Action, Database, Entry,
+	Database, Entry,
 };
 
 /// An immutable reference to a [`Database`].
@@ -120,8 +120,11 @@ impl<B: Backend> Gateway<B> {
 	pub async fn run<Success, Failure>(
 		&self,
 		action: impl ActionRunner<Success, Failure>,
-	) -> Result<Success, Failure> {
-		unsafe { action.__run(self).await }
+	) -> Result<Result<Success, Failure>, ActionError> {
+		unsafe {
+			action.__validate()?;
+			Ok(action.__run(self).await)
+		}
 	}
 
 	/// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
