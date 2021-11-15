@@ -34,7 +34,7 @@ impl GuardKind {
 /// The mechanism used to allow multiple readers and only one writer
 /// to access a shared database.
 ///
-/// This uses [`parking_lot`]'s [`RawRwLock`] internally.
+/// This uses [`std`]'s [`RwLock`] internally.
 ///
 /// # Examples
 ///
@@ -104,19 +104,19 @@ impl AtomicGuard {
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
-	#[cfg(not(tarpaulin_include))]
+	// #[cfg(not(tarpaulin_include))]
 	pub fn is_locked(&self) -> bool {
 		self.kind() != GuardKind::Unlocked
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked exclusively.
-	#[cfg(not(tarpaulin_include))]
+	// #[cfg(not(tarpaulin_include))]
 	pub fn is_exclusive(&self) -> bool {
 		self.kind() == GuardKind::Exclusive
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked shared.
-	#[cfg(not(tarpaulin_include))]
+	// #[cfg(not(tarpaulin_include))]
 	pub fn is_shared(&self) -> bool {
 		self.kind() == GuardKind::Shared
 	}
@@ -255,7 +255,7 @@ mod tests {
 	// works with cargo test but not cargo tarpaulin, and only in CI
 	// more investigation needed
 	#[test]
-	#[cfg_attr(tarpaulin, ignore)]
+	// #[cfg_attr(tarpaulin, ignore)]
 	fn guards() {
 		let state = Arc::new(AtomicGuard::new());
 
