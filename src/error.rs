@@ -10,7 +10,10 @@ pub use crate::backend::CacheError;
 #[doc(cfg(feature = "json"))]
 pub use crate::backend::JsonError;
 #[doc(inline)]
-pub use crate::{action::{ActionValidationError, ActionRunError}, database::DatabaseError};
+pub use crate::{
+	action::{ActionRunError, ActionValidationError},
+	database::DatabaseError,
+};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.

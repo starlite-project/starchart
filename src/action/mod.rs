@@ -4,11 +4,11 @@
 
 // TODO: move error types to their own module and clean up all the impl blocks
 
+mod error;
 mod r#impl;
 mod kind;
 pub mod result;
 mod target;
-mod error;
 
 use std::{
 	error::Error,
@@ -23,6 +23,7 @@ use thiserror::Error;
 
 #[doc(inline)]
 pub use self::{
+	error::{ActionRunError, ActionValidationError},
 	kind::ActionKind,
 	r#impl::{
 		ActionRunner, CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget,
@@ -30,7 +31,6 @@ pub use self::{
 	},
 	result::ActionResult,
 	target::OperationTarget,
-	error::{ActionRunError, ActionValidationError},
 };
 use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 
@@ -79,9 +79,7 @@ impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, Entr
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
-impl<S: Entry> ActionRunner<(), ActionRunError>
-	for Action<S, UpdateOperation, EntryTarget>
-{
+impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, UpdateOperation, EntryTarget> {
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
@@ -97,9 +95,7 @@ impl<S: Entry> ActionRunner<(), ActionRunError>
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
 
-impl<S: Entry> ActionRunner<bool, ActionRunError>
-	for Action<S, DeleteOperation, EntryTarget>
-{
+impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation, EntryTarget> {
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
@@ -115,9 +111,7 @@ impl<S: Entry> ActionRunner<bool, ActionRunError>
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
-impl<S: Entry> ActionRunner<(), ActionRunError>
-	for Action<S, CreateOperation, TableTarget>
-{
+impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, CreateOperation, TableTarget> {
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
@@ -136,9 +130,7 @@ pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
 // this is only here to satisfy the `clippy::type_complexity` lint
 type ReadTableResult<S> = Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send>>;
 
-impl<S: Entry> ActionRunner<Vec<S>, ActionRunError>
-	for Action<S, ReadOperation, TableTarget>
-{
+impl<S: Entry> ActionRunner<Vec<S>, ActionRunError> for Action<S, ReadOperation, TableTarget> {
 	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S> {
 		Box::pin(async move { todo!() })
 	}
@@ -154,9 +146,7 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
-impl<S: Entry> ActionRunner<bool, ActionRunError>
-	for Action<S, DeleteOperation, TableTarget>
-{
+impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation, TableTarget> {
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,

@@ -11,7 +11,7 @@ use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
 use crate::{
-	action::{ActionValidationError, ActionRunner},
+	action::{ActionRunner, ActionValidationError},
 	atomics::AtomicGuard,
 	backend::Backend,
 	database::DatabaseError,
