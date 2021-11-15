@@ -7,10 +7,13 @@ use crate::{backend::Backend, Gateway};
 
 /// The marker trait for all action runs, this trait should not be used and is only used
 /// to make the return type of [`Gateway::run`] easily known.
+/// 
+/// See [`Actions trait-implementations`] for more information.
 ///
 /// This trait is sealed and cannot be implemented outside of this crate.
 ///
 /// [`Gateway::run`]: crate::Gateway::run
+/// [`Actions trait-implementations`]: crate::action::Action#trait-implementations
 pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	#[doc(hidden)]
 	unsafe fn run<B: Backend>(

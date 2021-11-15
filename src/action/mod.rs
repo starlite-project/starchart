@@ -2,7 +2,7 @@
 
 //! The action structs for CRUD operations.
 
-// TODO: move error types to their own module and clean up all the impl blocks
+// TODO: Add overwrite option.
 
 mod error;
 mod r#impl;
@@ -41,9 +41,9 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
 		Box::pin(async move {
-			let table_name = self.inner.table_name.unwrap();
+			let table_name = self.table.unwrap_unchecked();
 
-			let entry = self.inner.data.unwrap();
+			let entry = self.data.unwrap_unchecked();
 
 			todo!()
 		})
@@ -140,6 +140,8 @@ impl<S: Entry> ActionRunner<Vec<S>, ActionRunError> for Action<S, ReadOperation,
 }
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
+///
+/// This action can never been ran.
 pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
@@ -165,39 +167,57 @@ impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation,
 #[derive(Serialize, Deserialize)]
 #[must_use = "an action alone has no side effects"]
 pub struct Action<S, C: CrudOperation, T: OpTarget> {
-	pub(crate) inner: InternalAction<S, C, T>,
+	data: Option<Box<S>>,
+	key: Option<String>,
+	table: Option<String>,
+	kind: PhantomData<C>,
+	target: PhantomData<T>,
 }
 
 impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
 	pub fn new() -> Self {
 		Self {
-			inner: InternalAction::new(),
+			data: None,
+			key: None,
+			table: None,
+			kind: PhantomData,
+			target: PhantomData,
 		}
 	}
 
 	/// Returns the [`ActionKind`] we will be performing with said action.
+	#[allow(clippy::unused_self)]
 	pub fn kind(&self) -> ActionKind {
-		self.inner.kind()
+		C::kind()
 	}
 
 	/// Returns the [`OperationTarget`] we will be performing with said action.
 	#[must_use]
+	#[allow(clippy::unused_self)]
 	pub fn target(&self) -> OperationTarget {
-		self.inner.target()
+		T::target()
 	}
 
 	/// Changes the [`CrudOperation`] of this [`Action`].
 	pub fn into_operation<O: CrudOperation>(self) -> Action<S, O, T> {
 		Action {
-			inner: self.inner.into_operation(),
+			data: self.data,
+			key: self.key,
+			table: self.table,
+			kind: PhantomData,
+			target: PhantomData,
 		}
 	}
 
 	/// Changes the [`OpTarget`] of this [`Action`].
 	pub fn into_target<T2: OpTarget>(self) -> Action<S, C, T2> {
 		Action {
-			inner: self.inner.into_target(),
+			data: self.data,
+			key: self.key,
+			table: self.table,
+			kind: PhantomData,
+			target: PhantomData,
 		}
 	}
 
@@ -234,7 +254,11 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Sets the target [`Entry`] of this [`Action`].
 	pub fn with_entry<S2>(self) -> Action<S2, C, T> {
 		Action {
-			inner: self.inner.with_entry(),
+			data: None,
+			key: self.key,
+			table: self.table,
+			kind: PhantomData,
+			target: PhantomData,
 		}
 	}
 
@@ -245,7 +269,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	///
 	/// This is unused on [`OperationTarget::Table`] actions.
 	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
-		self.inner.set_key(key.to_key());
+		self.key = Some(key.to_key());
 
 		self
 	}
@@ -254,13 +278,13 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	///
 	/// This is unused on [`OperationTarget::Table`] actions.
 	pub fn set_data(&mut self, entity: &S) -> &mut Self {
-		self.inner.set_entry(Box::new(entity.clone()));
+		self.data = Some(Box::new(entity.clone()));
 
 		self
 	}
 
 	fn validate_key(&self) -> Result<(), ActionValidationError> {
-		if self.inner.key.is_none() {
+		if self.key.is_none() {
 			return Err(ActionValidationError::Key);
 		}
 
@@ -268,7 +292,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	}
 
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
-		if self.inner.table_name.is_none() {
+		if self.table.is_none() {
 			return Err(ActionValidationError::Table);
 		}
 
@@ -276,7 +300,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	}
 
 	fn validate_data(&self) -> Result<(), ActionValidationError> {
-		if self.inner.data.is_none() {
+		if self.data.is_none() {
 			return Err(ActionValidationError::Data);
 		}
 
@@ -284,6 +308,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	}
 }
 
+// Crud helpers
 impl<S: Entry, T: OpTarget> Action<S, CreateOperation, T> {
 	/// Begins a [`CreateOperation`] action.
 	pub fn create() -> Self {
@@ -312,6 +337,7 @@ impl<S: Entry, T: OpTarget> Action<S, DeleteOperation, T> {
 	}
 }
 
+// Target helpers
 impl<S: Entry, C: CrudOperation> Action<S, C, TableTarget> {
 	/// Creates a new [`TableTarget`] based operation.
 	pub fn table() -> Self {
@@ -322,6 +348,58 @@ impl<S: Entry, C: CrudOperation> Action<S, C, TableTarget> {
 impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// Creates a new [`EntryTarget`] based operation.
 	pub fn entry() -> Self {
+		Self::new()
+	}
+}
+
+// Combined helpers
+impl<S: Entry> Action<S, CreateOperation, TableTarget> {
+	/// Creates a new [`CreateOperation`] based [`TableTarget`] operation. 
+	pub fn create_table() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry> Action<S, ReadOperation, TableTarget> {
+	/// Creates a new [`ReadOperation`] based [`TableTarget`] operation.
+	pub fn read_table() -> Self {
+		Self::new()
+	}
+}
+
+// Update table is specifically omitted as it's unsupported
+
+impl<S: Entry> Action<S, DeleteOperation, TableTarget> {
+	/// Creates a new [`DeleteOperation`] based [`TableTarget`] operation.
+	pub fn delete_table() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry> Action<S, CreateOperation, EntryTarget> {
+	/// Creates a new [`CreateOperation`] based [`EntryTarget`] operation.
+	pub fn create_entry() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry> Action<S, ReadOperation, EntryTarget> {
+	/// Creates a new [`ReadOperation`] based [`EntryTarget`] operation.
+	pub fn read_entry() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry> Action<S, UpdateOperation, EntryTarget> {
+	/// Creates a new [`UpdateOperation`] based [`EntryTarget`] operation.
+	pub fn update_entry() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry> Action<S, DeleteOperation, EntryTarget> {
+	/// Creates a new [`DeleteOperation`] based [`EntryTarget`] operation.
+	pub fn delete_entry() -> Self {
 		Self::new()
 	}
 }
@@ -341,9 +419,9 @@ impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> 
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("Action")
 			.field("kind", &self.kind())
-			.field("table_name", &self.inner.table_name)
-			.field("data", &self.inner.data)
-			.field("key", &self.inner.key)
+			.field("table", &self.table)
+			.field("data", &self.data)
+			.field("key", &self.key)
 			.field("target", &self.target())
 			.finish()
 	}
@@ -352,7 +430,11 @@ impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> 
 impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
 	fn clone(&self) -> Self {
 		Self {
-			inner: self.inner.clone(),
+			data: self.data.clone(),
+			key: self.key.clone(),
+			table: self.table.clone(),
+			kind: PhantomData,
+			target: PhantomData,
 		}
 	}
 }
@@ -360,122 +442,10 @@ impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> 
 impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	fn default() -> Self {
 		Self {
-			inner: InternalAction::default(),
-		}
-	}
-}
-
-// This struct is used for database creation and interaction
-// within the crate, and performs no validation
-// to ensure optimizations, and SHOULD NOT be exposed to public API.
-
-// TODO: merge this into Action
-#[derive(Serialize, Deserialize)]
-pub(crate) struct InternalAction<S, C: CrudOperation, T: OpTarget> {
-	kind: PhantomData<C>,
-	table_name: Option<String>,
-	data: Option<Box<S>>,
-	key: Option<String>,
-	target: PhantomData<T>,
-}
-
-impl<S, C: CrudOperation, T: OpTarget> InternalAction<S, C, T> {
-	pub(crate) fn new() -> Self {
-		Self {
-			kind: PhantomData,
-			table_name: None,
 			data: None,
 			key: None,
-			target: PhantomData,
-		}
-	}
-
-	#[allow(clippy::unused_self)]
-	pub(crate) fn kind(&self) -> ActionKind {
-		C::kind()
-	}
-
-	#[allow(clippy::unused_self)]
-	pub(crate) fn target(&self) -> OperationTarget {
-		T::target()
-	}
-
-	pub(crate) fn into_target<New: OpTarget>(self) -> InternalAction<S, C, New> {
-		InternalAction {
+			table: None,
 			kind: PhantomData,
-			table_name: self.table_name,
-			data: self.data,
-			key: self.key,
-			target: PhantomData,
-		}
-	}
-
-	pub(crate) fn into_operation<New: CrudOperation>(self) -> InternalAction<S, New, T> {
-		InternalAction {
-			kind: PhantomData,
-			table_name: self.table_name,
-			data: self.data,
-			key: self.key,
-			target: PhantomData,
-		}
-	}
-
-	pub(crate) fn with_entry<S2>(self) -> InternalAction<S2, C, T> {
-		InternalAction {
-			kind: self.kind,
-			table_name: self.table_name,
-			data: None,
-			key: None,
-			target: self.target,
-		}
-	}
-}
-
-impl<S: Entry, C: CrudOperation, O: OpTarget> InternalAction<S, C, O> {
-	pub(crate) fn set_table_name(&mut self, table_name: String) -> &mut Self {
-		self.table_name = Some(table_name);
-
-		self
-	}
-
-	pub(crate) fn set_key(&mut self, key: String) -> &mut Self {
-		self.key = Some(key);
-
-		self
-	}
-
-	pub(crate) fn set_entry(&mut self, entity: Box<S>) -> &mut Self {
-		self.data = Some(entity);
-
-		self
-	}
-
-	pub(crate) fn set_data(&mut self, data: S) -> &mut Self {
-		self.data = Some(Box::new(data));
-
-		self
-	}
-}
-
-impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for InternalAction<S, C, T> {
-	fn clone(&self) -> Self {
-		Self {
-			kind: PhantomData,
-			table_name: self.table_name.clone(),
-			data: self.data.clone(),
-			key: self.key.clone(),
-			target: PhantomData,
-		}
-	}
-}
-
-impl<S: Entry, C: CrudOperation, T: OpTarget> Default for InternalAction<S, C, T> {
-	fn default() -> Self {
-		Self {
-			kind: PhantomData,
-			table_name: Option::default(),
-			data: Option::default(),
-			key: Option::default(),
 			target: PhantomData,
 		}
 	}
