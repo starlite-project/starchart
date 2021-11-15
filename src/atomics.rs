@@ -104,19 +104,16 @@ impl AtomicGuard {
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked in any fashion.
-	// #[cfg(not(tarpaulin_include))]
 	pub fn is_locked(&self) -> bool {
 		self.kind() != GuardKind::Unlocked
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked exclusively.
-	// #[cfg(not(tarpaulin_include))]
 	pub fn is_exclusive(&self) -> bool {
 		self.kind() == GuardKind::Exclusive
 	}
 
 	/// Checks whether the [`AtomicGuard`] is currently locked shared.
-	// #[cfg(not(tarpaulin_include))]
 	pub fn is_shared(&self) -> bool {
 		self.kind() == GuardKind::Shared
 	}
@@ -252,10 +249,7 @@ mod tests {
 		assert_eq!(formatted, "AtomicGuard");
 	}
 
-	// works with cargo test but not cargo tarpaulin, and only in CI
-	// more investigation needed
 	#[test]
-	// #[cfg_attr(tarpaulin, ignore)]
 	fn guards() {
 		let state = Arc::new(AtomicGuard::new());
 
