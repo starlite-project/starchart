@@ -18,7 +18,7 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 
 	// TODO: move `Action::validate` logic into this function.
 	#[doc(hidden)]
-	fn validate(&self) -> Result<(), super::ActionError>;
+	fn validate(&self) -> Result<(), super::ActionValidationError>;
 }
 
 /// Marker type for a Create operation.

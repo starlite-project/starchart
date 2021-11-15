@@ -8,6 +8,7 @@ mod r#impl;
 mod kind;
 pub mod result;
 mod target;
+mod error;
 
 use std::{
 	error::Error,
@@ -29,6 +30,7 @@ pub use self::{
 	},
 	result::ActionResult,
 	target::OperationTarget,
+	error::{ActionRunError, ActionValidationError},
 };
 use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 
@@ -51,7 +53,7 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 		})
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		self.validate_key()?;
 
 		Ok(())
@@ -69,7 +71,7 @@ impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, Entr
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
 }
@@ -87,7 +89,7 @@ impl<S: Entry> ActionRunner<(), ActionRunError>
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
 }
@@ -105,7 +107,7 @@ impl<S: Entry> ActionRunner<bool, ActionRunError>
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
 }
@@ -123,7 +125,7 @@ impl<S: Entry> ActionRunner<(), ActionRunError>
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
 }
@@ -141,7 +143,7 @@ impl<S: Entry> ActionRunner<Vec<S>, ActionRunError>
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
 }
@@ -162,43 +164,9 @@ impl<S: Entry> ActionRunner<bool, ActionRunError>
 		Box::pin(async move { todo!() })
 	}
 
-	fn validate(&self) -> Result<(), ActionError> {
+	fn validate(&self) -> Result<(), ActionValidationError> {
 		todo!()
 	}
-}
-
-/// An error occurred during validation of an [`Action`].
-#[derive(Debug, Error)]
-#[non_exhaustive]
-pub enum ActionError<E: Error = !> {
-	/// The [`OperationTarget`] was not set.
-	#[error("an invalid operation was set")]
-	InvalidOperation,
-	/// No data was passed when data was expected.
-	#[error("no data was given when data was expected")]
-	NoData,
-	/// No key was passed when a key was expected.
-	#[error("no key was given when a key was expected.")]
-	NoKey,
-	/// Attempted to [`ActionKind::Update`] an [`OperationTarget::Table`].
-	#[error("updating an entire table is unsupported")]
-	UpdatingTable,
-	/// An error occurred from the [`Backend`].
-	///
-	/// [`Backend`]: crate::backend::Backend
-	#[error(transparent)]
-	Backend(#[from] E),
-	/// No table was provided.
-	#[error("no table was provided")]
-	NoTable,
-}
-
-/// An error that occurred from running an [`Action`].
-#[derive(Debug, Error)]
-#[error("an error occurred running the action")]
-pub struct ActionRunError {
-	#[from]
-	source: Box<dyn std::error::Error + Send + Sync>,
 }
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
@@ -230,9 +198,9 @@ impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.inner.target()
 	}
 
-	fn validate_key(&self) -> Result<(), ActionError> {
+	fn validate_key(&self) -> Result<(), ActionValidationError> {
 		if self.inner.key.is_none() {
-			return Err(ActionError::NoKey);
+			return Err(ActionValidationError::NoKey);
 		}
 
 		Ok(())

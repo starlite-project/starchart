@@ -11,7 +11,7 @@ use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
 
 use crate::{
-	action::{ActionError, ActionRunner},
+	action::{ActionValidationError, ActionRunner},
 	atomics::AtomicGuard,
 	backend::Backend,
 	database::DatabaseError,
@@ -120,7 +120,7 @@ impl<B: Backend> Gateway<B> {
 	pub async fn run<Success, Failure>(
 		&self,
 		action: impl ActionRunner<Success, Failure>,
-	) -> Result<Result<Success, Failure>, ActionError> {
+	) -> Result<Result<Success, Failure>, ActionValidationError> {
 		unsafe {
 			action.validate()?;
 			Ok(action.run(self).await)
