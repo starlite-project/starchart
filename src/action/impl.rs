@@ -8,6 +8,8 @@ use crate::{backend::Backend, Gateway};
 /// The marker trait for all action runs, this trait should not be used and is only used
 /// to make the return type of [`Gateway::run`] easily known.
 ///
+/// This trait is sealed and cannot be implemented outside of this crate.
+///
 /// [`Gateway::run`]: crate::Gateway::run
 pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	#[doc(hidden)]
@@ -16,8 +18,21 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send>>;
 
-	// TODO: move `Action::validate` logic into this function.
-	#[doc(hidden)]
+	/// Validates that the [`Action`] has been created correctly.
+	///
+	/// Each individual implementation of this is specialized, for example,
+	/// creating a table doesn't have to check for a valid key to have been set.
+	///
+	/// If calling [`Self::run`] manually, this should be called first to avoid any unwanted behavior when performing
+	/// database operations.
+	///
+	/// [`Action`]: crate::action::Action
+	///
+	/// # Errors
+	///
+	/// Any type of [`ActionValidationError`] that can arise.
+	///
+	/// [`ActionValidationError`]: crate::action::ActionValidationError
 	fn validate(&self) -> Result<(), super::ActionValidationError>;
 }
 

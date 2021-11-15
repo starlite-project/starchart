@@ -117,6 +117,8 @@ impl<B: Backend> Gateway<B> {
 	/// # Errors
 	///
 	/// Anything that the [`Action`] could return while running.
+	///
+	/// [`Action`]: crate::action::Action
 	pub async fn run<Success, Failure>(
 		&self,
 		action: impl ActionRunner<Success, Failure>,

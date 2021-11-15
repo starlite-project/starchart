@@ -1,4 +1,4 @@
-use std::fmt::{Display, Error as FmtError, Formatter, Result as FmtResult};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,15 +11,11 @@ pub enum OperationTarget {
 	Table,
 	/// The operation will be performed on a single entry.
 	Entry,
-	/// An unknown operation will occur, this raises an error if it's set when [`Action::validate`] is called.
-	///
-	/// [`Action::validate`]: crate::action::Action::validate
-	Unknown,
 }
 
 impl Default for OperationTarget {
 	fn default() -> Self {
-		Self::Unknown
+		Self::Entry
 	}
 }
 
@@ -28,7 +24,6 @@ impl Display for OperationTarget {
 		match self {
 			Self::Table => f.write_str("Table"),
 			Self::Entry => f.write_str("Entry"),
-			Self::Unknown => Err(FmtError),
 		}
 	}
 }

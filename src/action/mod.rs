@@ -1,4 +1,4 @@
-#![allow(missing_copy_implementations)]
+#![allow(unused_variables)]
 
 //! The action structs for CRUD operations.
 
@@ -7,11 +7,9 @@
 mod error;
 mod r#impl;
 mod kind;
-pub mod result;
 mod target;
 
 use std::{
-	error::Error,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	marker::PhantomData,
@@ -19,7 +17,6 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 #[doc(inline)]
 pub use self::{
@@ -29,7 +26,6 @@ pub use self::{
 		ActionRunner, CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget,
 		ReadOperation, TableTarget, UpdateOperation,
 	},
-	result::ActionResult,
 	target::OperationTarget,
 };
 use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
@@ -54,9 +50,8 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_key()?;
-
-		Ok(())
+		self.validate_table()?;
+		self.validate_key()
 	}
 }
 
@@ -72,7 +67,8 @@ impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, Entr
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()?;
+		self.validate_key()
 	}
 }
 
@@ -88,7 +84,9 @@ impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, UpdateOperation, E
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()?;
+		self.validate_key()?;
+		self.validate_data()
 	}
 }
 
@@ -104,7 +102,8 @@ impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation,
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()?;
+		self.validate_key()
 	}
 }
 
@@ -120,7 +119,7 @@ impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, CreateOperation, T
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()
 	}
 }
 
@@ -136,7 +135,7 @@ impl<S: Entry> ActionRunner<Vec<S>, ActionRunError> for Action<S, ReadOperation,
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()
 	}
 }
 
@@ -155,7 +154,7 @@ impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation,
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
-		todo!()
+		self.validate_table()
 	}
 }
 
@@ -169,7 +168,7 @@ pub struct Action<S, C: CrudOperation, T: OpTarget> {
 	pub(crate) inner: InternalAction<S, C, T>,
 }
 
-impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
+impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
 	pub fn new() -> Self {
 		Self {
@@ -188,58 +187,6 @@ impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.inner.target()
 	}
 
-	fn validate_key(&self) -> Result<(), ActionValidationError> {
-		if self.inner.key.is_none() {
-			return Err(ActionValidationError::NoKey);
-		}
-
-		Ok(())
-	}
-}
-
-impl<S: Entry, T: OpTarget> Action<S, CreateOperation, T> {
-	/// Begins a [`CreateOperation`] action.
-	pub fn create() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, T: OpTarget> Action<S, ReadOperation, T> {
-	/// Begins a [`ReadOperation`] action.
-	pub fn read() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, T: OpTarget> Action<S, UpdateOperation, T> {
-	/// Begins an [`UpdateOperation`] action.
-	pub fn update() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, T: OpTarget> Action<S, DeleteOperation, T> {
-	/// Begins a [`DeleteOperation`] action.
-	pub fn delete() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, C: CrudOperation> Action<S, C, TableTarget> {
-	/// Creates a new [`TableTarget`] based operation.
-	pub fn table() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
-	/// Creates a new [`EntryTarget`] based operation.
-	pub fn entry() -> Self {
-		Self::new()
-	}
-}
-
-impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Changes the [`CrudOperation`] of this [`Action`].
 	pub fn into_operation<O: CrudOperation>(self) -> Action<S, O, T> {
 		Action {
@@ -310,6 +257,72 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.inner.set_entry(Box::new(entity.clone()));
 
 		self
+	}
+
+	fn validate_key(&self) -> Result<(), ActionValidationError> {
+		if self.inner.key.is_none() {
+			return Err(ActionValidationError::Key);
+		}
+
+		Ok(())
+	}
+
+	fn validate_table(&self) -> Result<(), ActionValidationError> {
+		if self.inner.table_name.is_none() {
+			return Err(ActionValidationError::Table);
+		}
+
+		Ok(())
+	}
+
+	fn validate_data(&self) -> Result<(), ActionValidationError> {
+		if self.inner.data.is_none() {
+			return Err(ActionValidationError::Data);
+		}
+
+		Ok(())
+	}
+}
+
+impl<S: Entry, T: OpTarget> Action<S, CreateOperation, T> {
+	/// Begins a [`CreateOperation`] action.
+	pub fn create() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, T: OpTarget> Action<S, ReadOperation, T> {
+	/// Begins a [`ReadOperation`] action.
+	pub fn read() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, T: OpTarget> Action<S, UpdateOperation, T> {
+	/// Begins an [`UpdateOperation`] action.
+	pub fn update() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, T: OpTarget> Action<S, DeleteOperation, T> {
+	/// Begins a [`DeleteOperation`] action.
+	pub fn delete() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, C: CrudOperation> Action<S, C, TableTarget> {
+	/// Creates a new [`TableTarget`] based operation.
+	pub fn table() -> Self {
+		Self::new()
+	}
+}
+
+impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
+	/// Creates a new [`EntryTarget`] based operation.
+	pub fn entry() -> Self {
+		Self::new()
 	}
 }
 
