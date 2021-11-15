@@ -34,13 +34,13 @@ use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
-impl<S: Entry + 'static, E: Error> ActionRunner<(), ActionError<E>>
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
 		Box::pin(async move {
 			// SAFETY: table_name is asserted to be true in `Action::validate`
 			let table_name = self.inner.table_name.unwrap_unchecked();
@@ -51,78 +51,80 @@ impl<S: Entry + 'static, E: Error> ActionRunner<(), ActionError<E>>
 		})
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		self.validate_key()?;
+
+		Ok(())
 	}
 }
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<S, ActionError<E>> for Action<S, ReadOperation, EntryTarget> {
-	unsafe fn __run<B: Backend>(
+impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, EntryTarget> {
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<S, ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<S, ActionRunError>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+impl<S: Entry> ActionRunner<(), ActionRunError>
 	for Action<S, UpdateOperation, EntryTarget>
 {
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
+impl<S: Entry> ActionRunner<bool, ActionRunError>
 	for Action<S, DeleteOperation, EntryTarget>
 {
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
+impl<S: Entry> ActionRunner<(), ActionRunError>
 	for Action<S, CreateOperation, TableTarget>
 {
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
@@ -130,17 +132,17 @@ impl<S: Entry, E: Error> ActionRunner<(), ActionError<E>>
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
 
 // this is only here to satisfy the `clippy::type_complexity` lint
-type ReadTableResult<S, E> = Pin<Box<dyn Future<Output = Result<Vec<S>, ActionError<E>>> + Send>>;
+type ReadTableResult<S> = Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send>>;
 
-impl<S: Entry, E: Error> ActionRunner<Vec<S>, ActionError<E>>
+impl<S: Entry> ActionRunner<Vec<S>, ActionRunError>
 	for Action<S, ReadOperation, TableTarget>
 {
-	unsafe fn __run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S, E> {
+	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
@@ -150,18 +152,18 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
-impl<S: Entry, E: Error> ActionRunner<bool, ActionError<E>>
+impl<S: Entry> ActionRunner<bool, ActionRunError>
 	for Action<S, DeleteOperation, TableTarget>
 {
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionError<E>>> + Send>> {
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send>> {
 		Box::pin(async move { todo!() })
 	}
 
-	unsafe fn __validate(&self) -> Result<(), ActionError> {
-		self.validate()
+	fn validate(&self) -> Result<(), ActionError> {
+		todo!()
 	}
 }
 
@@ -191,6 +193,14 @@ pub enum ActionError<E: Error = !> {
 	NoTable,
 }
 
+/// An error that occurred from running an [`Action`].
+#[derive(Debug, Error)]
+#[error("an error occurred running the action")]
+pub struct ActionRunError {
+	#[from]
+	source: Box<dyn std::error::Error + Send + Sync>,
+}
+
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
 ///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
@@ -199,7 +209,6 @@ pub enum ActionError<E: Error = !> {
 #[must_use = "an action alone has no side effects"]
 pub struct Action<S, C: CrudOperation, T: OpTarget> {
 	pub(crate) inner: InternalAction<S, C, T>,
-	pub(crate) validated: Cell<bool>,
 }
 
 impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
@@ -207,7 +216,6 @@ impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn new() -> Self {
 		Self {
 			inner: InternalAction::new(),
-			validated: Cell::new(false),
 		}
 	}
 
@@ -222,10 +230,12 @@ impl<S, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.inner.target()
 	}
 
-	/// Whether the [`Action`] has been validated.
-	#[must_use]
-	pub fn is_validated(&self) -> bool {
-		self.validated.get()
+	fn validate_key(&self) -> Result<(), ActionError> {
+		if self.inner.key.is_none() {
+			return Err(ActionError::NoKey);
+		}
+
+		Ok(())
 	}
 }
 
@@ -276,7 +286,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn into_operation<O: CrudOperation>(self) -> Action<S, O, T> {
 		Action {
 			inner: self.inner.into_operation(),
-			validated: self.validated,
 		}
 	}
 
@@ -284,7 +293,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn into_target<T2: OpTarget>(self) -> Action<S, C, T2> {
 		Action {
 			inner: self.inner.into_target(),
-			validated: self.validated,
 		}
 	}
 
@@ -322,45 +330,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn with_entry<S2>(self) -> Action<S2, C, T> {
 		Action {
 			inner: self.inner.with_entry(),
-			validated: self.validated,
 		}
-	}
-
-	/// Validates the [`Action`].
-	///
-	/// This is a no-op if the [`Action`] has already been validated.
-	///
-	/// # Errors
-	///
-	/// Returns an [`ActionError::InvalidOperation`] if the [`Action`] has not set an [`OperationTarget`].
-	pub fn validate(&self) -> Result<(), ActionError> {
-		if self.is_validated() {
-			return Ok(());
-		}
-
-		if self.target() == OperationTarget::Unknown {
-			return Err(ActionError::InvalidOperation);
-		}
-
-		if self.needs_data() && self.inner.data.is_none() {
-			return Err(ActionError::NoData);
-		}
-
-		if self.needs_key() && self.inner.key.is_none() {
-			return Err(ActionError::NoKey);
-		}
-
-		if self.is_updating_table() {
-			return Err(ActionError::UpdatingTable);
-		}
-
-		if self.inner.key.is_none() {
-			return Err(ActionError::NoTable);
-		}
-
-		self.validated.set(true);
-
-		Ok(())
 	}
 
 	/// Sets the key for the action.
@@ -372,8 +342,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
 		self.inner.set_key(key.to_key());
 
-		self.validated.set(false);
-
 		self
 	}
 
@@ -384,35 +352,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.inner.set_entry(Box::new(entity.clone()));
 
 		self
-	}
-
-	// Updating tables is unsupported
-	fn is_updating_table(&self) -> bool {
-		self.kind() == ActionKind::Update && self.target() == OperationTarget::Table
-	}
-
-	fn needs_data(&self) -> bool {
-		if self.kind() == ActionKind::Read {
-			return false;
-		}
-
-		if self.kind() == ActionKind::Delete {
-			return false;
-		}
-
-		if self.target() == OperationTarget::Table {
-			return false;
-		}
-
-		true
-	}
-
-	fn needs_key(&self) -> bool {
-		if self.target() == OperationTarget::Table {
-			return false;
-		}
-
-		true
 	}
 }
 
@@ -443,7 +382,6 @@ impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> 
 	fn clone(&self) -> Self {
 		Self {
 			inner: self.inner.clone(),
-			validated: self.validated.clone(),
 		}
 	}
 }
@@ -452,7 +390,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	fn default() -> Self {
 		Self {
 			inner: InternalAction::default(),
-			validated: Cell::default(),
 		}
 	}
 }
@@ -460,6 +397,8 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 // This struct is used for database creation and interaction
 // within the crate, and performs no validation
 // to ensure optimizations, and SHOULD NOT be exposed to public API.
+
+// TODO: merge this into Action
 #[derive(Serialize, Deserialize)]
 pub(crate) struct InternalAction<S, C: CrudOperation, T: OpTarget> {
 	kind: PhantomData<C>,

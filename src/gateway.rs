@@ -122,8 +122,8 @@ impl<B: Backend> Gateway<B> {
 		action: impl ActionRunner<Success, Failure>,
 	) -> Result<Result<Success, Failure>, ActionError> {
 		unsafe {
-			action.__validate()?;
-			Ok(action.__run(self).await)
+			action.validate()?;
+			Ok(action.run(self).await)
 		}
 	}
 

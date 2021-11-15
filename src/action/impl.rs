@@ -11,14 +11,14 @@ use crate::{backend::Backend, Gateway};
 /// [`Gateway::run`]: crate::Gateway::run
 pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	#[doc(hidden)]
-	unsafe fn __run<B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send>>;
 
 	// TODO: move `Action::validate` logic into this function.
 	#[doc(hidden)]
-	unsafe fn __validate(&self) -> Result<(), super::ActionError>;
+	fn validate(&self) -> Result<(), super::ActionError>;
 }
 
 /// Marker type for a Create operation.
