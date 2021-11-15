@@ -122,7 +122,10 @@ impl<B: Backend> Gateway<B> {
 	pub async fn run<Success, Failure>(
 		&self,
 		action: impl ActionRunner<Success, Failure>,
-	) -> Result<Result<Success, Failure>, ActionValidationError> {
+	) -> Result<Result<Success, Failure>, ActionValidationError>
+	where
+		Failure: From<<B as Backend>::Error>,
+	{
 		unsafe {
 			action.validate()?;
 			Ok(action.run(self).await)

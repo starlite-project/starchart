@@ -36,16 +36,29 @@ pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run<'a, B: Backend>(
 		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
+		gateway: &'a Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + 'a>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
 		Box::pin(async move {
+			// SAFETY: Action::validate should be called beforehand.
 			let table_name = self.table.unwrap_unchecked();
 
 			let entry = self.data.unwrap_unchecked();
 
-			todo!()
+			let backend = gateway.backend();
+
+			if backend.has_table(&table_name).await? {
+				// Return early if the table already exists.
+				return Ok(());
+			}
+
+			backend.create_table(&table_name).await?;
+
+			Ok(())
 		})
 	}
 
@@ -354,7 +367,7 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 
 // Combined helpers
 impl<S: Entry> Action<S, CreateOperation, TableTarget> {
-	/// Creates a new [`CreateOperation`] based [`TableTarget`] operation. 
+	/// Creates a new [`CreateOperation`] based [`TableTarget`] operation.
 	pub fn create_table() -> Self {
 		Self::new()
 	}

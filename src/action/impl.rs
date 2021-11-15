@@ -7,7 +7,7 @@ use crate::{backend::Backend, Gateway};
 
 /// The marker trait for all action runs, this trait should not be used and is only used
 /// to make the return type of [`Gateway::run`] easily known.
-/// 
+///
 /// See [`Actions trait-implementations`] for more information.
 ///
 /// This trait is sealed and cannot be implemented outside of this crate.
@@ -15,11 +15,20 @@ use crate::{backend::Backend, Gateway};
 /// [`Gateway::run`]: crate::Gateway::run
 /// [`Actions trait-implementations`]: crate::action::Action#trait-implementations
 pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
-	#[doc(hidden)]
-	unsafe fn run<B: Backend>(
+	/// Runs the action through the [`Gateway`].
+	///
+	/// # Safety
+	///
+	/// This method may call a number of unsafe methods, such as [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`].
+	///
+	/// However, the [`Action`] is guarenteed to be safe to run if [`ActionRunner::validate`] is called beforehand, as
+	/// any issues found will be reported before.
+	unsafe fn run<'a, B: Backend>(
 		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send>>;
+		gateway: &'a Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send + 'a>>
+	where
+		Failure: From<<B as Backend>::Error>;
 
 	/// Validates that the [`Action`] has been created correctly.
 	///
