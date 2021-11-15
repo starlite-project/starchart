@@ -7,12 +7,10 @@
 
 use std::{
 	fmt::{Debug, Formatter, Result},
-	sync::atomic::{AtomicU8, Ordering},
-};
-
-use parking_lot::{
-	lock_api::{RawRwLock as IRawRwLock, RawRwLockFair},
-	RawRwLock,
+	sync::{
+		atomic::{AtomicU8, Ordering},
+		RwLock, RwLockReadGuard, RwLockWriteGuard,
+	},
 };
 
 /// The kind of lock an [`AtomicGuard`] is holding.
@@ -90,16 +88,16 @@ impl GuardKind {
 /// # Ok(()) }
 #[must_use = "a guard state does nothing if left unused"]
 pub struct AtomicGuard {
-	inner: RawRwLock,
+	inner: RwLock<()>,
 	kind: AtomicU8,
 	amount: AtomicU8,
 }
 
 impl AtomicGuard {
 	/// Creates a new, unlockecd [`AtomicGuard`].
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
-			inner: RawRwLock::INIT,
+			inner: RwLock::new(()),
 			kind: AtomicU8::new(GuardKind::Unlocked.as_u8()),
 			amount: AtomicU8::new(0),
 		}
@@ -139,31 +137,28 @@ impl AtomicGuard {
 
 	/// Returns a [`SharedGuard`], allowing multiple locks to be acquired for shared reading.
 	pub fn shared(&self) -> SharedGuard {
-		self.inner.lock_shared();
+		let guard = self.inner.read().expect("poisoned guard");
 
 		self.kind.store(GuardKind::Shared.as_u8(), Ordering::SeqCst);
 
 		self.amount.fetch_add(1, Ordering::SeqCst);
 
-		SharedGuard { state: self }
+		SharedGuard { state: self, guard }
 	}
 
 	/// Returns an [`ExclusiveGuard`], allowing only one lock to be acquired for exclusive writing.
 	pub fn exclusive(&self) -> ExclusiveGuard {
-		self.inner.lock_exclusive();
+		let guard = self.inner.write().expect("poisoned lock");
 
 		self.kind
 			.store(GuardKind::Exclusive.as_u8(), Ordering::SeqCst);
 
 		self.amount.store(1, Ordering::SeqCst);
 
-		ExclusiveGuard { state: self }
+		ExclusiveGuard { state: self, guard }
 	}
 
 	fn drop_shared(&self) {
-		unsafe {
-			self.inner.unlock_shared_fair();
-		}
 		self.amount.fetch_sub(1, Ordering::SeqCst);
 
 		if self.amount.load(Ordering::SeqCst) == 0 {
@@ -173,9 +168,6 @@ impl AtomicGuard {
 	}
 
 	fn drop_exclusive(&self) {
-		unsafe {
-			self.inner.unlock_exclusive_fair();
-		}
 		self.kind
 			.store(GuardKind::Unlocked.as_u8(), Ordering::SeqCst);
 		self.amount.store(0, Ordering::SeqCst);
@@ -197,6 +189,7 @@ impl Debug for AtomicGuard {
 /// A shared guard for allowing multiple accesses to a resource.
 pub struct SharedGuard<'a> {
 	state: &'a AtomicGuard,
+	guard: RwLockReadGuard<'a, ()>,
 }
 
 impl Drop for SharedGuard<'_> {
@@ -208,6 +201,7 @@ impl Drop for SharedGuard<'_> {
 /// An exclusive guard for allowing only one access to a resource.
 pub struct ExclusiveGuard<'a> {
 	state: &'a AtomicGuard,
+	guard: RwLockWriteGuard<'a, ()>,
 }
 
 impl Drop for ExclusiveGuard<'_> {

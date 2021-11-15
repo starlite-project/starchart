@@ -41,14 +41,14 @@ impl<S: Entry + 'static, E: Error> ActionRunner<(), ActionError<E>>
 		self,
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionError<E>>> + Send>> {
-		Box::pin(async move { 
+		Box::pin(async move {
 			// SAFETY: table_name is asserted to be true in `Action::validate`
 			let table_name = self.inner.table_name.unwrap_unchecked();
 
 			let entry = self.inner.data.unwrap_unchecked();
 
 			todo!()
-		 })
+		})
 	}
 
 	unsafe fn __validate(&self) -> Result<(), ActionError> {
