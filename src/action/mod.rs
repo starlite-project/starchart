@@ -2,13 +2,14 @@
 
 //! The action structs for CRUD operations.
 
+// TODO: move error types to their own module and clean up all the impl blocks
+
 mod r#impl;
 mod kind;
 pub mod result;
 mod target;
 
 use std::{
-	cell::Cell,
 	error::Error,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
@@ -42,10 +43,9 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 		gateway: &Gateway<B>,
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
 		Box::pin(async move {
-			// SAFETY: table_name is asserted to be true in `Action::validate`
-			let table_name = self.inner.table_name.unwrap_unchecked();
+			let table_name = self.inner.table_name.unwrap();
 
-			let entry = self.inner.data.unwrap_unchecked();
+			let entry = self.inner.data.unwrap();
 
 			todo!()
 		})
