@@ -39,7 +39,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features -- --test-threads 1
+          args: --all-features
 
   coverage:
     name: Coverage
@@ -58,7 +58,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: tarpaulin
-          args: -- --test-threads 1
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
