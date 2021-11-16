@@ -1,4 +1,6 @@
 /target
 Cargo.lock
-./expanded.rs
+expanded.rs
 /foo/*
+tarpaulin-report.html
+cobertura.xml

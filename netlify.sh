@@ -1,6 +1,6 @@
 rustup toolchain install nightly
 
-export RUSTDOCFLAGS="-D broken_intra_doc_links"
+export RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links"
 
 cargo +nightly doc --workspace --no-deps --all-features
 

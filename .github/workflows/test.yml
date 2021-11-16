@@ -8,8 +8,11 @@ on:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout sources
@@ -41,23 +44,20 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    needs: test
+
+    container:
+        image: xd009642/tarpaulin:develop-nightly
+        options: --security-opt seccomp=unconfined
 
     steps: 
       - name: Checkout sources
         uses: actions/checkout@v2
-
-      - name: Install nightly toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
-          override: true
       
       - name: Collect coverage
-        uses: actions-rs/tarpaulin@v0.1
+        uses: actions-rs/cargo@v1
         with:
-          args: --ignore-tests --workspace --all-features
+          command: tarpaulin
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2

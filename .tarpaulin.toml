@@ -1,0 +1,7 @@
+[all_features_coverage]
+workspace = true
+all-features = true
+ignore-tests = true
+
+[report]
+out = ["Html", "Xml"]

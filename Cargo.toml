@@ -12,6 +12,7 @@ version = "0.3.0"
 
 [dependencies]
 dashmap = "4.0"
+parking_lot = "0.11.2"
 thiserror = "1.0.30"
 
 [dependencies.futures]
@@ -67,6 +68,7 @@ cache = ["serde-value"]
 default = ["json"]
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
+unstable-atomics = []
 json = ["serde_json", "fs"]
 
 [workspace]
