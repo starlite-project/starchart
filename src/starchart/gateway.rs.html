@@ -341,10 +341,10 @@
 
 <span class="kw">use</span> <span class="ident">dashmap</span>::{<span class="ident">mapref::one::Ref</span>, <span class="ident">DashMap</span>};
 <span class="kw">use</span> <span class="ident">futures::executor::block_on</span>;
+<span class="kw">use</span> <span class="ident">parking_lot::RwLock</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
 	<span class="ident">action</span>::{<span class="ident">ActionRunner</span>, <span class="ident">ActionValidationError</span>},
-	<span class="ident">atomics::AtomicGuard</span>,
 	<span class="ident">backend::Backend</span>,
 	<span class="ident">database::DatabaseError</span>,
 	<span class="ident">Database</span>, <span class="ident">Entry</span>,
@@ -414,7 +414,7 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Gateway</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> {
 	<span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
 	<span class="ident">databases</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Database</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">guard</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">AtomicGuard</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">guard</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">RwLock</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> <span class="ident">Gateway</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> {
