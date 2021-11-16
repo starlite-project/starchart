@@ -79,15 +79,15 @@ jobs:
         id: nightly-version
         run: echo "::set-output name=miri-version::nightly-$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)"
 
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
       - name: Install ${{ steps.nightly-version.outputs.miri-version }} toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ steps.nightly-version.outputs.miri-version }}
           override: true
           components: miri
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
       
       - name: Install xargo
         uses: actions-rs/install@v0.1
