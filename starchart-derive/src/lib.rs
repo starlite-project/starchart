@@ -28,7 +28,7 @@ use syn::{
 	Result, Type,
 };
 
-#[proc_macro_derive(Key, attributes(key))]
+#[proc_macro_derive(IndexEntry, attributes(key))]
 pub fn derive_entity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
 	parse(input)
@@ -82,9 +82,9 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
 
 	let implementation = quote_spanned! {id_span=>
 		#[automatically_derived]
-		impl ::starchart::Key for #ident {
-			fn to_key(&self) -> std::string::String {
-				<#id_type as ::std::string::ToString>::to_string(&self.#id_ident)
+		impl ::starchart::IndexEntry for #ident {
+			fn key(&self) -> std::string::String {
+				self.#id_ident
 			}
 		}
 	};

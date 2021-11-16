@@ -42,7 +42,7 @@ pub use self::{
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;
 
-/// The helper derive macro for easily implementing [`Key`].
+/// The helper derive macro for easily implementing [`IndexEntry`].
 #[cfg(feature = "derive")]
 #[doc(cfg(feature = "derive"))]
-pub use starchart_derive::Key;
+pub use starchart_derive::IndexEntry;
