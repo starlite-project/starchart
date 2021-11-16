@@ -187,7 +187,7 @@ impl Backend for CacheBackend {
 	}
 }
 
-#[cfg(all(test, not(miri)))]
+#[cfg(test)]
 mod tests {
 	use std::fmt::Debug;
 
