@@ -175,182 +175,210 @@
 <span id="175">175</span>
 <span id="176">176</span>
 <span id="177">177</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">backend::Backend</span>, <span class="ident">Settings</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
+
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">backend::Backend</span>, <span class="ident">Entry</span>};
 
 <span class="doccomment">/// An error that can be returned when setting up a [`Database`].</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
+<span class="attribute">#[<span class="ident">deprecated</span>(
+	<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.3.0&quot;</span>,
+	<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;direct database interaction is deprecated, users should use Actions instead.&quot;</span>
+)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Error</span> <span class="op">=</span> <span class="op">!</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// An invalid generic type was passed to [`Gateway::get`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Gateway::get`]: crate::gateway::Gateway::get</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;an invalid type was passed&quot;</span>)]</span>
-    <span class="ident">InvalidType</span>,
-    <span class="doccomment">/// An error occurred from the [`Backend`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This will match the error type of the backend.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">Backend</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">E</span>),
-    <span class="doccomment">/// An expected value wasn&#39;t found in the database.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;the expected value doesn&#39;t exist in the database&quot;</span>)]</span>
-    <span class="ident">ValueDoesntExist</span>,
+	<span class="doccomment">/// An invalid generic type was passed to [`Gateway::get`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// [`Gateway::get`]: crate::gateway::Gateway::get</span>
+	<span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;an invalid type was passed&quot;</span>)]</span>
+	<span class="ident">InvalidType</span>,
+	<span class="doccomment">/// An error occurred from the [`Backend`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// This will match the error type of the backend.</span>
+	<span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+	<span class="ident">Backend</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">E</span>),
+	<span class="doccomment">/// An expected value wasn&#39;t found in the database.</span>
+	<span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;the expected value doesn&#39;t exist in the database&quot;</span>)]</span>
+	<span class="ident">ValueDoesntExist</span>,
 }
 
 <span class="doccomment">/// A database for easily interacting with a [`Backend`].</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">deprecated</span>(
+	<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.3.0&quot;</span>,
+	<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;direct database interaction is deprecated, users should use Actions instead.&quot;</span>
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Database</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">name</span>: <span class="ident">String</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-    <span class="ident">type_id</span>: <span class="ident">TypeId</span>,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">name</span>: <span class="ident">String</span>,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
+	<span class="ident">type_id</span>: <span class="ident">TypeId</span>,
 }
 
+<span class="attribute">#[<span class="ident">deprecated</span>(
+	<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.3.0&quot;</span>,
+	<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;direct database interaction is deprecated, users should use Actions instead.&quot;</span>
+)]</span>
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> <span class="ident">Database</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Gives access to the raw [`Backend`] instance.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Safety</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Accessing the backend functions directly isn&#39;t inheritly unsafe, however</span>
-    <span class="doccomment">/// care must be taken to ensure the data isn&#39;t modified directly, and</span>
-    <span class="doccomment">/// that [`Backend::shutdown`] isn&#39;t directly called.</span>
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">backend</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">B</span> {
-        <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">backend</span>
-    }
+	<span class="doccomment">/// Gives access to the raw [`Backend`] instance.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Safety</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Accessing the backend functions directly isn&#39;t inheritly unsafe, however</span>
+	<span class="doccomment">/// care must be taken to ensure the data isn&#39;t modified directly, and</span>
+	<span class="doccomment">/// that [`Backend::shutdown`] isn&#39;t directly called.</span>
+	<span class="attribute">#[<span class="ident">must_use</span>]</span>
+	<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">backend</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">B</span> {
+		<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">backend</span>
+	}
 
-    <span class="doccomment">/// Gets a value from the [`Database`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
-    <span class="doccomment">/// or if [`Backend::get`] returned an error.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="doccomment">/// Gets a value from the [`Database`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
+	<span class="doccomment">/// or if [`Backend::get`] returned an error.</span>
+	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">value</span>)
-    }
+		<span class="prelude-val">Ok</span>(<span class="ident">value</span>)
+	}
 
-    <span class="doccomment">/// Sets a value in the [`Database`], overwriting whatever was there before.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
-    <span class="doccomment">/// or if [`Backend::replace`] or [`Backend::create`] returned an error.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">set</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="doccomment">/// Sets a value in the [`Database`], overwriting whatever was there before.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
+	<span class="doccomment">/// or if [`Backend::replace`] or [`Backend::create`] returned an error.</span>
+	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">set</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        }
+		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
+			<span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		} <span class="kw">else</span> {
+			<span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		}
 
-        <span class="prelude-val">Ok</span>(())
-    }
+		<span class="prelude-val">Ok</span>(())
+	}
 
-    <span class="doccomment">/// Updates a value in place.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
-    <span class="doccomment">/// if the value doesn&#39;t exist in the [`Database`], or if [`Backend::update`] returned an error.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">update</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="doccomment">/// Updates a value in place.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
+	<span class="doccomment">/// if the value doesn&#39;t exist in the [`Database`], or if [`Backend::update`] returned an error.</span>
+	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">update</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        } <span class="kw">else</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::ValueDoesntExist</span>);
-        }
+		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
+			<span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		} <span class="kw">else</span> {
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::ValueDoesntExist</span>);
+		}
 
-        <span class="prelude-val">Ok</span>(())
-    }
+		<span class="prelude-val">Ok</span>(())
+	}
 
-    <span class="doccomment">/// Replaces a value in place.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
-    <span class="doccomment">/// or if [`Backend::replace`] returned an error.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">replace</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="doccomment">/// Replaces a value in place.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
+	<span class="doccomment">/// or if [`Backend::replace`] returned an error.</span>
+	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">replace</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
-            <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        } <span class="kw">else</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::ValueDoesntExist</span>);
-        }
+		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
+			<span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		} <span class="kw">else</span> {
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::ValueDoesntExist</span>);
+		}
 
-        <span class="prelude-val">Ok</span>(())
-    }
+		<span class="prelude-val">Ok</span>(())
+	}
 
-    <span class="doccomment">/// Deletes a value from the [`Database`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Errors</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
-    <span class="doccomment">/// or if [`Backend::delete`] returned an error.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+	<span class="doccomment">/// Deletes a value from the [`Database`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns an error if the passed type does not match the type this [`Database`] was created with,</span>
+	<span class="doccomment">/// or if [`Backend::delete`] returned an error.</span>
+	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="self">self</span>.<span class="ident">check</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">name</span>, <span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(())
-    }
+		<span class="prelude-val">Ok</span>(())
+	}
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">table_name</span>: <span class="ident">String</span>,
-        <span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-        <span class="ident">type_id</span>: <span class="ident">TypeId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">B::Error</span><span class="op">&gt;</span> {
-        <span class="ident">backend</span>.<span class="ident">ensure_table</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">new</span>(
+		<span class="ident">table_name</span>: <span class="ident">String</span>,
+		<span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
+		<span class="ident">type_id</span>: <span class="ident">TypeId</span>,
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">B::Error</span><span class="op">&gt;</span> {
+		<span class="ident">backend</span>.<span class="ident">ensure_table</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">name</span>: <span class="ident">table_name</span>,
-            <span class="ident">backend</span>,
-            <span class="ident">type_id</span>,
-        })
-    }
+		<span class="prelude-val">Ok</span>(<span class="self">Self</span> {
+			<span class="ident">name</span>: <span class="ident">table_name</span>,
+			<span class="ident">backend</span>,
+			<span class="ident">type_id</span>,
+		})
+	}
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">check</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Settings</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    {
-        <span class="kw">let</span> <span class="ident">type_of_val</span> <span class="op">=</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>();
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">check</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	<span class="kw">where</span>
+		<span class="ident">S</span>: <span class="ident">Entry</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+	{
+		<span class="kw">let</span> <span class="ident">type_of_val</span> <span class="op">=</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>();
 
-        <span class="kw">if</span> <span class="ident">type_of_val</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">type_id</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::InvalidType</span>);
-        }
+		<span class="kw">if</span> <span class="ident">type_of_val</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">type_id</span> {
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DatabaseError::InvalidType</span>);
+		}
 
-        <span class="prelude-val">Ok</span>(())
-    }
+		<span class="prelude-val">Ok</span>(())
+	}
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Database</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">backend</span>: <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">clone</span>(),
-            <span class="ident">name</span>: <span class="self">self</span>.<span class="ident">name</span>.<span class="ident">clone</span>(),
-            <span class="ident">type_id</span>: <span class="self">self</span>.<span class="ident">type_id</span>,
-        }
-    }
+	<span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
+		<span class="self">Self</span> {
+			<span class="ident">backend</span>: <span class="self">self</span>.<span class="ident">backend</span>.<span class="ident">clone</span>(),
+			<span class="ident">name</span>: <span class="self">self</span>.<span class="ident">name</span>.<span class="ident">clone</span>(),
+			<span class="ident">type_id</span>: <span class="self">self</span>.<span class="ident">type_id</span>,
+		}
+	}
 }
 </code></pre></div>
 </section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>

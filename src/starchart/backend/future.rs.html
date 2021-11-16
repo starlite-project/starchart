@@ -52,15 +52,13 @@
 <span id="52">52</span>
 <span id="53">53</span>
 <span id="54">54</span>
-<span id="55">55</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Futures for [`Backend`] functions to return, for easier documentation.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Backend`]: crate::backend::Backend</span>
-<span class="doccomment">//!</span>
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">future::Future</span>, <span class="ident">pin::Pin</span>};
+
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doc</span>)]</span>
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::backend::Backend</span>;
-
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">future::Future</span>, <span class="ident">pin::Pin</span>};
 
 <span class="doccomment">/// The future returned from [`Backend::init`].</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InitFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PinBoxFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">E</span><span class="op">&gt;</span><span class="op">&gt;</span>;

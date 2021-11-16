@@ -1,1 +1,1 @@
-initSidebarItems({"derive":[["Key",""]]});
+initSidebarItems({"derive":[["IndexEntry",""]]});

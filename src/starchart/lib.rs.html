@@ -41,25 +41,37 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>, <span class="ident">doc_cfg</span>)]</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">feature</span>(<span class="ident">never_type</span>, <span class="ident">doc_cfg</span>, <span class="ident">try_trait_v2</span>)]</span>
 <span class="attribute">#![<span class="ident">warn</span>(
-    <span class="ident">clippy::pedantic</span>,
-    <span class="ident">clippy::nursery</span>,
-    <span class="ident">clippy::suspicious</span>,
-    <span class="ident">clippy::str_to_string</span>,
-    <span class="ident">clippy::string_to_string</span>,
-    <span class="ident">missing_copy_implementations</span>,
-    <span class="ident">missing_docs</span>
+	<span class="ident">clippy::pedantic</span>,
+	<span class="ident">clippy::nursery</span>,
+	<span class="ident">clippy::suspicious</span>,
+	<span class="ident">clippy::str_to_string</span>,
+	<span class="ident">clippy::string_to_string</span>,
+	<span class="ident">missing_copy_implementations</span>,
+	<span class="ident">missing_docs</span>
 )]</span>
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">clippy::all</span>)]</span>
 <span class="attribute">#![<span class="ident">allow</span>(
-    <span class="ident">clippy::module_name_repetitions</span>,
-    <span class="ident">clippy::no_effect_underscore_binding</span>,
-    <span class="ident">dead_code</span>
+	<span class="ident">clippy::module_name_repetitions</span>,
+	<span class="ident">clippy::no_effect_underscore_binding</span>,
+	<span class="ident">dead_code</span>,
+	<span class="ident">deprecated</span>
 )]</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">test</span>), <span class="ident">warn</span>(<span class="ident">clippy::panic_in_result_fn</span>))]</span>
 <span class="doccomment">//! A simple database system that allows the use of multiple different backends.</span>
 
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">action</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;unstable-atomics&quot;</span>))]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">atomics</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;unstable-atomics&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;unstable-atomics&quot;</span>))]</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">atomics</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">backend</span>;
 <span class="kw">mod</span> <span class="ident">database</span>;
 <span class="kw">mod</span> <span class="ident">entry</span>;
@@ -68,22 +80,20 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">test_utils</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{
-    <span class="ident">database::Database</span>,
-    <span class="ident">entry</span>::{<span class="ident">Key</span>, <span class="ident">Settings</span>},
-};
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{<span class="ident">error::ChartError</span> <span class="kw">as</span> <span class="ident">Error</span>, <span class="ident">gateway::Gateway</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{<span class="ident">action::Action</span>, <span class="ident">error::ChartError</span> <span class="kw">as</span> <span class="ident">Error</span>, <span class="ident">gateway::Gateway</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{
+	<span class="ident">database::Database</span>,
+	<span class="ident">entry</span>::{<span class="ident">Entry</span>, <span class="ident">IndexEntry</span>, <span class="ident">Key</span>},
+};
 
 <span class="doccomment">/// A type alias for a [`Result`] that wraps around [`Error`].</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ChartResult</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">B</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Error</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
-<span class="doccomment">/// The helper derive macro for easily implementing [`Key`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Key`]: crate::Key</span>
+<span class="doccomment">/// The helper derive macro for easily implementing [`IndexEntry`].</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>))]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">starchart_derive::Key</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">starchart_derive::IndexEntry</span>;
 </code></pre></div>
 </section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
     <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script>
