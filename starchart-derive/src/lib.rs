@@ -10,23 +10,15 @@
 	missing_copy_implementations
 )]
 #![deny(clippy::all)]
-#![allow(
-	clippy::module_name_repetitions,
-	clippy::no_effect_underscore_binding,
-	dead_code,
-	warnings
-)]
+#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding)]
 //! Derive macro helpers for the starchart crate.
 
 const KEY_IDENT: &str = "key";
 const ID_IDENT: &str = "id";
 
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned};
-use syn::{
-	parse_macro_input, spanned::Spanned, Attribute, Data, DeriveInput, Error, Field, Fields, Ident,
-	Result, Type,
-};
+use proc_macro2::TokenStream;
+use quote::quote_spanned;
+use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Error, Field, Fields, Result};
 
 #[proc_macro_derive(IndexEntry, attributes(key))]
 pub fn derive_entity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -76,8 +68,6 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
 		Some(f) => f,
 	};
 
-	let id_type = &id_field.ty;
-
 	let id_span = id_field.span();
 
 	let implementation = quote_spanned! {id_span=>
@@ -106,7 +96,6 @@ fn get_id_field(fields: &[Field]) -> Option<&Field> {
 		}
 	}
 
-	let span = Span::call_site();
 	for field in fields {
 		let ident = match &field.ident {
 			None => continue,
