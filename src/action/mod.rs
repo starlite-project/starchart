@@ -36,36 +36,33 @@ pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn run<'a, B: Backend>(
+	unsafe fn run<B: Backend>(
 		self,
-		gateway: &'a Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + 'a>>
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
 		// Create the lock outside of the async block, as the guard is invalid if created in async context.
 		let lock = gateway.guard.exclusive();
-		let res = Box::pin(async move {
+		Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
 			let table_name = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
 
 			let entry = self.data.unwrap_unchecked();
 
 			let backend = gateway.backend();
 
-			if backend.has_table(&table_name).await? {
-				// Return early if the table already exists.
+			if backend.has(&table_name, &key).await? {
 				return Ok(());
 			}
 
-			backend.create_table(&table_name).await?;
+			backend.create(&table_name, &key, &*entry).await?;
 
 			Ok(())
-		});
-
-		drop(lock);
-
-		res
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -77,12 +74,26 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
 
-impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, EntryTarget> {
+impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
+	for Action<S, ReadOperation, EntryTarget>
+{
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<S, ActionRunError>> + Send>> {
-		Box::pin(async move { todo!() })
+	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.shared();
+		Box::pin(async move {
+			let table_name = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			Ok(backend.get(&table_name, &key).await?)
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -94,12 +105,29 @@ impl<S: Entry> ActionRunner<S, ActionRunError> for Action<S, ReadOperation, Entr
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
-impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, UpdateOperation, EntryTarget> {
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+	for Action<S, UpdateOperation, EntryTarget>
+{
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
-		Box::pin(async move { todo!() })
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.exclusive();
+		Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+			let new_data = self.data.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			backend.update(&table, &key, &new_data).await?;
+
+			Ok(())
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -112,12 +140,32 @@ impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, UpdateOperation, E
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
 
-impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation, EntryTarget> {
+impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+	for Action<S, DeleteOperation, EntryTarget>
+{
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send>> {
-		Box::pin(async move { todo!() })
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.shared();
+		Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let exists = backend.has(&table, &key).await?;
+
+			backend.delete(&table, &key).await?;
+
+			let after_exists = backend.has(&table, &key).await?;
+
+			Ok(exists != after_exists)
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -129,12 +177,26 @@ impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation,
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
-impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, CreateOperation, TableTarget> {
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+	for Action<S, CreateOperation, TableTarget>
+{
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send>> {
-		Box::pin(async move { todo!() })
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.exclusive();
+		Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			backend.create_table(&table).await?;
+
+			Ok(())
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -146,11 +208,30 @@ impl<S: Entry> ActionRunner<(), ActionRunError> for Action<S, CreateOperation, T
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
 
 // this is only here to satisfy the `clippy::type_complexity` lint
-type ReadTableResult<S> = Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send>>;
+type ReadTableResult<'a, S> =
+	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send + 'a>>;
 
-impl<S: Entry> ActionRunner<Vec<S>, ActionRunError> for Action<S, ReadOperation, TableTarget> {
-	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<S> {
-		Box::pin(async move { todo!() })
+impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
+	for Action<S, ReadOperation, TableTarget>
+{
+	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<'_, S>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.shared();
+		Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+
+			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
+
+			let data = backend.get_all(&table, &keys_borrowed).await?;
+
+			Ok(data)
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -166,12 +247,30 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
-impl<S: Entry> ActionRunner<bool, ActionRunError> for Action<S, DeleteOperation, TableTarget> {
+impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+	for Action<S, DeleteOperation, TableTarget>
+{
 	unsafe fn run<B: Backend>(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send>> {
-		Box::pin(async move { todo!() })
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.exclusive();
+		Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let exists = backend.has_table(&table).await?;
+
+			backend.delete_table(&table).await?;
+
+			let new_exists = backend.has_table(&table).await?;
+
+			Ok(exists != new_exists)
+		})
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {

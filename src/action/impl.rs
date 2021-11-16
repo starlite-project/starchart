@@ -23,6 +23,8 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	///
 	/// However, the [`Action`] is guarenteed to be safe to run if [`ActionRunner::validate`] is called beforehand, as
 	/// any issues found will be reported before.
+	///
+	/// [`Action`]: crate::action::Action
 	unsafe fn run<'a, B: Backend>(
 		self,
 		gateway: &'a Gateway<B>,
