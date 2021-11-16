@@ -21,7 +21,7 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	///
 	/// This method may call a number of unsafe methods, such as [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`].
 	///
-	/// However, the [`Action`] is guarenteed to be safe to run if [`ActionRunner::validate`] is called beforehand, as
+	/// However, the [`Action`] is guaranteed to be safe to run if [`ActionRunner::validate`] is called beforehand, as
 	/// any issues found will be reported before.
 	///
 	/// [`Action`]: crate::action::Action
