@@ -17,11 +17,11 @@ impl<T: ToString> Key for T {
 /// A marker trait for use within the [`Gateway`].
 ///
 /// This signifies that the type can be stored within a [`Gateway`].
-/// 
+///
 /// [`Gateway`]: crate::Gateway
 pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Send + Sync {}
 
-impl< T: Clone + Serialize + DeserializeOwned + Debug + Send + Sync> Entry for T {}
+impl<T: Clone + Serialize + DeserializeOwned + Debug + Send + Sync> Entry for T {}
 
 /// An indexable entry, used for any [`Entry`] that can be indexed by a [`Key`] that it owns.
 pub trait IndexEntry: Entry {
