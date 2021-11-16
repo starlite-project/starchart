@@ -1,5 +1,3 @@
-#![allow(clippy::empty_enum)]
-
 use std::fmt::Debug;
 
 use serde::{de::DeserializeOwned, Serialize};
@@ -10,14 +8,20 @@ pub trait Key {
 	fn to_key(&self) -> String;
 }
 
-/// A marker trait for use within the [`Database`].
+impl<T: ToString> Key for T {
+	fn to_key(&self) -> String {
+		self.to_string()
+	}
+}
+
+/// A marker trait for use within the [`Gateway`].
 ///
-/// This signifies that the type can be stored within a [`Database`].
-///
-/// [`Database`]: crate::Database
+/// This signifies that the type can be stored within a [`Gateway`].
+/// 
+/// [`Gateway`]: crate::Gateway
 pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Send + Sync {}
 
-impl<T: Clone + Serialize + DeserializeOwned + Debug + Send + Sync> Entry for T {}
+impl< T: Clone + Serialize + DeserializeOwned + Debug + Send + Sync> Entry for T {}
 
 /// An indexable entry, used for any [`Entry`] that can be indexed by a [`Key`] that it owns.
 pub trait IndexEntry: Entry {

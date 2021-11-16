@@ -471,14 +471,14 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 }
 
 // Combined helpers
-impl<S: Entry> Action<S, CreateOperation, TableTarget> {
+impl<S: Entry> CreateTableAction<S> {
 	/// Creates a new [`CreateOperation`] based [`TableTarget`] operation.
 	pub fn create_table() -> Self {
 		Self::new()
 	}
 }
 
-impl<S: Entry> Action<S, ReadOperation, TableTarget> {
+impl<S: Entry> ReadTableAction<S> {
 	/// Creates a new [`ReadOperation`] based [`TableTarget`] operation.
 	pub fn read_table() -> Self {
 		Self::new()
@@ -487,35 +487,35 @@ impl<S: Entry> Action<S, ReadOperation, TableTarget> {
 
 // Update table is specifically omitted as it's unsupported
 
-impl<S: Entry> Action<S, DeleteOperation, TableTarget> {
+impl<S: Entry> DeleteTableAction<S> {
 	/// Creates a new [`DeleteOperation`] based [`TableTarget`] operation.
 	pub fn delete_table() -> Self {
 		Self::new()
 	}
 }
 
-impl<S: Entry> Action<S, CreateOperation, EntryTarget> {
+impl<S: Entry> CreateEntryAction<S> {
 	/// Creates a new [`CreateOperation`] based [`EntryTarget`] operation.
 	pub fn create_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<S: Entry> Action<S, ReadOperation, EntryTarget> {
+impl<S: Entry> ReadEntryAction<S> {
 	/// Creates a new [`ReadOperation`] based [`EntryTarget`] operation.
 	pub fn read_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<S: Entry> Action<S, UpdateOperation, EntryTarget> {
+impl<S: Entry> UpdateEntryAction<S> {
 	/// Creates a new [`UpdateOperation`] based [`EntryTarget`] operation.
 	pub fn update_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<S: Entry> Action<S, DeleteOperation, EntryTarget> {
+impl<S: Entry> DeleteEntryAction<S> {
 	/// Creates a new [`DeleteOperation`] based [`EntryTarget`] operation.
 	pub fn delete_entry() -> Self {
 		Self::new()
