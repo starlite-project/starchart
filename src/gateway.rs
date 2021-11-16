@@ -82,7 +82,7 @@ where
 pub struct Gateway<B: Backend> {
 	backend: Arc<B>,
 	databases: Arc<DashMap<String, Database<B>>>,
-	guard: Arc<AtomicGuard>,
+	pub(crate) guard: Arc<AtomicGuard>,
 }
 
 impl<B: Backend> Gateway<B> {

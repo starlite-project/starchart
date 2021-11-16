@@ -43,7 +43,9 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		Box::pin(async move {
+		// Create the lock outside of the async block, as the guard is invalid if created in async context.
+		let lock = gateway.guard.exclusive();
+		let res = Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
 			let table_name = self.table.unwrap_unchecked();
 
@@ -59,7 +61,11 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 			backend.create_table(&table_name).await?;
 
 			Ok(())
-		})
+		});
+
+		drop(lock);
+
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
