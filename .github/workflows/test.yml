@@ -84,7 +84,7 @@ jobs:
         with:
           toolchain: ${{ steps.nightly-version.outputs.miri-version }}
           override: true
-          components: miri
+          components: miri, rust-src
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
