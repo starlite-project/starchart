@@ -74,16 +74,22 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+      
+      - name: Set correct nightly version
+        id: nightly-version
+        run: echo "::set-output name=miri-version::nightly-$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)"
 
-      - name: Install nightly toolchain
+      - name: Install ${{ steps.nightly-version.outptus.miri-version }} toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: ${{ steps.nightly-version.outptus.miri-version }}
           override: true
           components: miri
 
-      - name: Run miri
+      - name: Run Miri UB check
         uses: actions-rs/cargo@v1
         with:
           command: miri
           args: test --workspace --all-features
+        env:
+          MIRIFLAGS: "-Zmiri-disable-isolation"
