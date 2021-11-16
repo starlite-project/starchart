@@ -16,6 +16,7 @@ use std::{
 	pin::Pin,
 };
 
+use parking_lot::{RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 
 #[doc(inline)]
@@ -44,8 +45,8 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 		ActionRunError: From<<B as Backend>::Error>,
 	{
 		// Create the lock outside of the async block, as the guard is invalid if created in async context.
-		let lock = gateway.guard.exclusive();
-		Box::pin(async move {
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
 			let table_name = self.table.unwrap_unchecked();
 
@@ -62,7 +63,10 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 			backend.create(&table_name, &key, &*entry).await?;
 
 			Ok(())
-		})
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -84,8 +88,8 @@ impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.shared();
-		Box::pin(async move {
+		let lock = gateway.guard.read();
+		let res = Box::pin(async move {
 			let table_name = self.table.unwrap_unchecked();
 
 			let key = self.key.unwrap_unchecked();
@@ -93,7 +97,10 @@ impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
 			let backend = gateway.backend();
 
 			Ok(backend.get(&table_name, &key).await?)
-		})
+		});
+
+		RwLockReadGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -115,8 +122,8 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.exclusive();
-		Box::pin(async move {
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
 
 			let key = self.key.unwrap_unchecked();
@@ -127,7 +134,10 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 			backend.update(&table, &key, &new_data).await?;
 
 			Ok(())
-		})
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -150,8 +160,8 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.shared();
-		Box::pin(async move {
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
 
 			let key = self.key.unwrap_unchecked();
@@ -165,7 +175,10 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 			let after_exists = backend.has(&table, &key).await?;
 
 			Ok(exists != after_exists)
-		})
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -187,8 +200,8 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.exclusive();
-		Box::pin(async move {
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
 
 			let backend = gateway.backend();
@@ -196,7 +209,10 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 			backend.create_table(&table).await?;
 
 			Ok(())
-		})
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -218,8 +234,8 @@ impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.shared();
-		Box::pin(async move {
+		let lock = gateway.guard.read();
+		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
 
 			let backend = gateway.backend();
@@ -231,7 +247,10 @@ impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
 			let data = backend.get_all(&table, &keys_borrowed).await?;
 
 			Ok(data)
-		})
+		});
+
+		RwLockReadGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {
@@ -257,8 +276,8 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 	where
 		ActionRunError: From<<B as Backend>::Error>,
 	{
-		let lock = gateway.guard.exclusive();
-		Box::pin(async move {
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
 
 			let backend = gateway.backend();
@@ -270,7 +289,10 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 			let new_exists = backend.has_table(&table).await?;
 
 			Ok(exists != new_exists)
-		})
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
 	}
 
 	fn validate(&self) -> Result<(), ActionValidationError> {

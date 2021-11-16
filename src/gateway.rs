@@ -9,10 +9,10 @@ use std::{
 
 use dashmap::{mapref::one::Ref, DashMap};
 use futures::executor::block_on;
+use parking_lot::RwLock;
 
 use crate::{
 	action::{ActionRunner, ActionValidationError},
-	atomics::AtomicGuard,
 	backend::Backend,
 	database::DatabaseError,
 	Database, Entry,
@@ -82,7 +82,7 @@ where
 pub struct Gateway<B: Backend> {
 	backend: Arc<B>,
 	databases: Arc<DashMap<String, Database<B>>>,
-	pub(crate) guard: Arc<AtomicGuard>,
+	pub(crate) guard: Arc<RwLock<()>>,
 }
 
 impl<B: Backend> Gateway<B> {
