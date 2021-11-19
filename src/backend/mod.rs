@@ -191,6 +191,7 @@ mod tests {
 	use super::{Backend, CacheBackend, CacheError};
 
 	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
 	async fn init() {
 		let backend = CacheBackend::new();
 
@@ -199,6 +200,7 @@ mod tests {
 
 	// The default impl does nothing, this is just for coverage
 	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
 	async fn shutdown() {
 		let backend = CacheBackend::new();
 
@@ -208,6 +210,7 @@ mod tests {
 	}
 
 	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
 	async fn ensure_table() -> Result<(), CacheError> {
 		let backend = CacheBackend::new();
 
@@ -222,6 +225,7 @@ mod tests {
 	}
 
 	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
 	async fn ensure() -> Result<(), CacheError> {
 		let backend = CacheBackend::new();
 
