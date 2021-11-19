@@ -4,13 +4,12 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
-use serde::{Deserialize, Serialize};
-
 use self::future::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
+use crate::Entry;
 
 pub mod future;
 
@@ -101,7 +100,7 @@ pub trait Backend: Send + Sync {
 		entries: &'a [&str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync,
+		D: Entry,
 		I: FromIterator<D>,
 	{
 		Box::pin(async move {
@@ -127,7 +126,7 @@ pub trait Backend: Send + Sync {
 	/// Gets a certain entry from a table.
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync;
+		D: Entry;
 
 	/// Checks if an entry exists in a table.
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error>;
@@ -140,7 +139,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> CreateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Ensures a value exists in the table.
 	fn ensure<'a, S>(
@@ -150,7 +149,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> EnsureFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			if !self.has(table, id).await? {
@@ -169,7 +168,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> UpdateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Replaces an existing entry in a table.
 	fn replace<'a, S>(
@@ -179,8 +178,129 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> ReplaceFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Deletes an entry from a table.
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
+}
+
+#[cfg(test)]
+mod tests {
+	use std::iter::FromIterator;
+
+	use thiserror::Error;
+
+	use super::{
+		future::{
+			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
+			GetKeysFuture, HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
+		},
+		Backend,
+	};
+	use crate::Entry;
+
+	#[derive(Debug, Default, Error, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+	#[error("test error")]
+	struct MockError;
+
+	#[derive(Debug, Default, Clone, Copy)]
+	struct MockBackend;
+
+	impl MockBackend {
+		pub const fn new() -> Self {
+			Self
+		}
+	}
+
+	#[cfg(not(tarpaulin_include))]
+	impl Backend for MockBackend {
+		type Error = MockError;
+
+		fn has_table<'a>(&'a self, _: &'a str) -> HasTableFuture<'a, Self::Error> {
+			Box::pin(async { Ok(false) })
+		}
+
+		fn create_table<'a>(&'a self, _: &'a str) -> CreateTableFuture<'a, Self::Error> {
+			Box::pin(async { Ok(()) })
+		}
+
+		fn delete_table<'a>(&'a self, _: &'a str) -> DeleteTableFuture<'a, Self::Error> {
+			Box::pin(async { Ok(()) })
+		}
+
+		fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
+		where
+			I: FromIterator<String>,
+		{
+			Box::pin(async move { Ok(vec![table.to_owned()].into_iter().collect()) })
+		}
+
+		fn get<'a, D>(&'a self, _: &'a str, _: &'a str) -> GetFuture<'a, D, Self::Error>
+		where
+			D: Entry,
+		{
+			Box::pin(async { Ok(None) })
+		}
+
+		fn has<'a>(&'a self, _: &'a str, _: &'a str) -> HasFuture<'a, Self::Error> {
+			Box::pin(async { Ok(false) })
+		}
+
+		fn create<'a, S>(
+			&'a self,
+			_: &'a str,
+			_: &'a str,
+			_: &'a S,
+		) -> CreateFuture<'a, Self::Error>
+		where
+			S: Entry,
+		{
+			Box::pin(async { Ok(()) })
+		}
+
+		fn update<'a, S>(
+			&'a self,
+			_: &'a str,
+			_: &'a str,
+			_: &'a S,
+		) -> UpdateFuture<'a, Self::Error>
+		where
+			S: Entry,
+		{
+			Box::pin(async { Ok(()) })
+		}
+
+		fn replace<'a, S>(
+			&'a self,
+			_: &'a str,
+			_: &'a str,
+			_: &'a S,
+		) -> ReplaceFuture<'a, Self::Error>
+		where
+			S: Entry,
+		{
+			Box::pin(async { Ok(()) })
+		}
+
+		fn delete<'a>(&'a self, _: &'a str, _: &'a str) -> DeleteFuture<'a, Self::Error> {
+			Box::pin(async { Ok(()) })
+		}
+	}
+
+	#[tokio::test]
+	async fn init() {
+		let backend = MockBackend::new();
+
+		assert_eq!(Backend::init(&backend).await, Ok(()));
+	}
+
+	// The default impl does nothing, this is just for coverage
+	#[tokio::test]
+	async fn shutdown() {
+		let backend = MockBackend::new();
+
+		unsafe {
+			Backend::shutdown(&backend).await;
+		}
+	}
 }

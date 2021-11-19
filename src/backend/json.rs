@@ -6,7 +6,6 @@ use std::{
 };
 
 use futures_util::StreamExt;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
@@ -18,6 +17,7 @@ use super::{
 	},
 	Backend,
 };
+use crate::Entry;
 
 /// An error returned from the [`JsonBackend`].
 ///
@@ -173,7 +173,7 @@ impl Backend for JsonBackend {
 
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, JsonError>
 	where
-		D: for<'de> Deserialize<'de>,
+		D: Entry,
 	{
 		Box::pin(async move {
 			let filename = id.to_owned() + ".json";
@@ -211,7 +211,7 @@ impl Backend for JsonBackend {
 		value: &'a S,
 	) -> CreateFuture<'a, JsonError>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let filepath = id.to_owned() + ".json";
@@ -237,7 +237,7 @@ impl Backend for JsonBackend {
 		value: &'a S,
 	) -> UpdateFuture<'a, JsonError>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let serialized = serde_json::to_string(value)?.into_bytes();
@@ -259,7 +259,7 @@ impl Backend for JsonBackend {
 		value: &'a S,
 	) -> ReplaceFuture<'a, JsonError>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			self.update(table, id, value).await?;

@@ -1,7 +1,6 @@
 use std::iter::FromIterator;
 
 use dashmap::{mapref::one::Ref, DashMap};
-use serde::{Deserialize, Serialize};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
 
@@ -12,6 +11,7 @@ use super::{
 	},
 	Backend,
 };
+use crate::Entry;
 
 /// An error returned from the [`CacheBackend`].
 #[doc(cfg(feature = "cache"))]
@@ -96,7 +96,7 @@ impl Backend for CacheBackend {
 
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync,
+		D: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -125,7 +125,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> CreateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -149,7 +149,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> UpdateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -167,7 +167,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> ReplaceFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			self.update(table, id, value).await?;
