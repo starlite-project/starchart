@@ -24,8 +24,6 @@ mod database;
 mod entry;
 pub mod error;
 pub mod gateway;
-#[cfg(test)]
-mod test_utils;
 
 #[doc(inline)]
 pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};
