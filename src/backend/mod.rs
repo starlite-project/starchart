@@ -233,6 +233,8 @@ mod tests {
 		let id = "id";
 		let value = "value".to_owned();
 
+		backend.create_table(table_name).await?;
+
 		assert!(!backend.has(table_name, id).await?);
 
 		Backend::ensure(&backend, table_name, id, &value).await?;
