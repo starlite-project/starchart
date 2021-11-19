@@ -184,123 +184,57 @@ pub trait Backend: Send + Sync {
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
 }
 
-#[cfg(test)]
+// need to cfg for cache because otherwise we would get errors if someone just ran `cargo test`
+#[cfg(all(test, feature = "cache"))]
 mod tests {
-	use std::iter::FromIterator;
 
-	use thiserror::Error;
-
-	use super::{
-		future::{
-			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
-			GetKeysFuture, HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
-		},
-		Backend,
-	};
-	use crate::Entry;
-
-	#[derive(Debug, Default, Error, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-	#[error("test error")]
-	struct MockError;
-
-	#[derive(Debug, Default, Clone, Copy)]
-	struct MockBackend;
-
-	impl MockBackend {
-		pub const fn new() -> Self {
-			Self
-		}
-	}
-
-	#[cfg(not(tarpaulin_include))]
-	impl Backend for MockBackend {
-		type Error = MockError;
-
-		fn has_table<'a>(&'a self, _: &'a str) -> HasTableFuture<'a, Self::Error> {
-			Box::pin(async { Ok(false) })
-		}
-
-		fn create_table<'a>(&'a self, _: &'a str) -> CreateTableFuture<'a, Self::Error> {
-			Box::pin(async { Ok(()) })
-		}
-
-		fn delete_table<'a>(&'a self, _: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-			Box::pin(async { Ok(()) })
-		}
-
-		fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
-		where
-			I: FromIterator<String>,
-		{
-			Box::pin(async move { Ok(vec![table.to_owned()].into_iter().collect()) })
-		}
-
-		fn get<'a, D>(&'a self, _: &'a str, _: &'a str) -> GetFuture<'a, D, Self::Error>
-		where
-			D: Entry,
-		{
-			Box::pin(async { Ok(None) })
-		}
-
-		fn has<'a>(&'a self, _: &'a str, _: &'a str) -> HasFuture<'a, Self::Error> {
-			Box::pin(async { Ok(false) })
-		}
-
-		fn create<'a, S>(
-			&'a self,
-			_: &'a str,
-			_: &'a str,
-			_: &'a S,
-		) -> CreateFuture<'a, Self::Error>
-		where
-			S: Entry,
-		{
-			Box::pin(async { Ok(()) })
-		}
-
-		fn update<'a, S>(
-			&'a self,
-			_: &'a str,
-			_: &'a str,
-			_: &'a S,
-		) -> UpdateFuture<'a, Self::Error>
-		where
-			S: Entry,
-		{
-			Box::pin(async { Ok(()) })
-		}
-
-		fn replace<'a, S>(
-			&'a self,
-			_: &'a str,
-			_: &'a str,
-			_: &'a S,
-		) -> ReplaceFuture<'a, Self::Error>
-		where
-			S: Entry,
-		{
-			Box::pin(async { Ok(()) })
-		}
-
-		fn delete<'a>(&'a self, _: &'a str, _: &'a str) -> DeleteFuture<'a, Self::Error> {
-			Box::pin(async { Ok(()) })
-		}
-	}
+	use super::{Backend, CacheBackend, CacheError};
 
 	#[tokio::test]
 	async fn init() {
-		let backend = MockBackend::new();
+		let backend = CacheBackend::new();
 
-		assert_eq!(Backend::init(&backend).await, Ok(()));
+		assert!(Backend::init(&backend).await.is_ok());
 	}
 
 	// The default impl does nothing, this is just for coverage
 	#[tokio::test]
 	async fn shutdown() {
-		let backend = MockBackend::new();
+		let backend = CacheBackend::new();
 
 		unsafe {
 			Backend::shutdown(&backend).await;
 		}
+	}
+
+	#[tokio::test]
+	async fn ensure_table() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		let table_name = "test";
+		assert!(!backend.has_table(table_name).await?);
+
+		Backend::ensure_table(&backend, table_name).await?;
+
+		assert!(backend.has_table(table_name).await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn ensure() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		let table_name = "test";
+		let id = "id";
+		let value = "value".to_owned();
+
+		assert!(!backend.has(table_name, id).await?);
+
+		Backend::ensure(&backend, table_name, id, &value).await?;
+
+		assert!(backend.has(table_name, id).await?);
+
+		Ok(())
 	}
 }
