@@ -75,7 +75,7 @@ impl JsonBackend {
 			base = base.join(value);
 		}
 
-		base
+		base // coverage:ignore-line
 	}
 
 	fn resolve_key(file: OsString) -> Result<String, JsonError> {

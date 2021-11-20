@@ -5,6 +5,7 @@
 	clippy::suspicious,
 	clippy::str_to_string,
 	clippy::string_to_string,
+	clippy::undocumented_unsafe_blocks,
 	missing_copy_implementations,
 	missing_docs
 )]
