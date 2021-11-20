@@ -107,9 +107,9 @@ pub trait Backend: Send + Sync {
 			let mut output = Vec::with_capacity(entries.len());
 
 			for key in entries.iter().copied() {
-				let value = self.get(table, key).await?;
+				let value: Option<D> = self.get(table, key).await?;
 				if value.is_none() {
-					continue;
+					continue; // coverage:ignore-line
 				}
 				output.push(unsafe { value.unwrap_unchecked() });
 			}
