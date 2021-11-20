@@ -243,4 +243,22 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_all() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		backend.create_table("test").await?;
+
+		backend.create("test", "id", &"value".to_owned()).await?;
+		backend.create("test", "id2", &"value2".to_owned()).await?;
+
+		let keys = vec!["id", "id2"];
+		let values: Vec<String> = backend.get_all("test", &keys).await?;
+
+		assert_eq!(values, vec!["value".to_owned(), "value2".to_owned()]);
+
+		Ok(())
+	}
 }
