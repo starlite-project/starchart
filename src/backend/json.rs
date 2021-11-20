@@ -378,6 +378,23 @@ mod tests {
 
 		assert_eq!(JsonBackend::resolve_key(path.into())?, "foo");
 
+		assert!(JsonBackend::resolve_key("foo".into()).is_err());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn init() -> Result<(), JsonError> {
+		let path = Cleanup::new("init")?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		assert!(fs::read_dir(&path).is_ok());
+
+		backend.init().await?;
+
 		Ok(())
 	}
 }
