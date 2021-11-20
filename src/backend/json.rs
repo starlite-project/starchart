@@ -283,6 +283,7 @@ impl Backend for JsonBackend {
 mod tests {
 	use std::{
 		fmt::Debug,
+		fs,
 		path::{Path, PathBuf},
 	};
 
@@ -308,6 +309,14 @@ mod tests {
 
 		assert_eq!(backend.base_directory, PathBuf::from(path));
 
+		let file_path = create_test_path("file.txt");
+
+		fs::create_dir_all(create_test_path(""))?;
+
+		fs::write(&file_path, "Hello, world!")?;
+
+		assert!(JsonBackend::new(file_path).is_err());
+
 		Ok(())
 	}
 
@@ -316,10 +325,9 @@ mod tests {
 		let path = create_test_path("resolve_path");
 		let backend = JsonBackend::new(&path)?;
 
-		assert_eq!(
-			backend.resolve_path(&["table", "id.json"]),
-			PathBuf::from(path).join("table/id.json")
-		);
+		let resolved = backend.resolve_path(&["table", "id.json"]);
+
+		assert_eq!(resolved, PathBuf::from(path).join("table/id.json"));
 
 		Ok(())
 	}
