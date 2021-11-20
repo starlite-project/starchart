@@ -254,7 +254,7 @@ mod tests {
 		backend.create("test", "id", &"value".to_owned()).await?;
 		backend.create("test", "id2", &"value2".to_owned()).await?;
 
-		let keys = vec!["id", "id2", "id3"];
+		let keys = vec!["id", "id2", "doesn't exist"];
 		let values: Vec<String> = backend.get_all("test", &keys).await?;
 
 		assert_eq!(values, vec!["value".to_owned(), "value2".to_owned()]);
