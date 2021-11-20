@@ -372,7 +372,8 @@ mod tests {
 	fn resolve_key() -> Result<(), JsonError> {
 		let path = PathBuf::new().join("foo.json");
 
-		assert_eq!(JsonBackend::resolve_key(path.into())?, "foo");
+		assert_eq!(JsonBackend::resolve_key(path.into())?
+		, "foo");
 
 		assert!(JsonBackend::resolve_key("foo".into()).is_err());
 
