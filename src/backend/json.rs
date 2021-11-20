@@ -300,13 +300,15 @@ mod tests {
 	struct Cleanup(PathBuf);
 
 	impl Cleanup {
-		pub fn new(test_name: &str) -> IoResult<Self> {
+		pub fn new(test_name: &str, should_create: bool) -> IoResult<Self> {
 			let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 				.join("target")
 				.join("tests")
 				.join(test_name);
 
-			fs::create_dir_all(&path)?;
+			if should_create {
+				fs::create_dir_all(&path)?;
+			}
 
 			Ok(Self(path))
 		}
@@ -333,21 +335,15 @@ mod tests {
 
 	#[test]
 	fn new() -> Result<(), JsonError> {
-		let path = Cleanup::new("new")?;
-		let blank = Path::new(env!("CARGO_MANIFEST_DIR"))
-			.join("target")
-			.join("tests")
-			.join("");
+		let path = Cleanup::new("new", true)?;
+		let blank = Cleanup::new("", false)?;
 		let backend = JsonBackend::new(&path)?;
 
 		dbg!(&path);
 
 		assert_eq!(backend.base_directory, PathBuf::from(&path));
 
-		let file_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-			.join("target")
-			.join("tests")
-			.join("file.txt");
+		let file_path = Cleanup::new("file.txt", false)?;
 
 		fs::create_dir_all(blank)?;
 
@@ -362,7 +358,7 @@ mod tests {
 
 	#[test]
 	fn resolve_path() -> Result<(), JsonError> {
-		let path = Cleanup::new("resolve_path")?;
+		let path = Cleanup::new("resolve_path", true)?;
 		let backend = JsonBackend::new(&path)?;
 
 		let resolved = backend.resolve_path(&["table", "id.json"]);
@@ -386,7 +382,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), JsonError> {
-		let path = Cleanup::new("init")?;
+		let path = Cleanup::new("init", false)?;
 		let backend = JsonBackend::new(&path)?;
 
 		backend.init().await?;
