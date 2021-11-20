@@ -278,3 +278,8 @@ impl Backend for JsonBackend {
 		})
 	}
 }
+
+#[cfg(all(test, feature = "json"))]
+mod tests {
+	use crate::backend::{JsonBackend, JsonError, Backend};
+}
