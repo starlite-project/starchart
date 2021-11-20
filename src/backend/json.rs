@@ -282,8 +282,10 @@ impl Backend for JsonBackend {
 #[cfg(all(test, feature = "json"))]
 mod tests {
 	use std::{
+		ffi::OsStr,
 		fmt::Debug,
 		fs,
+		io::Result as IoResult,
 		path::{Path, PathBuf},
 	};
 
@@ -293,41 +295,79 @@ mod tests {
 
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
 
-	fn create_test_path(test_name: &str) -> String {
-		let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-			.join("target")
-			.join("tests")
-			.join(test_name);
+	// TODO: Extract this to another module when creating more fs backends
+	#[derive(Debug, Clone)]
+	struct Cleanup(PathBuf);
 
-		path.to_str().unwrap().to_owned()
+	impl Cleanup {
+		pub fn new(test_name: &str) -> IoResult<Self> {
+			let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("target")
+				.join("tests")
+				.join(test_name);
+
+			fs::create_dir_all(&path)?;
+
+			Ok(Self(path))
+		}
+	}
+
+	impl AsRef<Path> for Cleanup {
+		fn as_ref(&self) -> &Path {
+			self.0.as_ref()
+		}
+	}
+
+	impl AsRef<OsStr> for Cleanup {
+		fn as_ref(&self) -> &OsStr {
+			self.0.as_ref()
+		}
+	}
+
+	impl Drop for Cleanup {
+		#[allow(clippy::let_underscore_drop)]
+		fn drop(&mut self) {
+			let _ = fs::remove_dir_all(&self.0);
+		}
 	}
 
 	#[test]
 	fn new() -> Result<(), JsonError> {
-		let path = create_test_path("new");
+		let path = Cleanup::new("new")?;
+		let blank = Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("target")
+			.join("tests")
+			.join("");
 		let backend = JsonBackend::new(&path)?;
 
-		assert_eq!(backend.base_directory, PathBuf::from(path));
+		dbg!(&path);
 
-		let file_path = create_test_path("file.txt");
+		assert_eq!(backend.base_directory, PathBuf::from(&path));
 
-		fs::create_dir_all(create_test_path(""))?;
+		let file_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("target")
+			.join("tests")
+			.join("file.txt");
+
+		fs::create_dir_all(blank)?;
 
 		fs::write(&file_path, "Hello, world!")?;
 
-		assert!(JsonBackend::new(file_path).is_err());
+		assert!(JsonBackend::new(&file_path).is_err());
+
+		fs::remove_file(file_path)?;
 
 		Ok(())
 	}
 
 	#[test]
 	fn resolve_path() -> Result<(), JsonError> {
-		let path = create_test_path("resolve_path");
+		let path = Cleanup::new("resolve_path")?;
 		let backend = JsonBackend::new(&path)?;
 
 		let resolved = backend.resolve_path(&["table", "id.json"]);
 
-		assert_eq!(resolved, PathBuf::from(path).join("table/id.json"));
+		assert_eq!(resolved, PathBuf::from(&path).join("table/id.json"));
 
 		Ok(())
 	}
