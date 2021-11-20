@@ -196,10 +196,9 @@ mod tests {
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
 
-	use super::{CacheBackend, CacheError};
-	use crate::backend::Backend;
+	use crate::backend::{Backend, CacheBackend, CacheError};
 
-	assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+	assert_impl_all!(CacheBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 	struct Settings {

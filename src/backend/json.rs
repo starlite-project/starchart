@@ -281,5 +281,55 @@ impl Backend for JsonBackend {
 
 #[cfg(all(test, feature = "json"))]
 mod tests {
+	use std::{
+		fmt::Debug,
+		path::{Path, PathBuf},
+	};
+
+	use static_assertions::assert_impl_all;
+
 	use crate::backend::{Backend, JsonBackend, JsonError};
+
+	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
+
+	fn create_test_path(test_name: &str) -> String {
+		let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("target")
+			.join("tests")
+			.join(test_name);
+
+		path.to_str().unwrap().to_owned()
+	}
+
+	#[test]
+	fn new() -> Result<(), JsonError> {
+		let path = create_test_path("new");
+		let backend = JsonBackend::new(&path)?;
+
+		assert_eq!(backend.base_directory, PathBuf::from(path));
+
+		Ok(())
+	}
+
+	#[test]
+	fn resolve_path() -> Result<(), JsonError> {
+		let path = create_test_path("resolve_path");
+		let backend = JsonBackend::new(&path)?;
+
+		assert_eq!(
+			backend.resolve_path(&["table", "id.json"]),
+			PathBuf::from(path).join("table/id.json")
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn resolve_key() -> Result<(), JsonError> {
+		let path = PathBuf::new().join("foo.json");
+
+		assert_eq!(JsonBackend::resolve_key(path.into())?, "foo");
+
+		Ok(())
+	}
 }
