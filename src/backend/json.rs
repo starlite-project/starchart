@@ -345,16 +345,12 @@ mod tests {
 	#[test]
 	fn new() -> Result<(), JsonError> {
 		let path = Cleanup::new("new", true)?;
-		let blank = Cleanup::new("", false)?;
+		let _blank = Cleanup::new("", true)?;
 		let backend = JsonBackend::new(&path)?;
-
-		dbg!(&path);
 
 		assert_eq!(backend.base_directory, PathBuf::from(&path));
 
 		let file_path = Cleanup::new("file.txt", false)?;
-
-		fs::create_dir_all(blank)?;
 
 		fs::write(&file_path, "Hello, world!")?;
 
