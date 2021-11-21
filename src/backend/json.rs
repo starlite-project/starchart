@@ -460,8 +460,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get() -> Result<(), JsonError> {
-		let path = Cleanup::new("get", true)?;
+	async fn get_and_create() -> Result<(), JsonError> {
+		let path = Cleanup::new("get_and_create", true)?;
 		let backend = JsonBackend::new(&path)?;
 
 		backend.init().await?;
@@ -473,6 +473,8 @@ mod tests {
 		assert_eq!(backend.get::<u8>("table", "id").await?, Some(1));
 
 		assert_eq!(backend.get::<u8>("table", "id2").await?, None);
+
+		assert!(backend.create("table", "id", &2_u8).await.is_err());
 
 		Ok(())
 	}
