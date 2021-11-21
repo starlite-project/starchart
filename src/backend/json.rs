@@ -190,7 +190,7 @@ impl Backend for JsonBackend {
 		Box::pin(async move {
 			let filename = id.to_owned() + ".json";
 			let path = self.resolve_path(&[table, filename.as_str()]);
-			let file = {
+			let file = { // coverage:ignore-line
 				match fs::File::open(&path).await {
 					Ok(file) => file.into_std().await,
 					Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
