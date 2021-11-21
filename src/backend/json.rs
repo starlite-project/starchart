@@ -132,7 +132,7 @@ impl Backend for JsonBackend {
 			match result {
 				Ok(_) => Ok(true),
 				Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-				#[cfg_attr(tarpaulin, no_coverage)]
+				#[cfg_attr(tarpaulin, tarpaulin::skip)]
 				Err(e) => Err(e.into()),
 			}
 		})

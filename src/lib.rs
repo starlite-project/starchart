@@ -16,7 +16,8 @@
 	dead_code,
 	deprecated
 )]
-#![cfg_attr(tarpaulin, feature(no_coverage))]
+#![cfg_attr(tarpaulin, feature(register_tool))]
+#![cfg_attr(tarpaulin, register_tool(tarpaulin))]
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! A simple database system that allows the use of multiple different backends.
 
