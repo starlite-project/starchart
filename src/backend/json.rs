@@ -478,4 +478,23 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update() -> Result<(), JsonError> {
+		let path = Cleanup::new("update", true)?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		backend.create("table", "id", &1_u8).await?;
+
+		backend.update("table", "id", &2_u8).await?;
+
+		assert_eq!(backend.get::<u8>("table", "id").await?, Some(2));
+
+		Ok(())
+	}
 }
