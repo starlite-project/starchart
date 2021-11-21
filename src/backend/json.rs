@@ -47,6 +47,7 @@ pub enum JsonError {
 /// A JSON based backend, uses [`serde_json`] to read and write files.
 #[doc(cfg(feature = "json"))]
 #[derive(Default, Clone)]
+#[cfg_attr(tarpaulin_include, derive(Debug))]
 pub struct JsonBackend {
 	base_directory: PathBuf,
 }
@@ -101,6 +102,7 @@ impl JsonBackend {
 	}
 }
 
+#[cfg(not(tarpaulin_include))]
 impl Debug for JsonBackend {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("JsonBackend")
