@@ -401,8 +401,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn has_table() -> Result<(), JsonError> {
-		let path = Cleanup::new("has_table", true)?;
+	async fn has_and_create_table() -> Result<(), JsonError> {
+		let path = Cleanup::new("has_and_create_table", true)?;
 		let backend = JsonBackend::new(&path)?;
 
 		backend.init().await?;
@@ -412,6 +412,27 @@ mod tests {
 		backend.create_table("table").await?;
 
 		assert!(backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys() -> Result<(), JsonError> {
+		let path = Cleanup::new("get_keys", true)?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		backend.create("table", "id", &1).await?;
+		backend.create("table", "id2", &2).await?;
+
+		assert_eq!(
+			backend.get_keys::<Vec<_>>("table").await?,
+			vec!["id".to_owned(), "id2".to_owned()]
+		);
 
 		Ok(())
 	}
