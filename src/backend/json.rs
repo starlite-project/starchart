@@ -132,7 +132,9 @@ impl Backend for JsonBackend {
 			match result {
 				Ok(_) => Ok(true),
 				Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-				Err(e) => Err(e.into()), // coverage:ignore-line
+				// coverage:ignore-start
+				Err(e) => Err(e.into()),
+				// coverage:ignore-end
 			}
 		})
 	}
