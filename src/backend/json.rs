@@ -1,6 +1,7 @@
 use std::{
 	ffi::OsString,
 	fmt::{Debug, Formatter, Result as FmtResult},
+	fs::File as StdFile,
 	io::{self, ErrorKind},
 	iter::FromIterator,
 	path::{Path, PathBuf},
@@ -189,15 +190,14 @@ impl Backend for JsonBackend {
 		Box::pin(async move {
 			let filename = id.to_owned() + ".json";
 			let path = self.resolve_path(&[table, filename.as_str()]);
-			let file: std::fs::File = {
-				let res = fs::File::open(path).await;
-				match res {
+			let file = {
+				match fs::File::open(&path).await {
 					Ok(file) => file.into_std().await,
 					Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
-					Err(e) => return Err(e.into()),
+					Err(e) => return Err(e.into()), // coverage:ignore-line
 				}
 			};
-			let reader = io::BufReader::new(file);
+			let reader = io::BufReader::<StdFile>::new(file);
 			Ok(Some(serde_json::from_reader(reader)?))
 		})
 	}
