@@ -1,5 +1,6 @@
 use std::{
 	ffi::OsString,
+	fmt::{Debug, Formatter, Result as FmtResult},
 	io::{self, ErrorKind},
 	iter::FromIterator,
 	path::{Path, PathBuf},
@@ -45,7 +46,7 @@ pub enum JsonError {
 
 /// A JSON based backend, uses [`serde_json`] to read and write files.
 #[doc(cfg(feature = "json"))]
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct JsonBackend {
 	base_directory: PathBuf,
 }
@@ -97,6 +98,14 @@ impl JsonBackend {
 		} else {
 			Err(JsonError::InvalidFile(path))
 		}
+	}
+}
+
+impl Debug for JsonBackend {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("JsonBackend")
+			.field("base_directory", &self.base_directory.display().to_string())
+			.finish()
 	}
 }
 
@@ -334,7 +343,6 @@ mod tests {
 	}
 
 	#[test]
-	#[cfg_attr(miri, ignore)]
 	fn new() -> Result<(), JsonError> {
 		let path = Cleanup::new("new", true)?;
 		let blank = Cleanup::new("", false)?;
@@ -394,6 +402,4 @@ mod tests {
 
 		Ok(())
 	}
-
-	
 }
