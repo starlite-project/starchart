@@ -210,7 +210,7 @@ impl Backend for JsonBackend {
 			match file {
 				Ok(_) => Ok(true),
 				Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-				Err(e) => Err(e.into()),
+				Err(e) => Err(e.into()), // coverage:ignore-line
 			}
 		})
 	}
@@ -441,8 +441,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn delete_table() -> Result<(), JsonError> {
-		let path = Cleanup::new("delete_table", true)?;
+	async fn create_and_delete_table() -> Result<(), JsonError> {
+		let path = Cleanup::new("create_and_delete_table", true)?;
 		let backend = JsonBackend::new(&path)?;
 
 		backend.init().await?;
@@ -454,6 +454,25 @@ mod tests {
 		backend.delete_table("table").await?;
 
 		assert!(!backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get() -> Result<(), JsonError> {
+		let path = Cleanup::new("get", true)?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		backend.create("table", "id", &1_u8).await?;
+
+		assert_eq!(backend.get::<u8>("table", "id").await?, Some(1));
+
+		assert_eq!(backend.get::<u8>("table", "id2").await?, None);
 
 		Ok(())
 	}
