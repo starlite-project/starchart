@@ -481,8 +481,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn update() -> Result<(), JsonError> {
-		let path = Cleanup::new("update", true)?;
+	async fn update_and_replace() -> Result<(), JsonError> {
+		let path = Cleanup::new("update_and_replace", true)?;
 		let backend = JsonBackend::new(&path)?;
 
 		backend.init().await?;
@@ -494,6 +494,29 @@ mod tests {
 		backend.update("table", "id", &2_u8).await?;
 
 		assert_eq!(backend.get::<u8>("table", "id").await?, Some(2));
+
+		backend.replace("table", "id", &3_u8).await?;
+
+		assert_eq!(backend.get::<u8>("table", "id").await?, Some(3));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn delete() -> Result<(), JsonError> {
+		let path = Cleanup::new("delete", true)?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		backend.create("table", "id", &1_u8).await?;
+
+		backend.delete("table", "id").await?;
+
+		assert_eq!(backend.get::<u8>("table", "id").await?, None);
 
 		Ok(())
 	}
