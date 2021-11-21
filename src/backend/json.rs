@@ -190,16 +190,14 @@ impl Backend for JsonBackend {
 		Box::pin(async move {
 			let filename = id.to_owned() + ".json";
 			let path = self.resolve_path(&[table, filename.as_str()]);
-			#[rustfmt::skip]
-			let file = { // coverage:ignore-line
-				match fs::File::open(&path).await {
-					Ok(file) => file.into_std().await,
-					Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
-					Err(e) => return Err(e.into()), // coverage:ignore-line
+			match fs::File::open(&path).await {
+				Ok(file) => {
+					let reader = io::BufReader::<StdFile>::new(file.into_std().await);
+					Ok(Some(serde_json::from_reader(reader)?))
 				}
-			};
-			let reader = io::BufReader::<StdFile>::new(file);
-			Ok(Some(serde_json::from_reader(reader)?))
+				Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
+				Err(e) => Err(e.into()), // coverage:ignore-line
+			}
 		})
 	}
 
