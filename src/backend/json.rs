@@ -125,7 +125,6 @@ impl Backend for JsonBackend {
 		})
 	}
 
-	#[cfg_attr(tarpaulin, tarpaulin::skip)]
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, JsonError> {
 		Box::pin(async move {
 			let result = fs::read_dir(self.resolve_path(&[table])).await;
