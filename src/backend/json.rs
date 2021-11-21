@@ -334,6 +334,7 @@ mod tests {
 	}
 
 	#[test]
+	#[cfg_attr(miri, ignore)]
 	fn new() -> Result<(), JsonError> {
 		let path = Cleanup::new("new", true)?;
 		let blank = Cleanup::new("", false)?;
@@ -393,4 +394,6 @@ mod tests {
 
 		Ok(())
 	}
+
+	
 }
