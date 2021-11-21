@@ -438,4 +438,23 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn delete_table() -> Result<(), JsonError> {
+		let path = Cleanup::new("delete_table", true)?;
+		let backend = JsonBackend::new(&path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		Ok(())
+	}
 }
