@@ -762,4 +762,12 @@ mod tests {
 			(ActionKind::Create, OperationTarget::Entry)
 		);
 	}
+
+	#[test]
+	fn default() {
+		let default = Action::<Settings, ReadOperation, EntryTarget>::default();
+
+		assert!(default.data.is_none());
+		assert!(default.key.is_none());
+	}
 }
