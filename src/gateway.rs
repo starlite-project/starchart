@@ -33,6 +33,10 @@ where
 }
 
 #[cfg(not(tarpaulin_include))]
+#[deprecated(
+	since = "0.3.0",
+	note = "direct database interaction is deprecated, users should use Actions instead."
+)]
 impl<'a, B> DbRef<'a, B>
 where
 	B: Backend,
@@ -82,7 +86,7 @@ where
 ///
 /// The inner data is wrapped in an [`Arc`], so cloning
 /// is cheap and will allow multiple accesses to the data.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Gateway<B: Backend> {
 	backend: Arc<B>,
 	databases: Arc<DashMap<String, Database<B>>>,
@@ -135,7 +139,14 @@ impl<B: Backend> Gateway<B> {
 			Ok(action.run(self).await)
 		}
 	}
+}
 
+#[deprecated(
+	since = "0.3.0",
+	note = "direct database interaction is deprecated, users should use Actions instead."
+)]
+#[cfg(not(tarpaulin_include))]
+impl<B: Backend> Gateway<B> {
 	/// Acquires a [`Database`], uses [`Gateway::get`] first, then [`Gateway::create`]
 	/// if a [`Database`] was not found.
 	///
@@ -148,10 +159,6 @@ impl<B: Backend> Gateway<B> {
 	///
 	/// An error will be raised if the type provided is not the same as the type provided
 	/// when the database was created.
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub async fn acquire<S>(
 		&self,
 		table_name: String,
@@ -175,10 +182,6 @@ impl<B: Backend> Gateway<B> {
 	///
 	/// The generic parameter `S` should be whatever type you plan on storing in the [`Database`],
 	/// passing an incorrect type will create a runtime error.
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub async fn create<S>(
 		&self,
 		table_name: String,
@@ -206,10 +209,6 @@ impl<B: Backend> Gateway<B> {
 	/// # Errors
 	///
 	/// Returns an error if the passed type does not match the one the database was created with.
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub fn get<'a, S>(
 		&'a self,
 		table_name: &str,
@@ -244,10 +243,6 @@ impl<B: Backend> Gateway<B> {
 	/// Can return errors from [`Gateway::get`], as well as from [`Backend::delete_table`].
 	///
 	/// [`Gateway::get`]: Self::get
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub async fn delete<S>(&self, table_name: &str) -> Result<(), DatabaseError<B::Error>>
 	where
 		S: Entry + 'static,
@@ -275,10 +270,6 @@ impl<B: Backend> Gateway<B> {
 	/// # Safety
 	///
 	/// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub async unsafe fn delete_unchecked<S>(&self, table_name: &str)
 	where
 		S: Entry + 'static,
@@ -303,10 +294,6 @@ impl<B: Backend> Gateway<B> {
 	/// # Safety
 	///
 	/// This uses both [`Result::unwrap_unchecked`] and [`Option::unwrap_unchecked`] under the hood.
-	#[deprecated(
-		since = "0.3.0",
-		note = "direct database interaction is deprecated, users should use Actions instead."
-	)]
 	pub unsafe fn get_unchecked<'a, S>(&'a self, table_name: &str) -> DbRef<'a, B>
 	where
 		S: Entry + 'static,
@@ -332,5 +319,50 @@ impl<B: Backend> Clone for Gateway<B> {
 impl<B: Backend> Drop for Gateway<B> {
 	fn drop(&mut self) {
 		block_on(unsafe { self.backend.shutdown() });
+	}
+}
+
+#[cfg(all(test, feature = "cache"))]
+mod tests {
+	use std::{fmt::Debug, sync::Arc};
+
+	use static_assertions::assert_impl_all;
+
+	use crate::{
+		test_utils::{MockBackend, MockBackendError},
+		Gateway,
+	};
+
+	assert_impl_all!(Gateway<MockBackend>: Clone, Debug, Default, Drop);
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn new_and_drop() -> Result<(), MockBackendError> {
+		let backend = MockBackend::new();
+		let gateway = Gateway::new(backend).await?;
+
+		// SAFETY: this is a test
+		let backend = unsafe { gateway.backend() };
+
+		assert!(backend.is_initialized());
+
+		drop(backend);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn clone() -> Result<(), MockBackendError> {
+		let backend = MockBackend::new();
+		let gateway = Gateway::new(backend).await?;
+
+		{
+			let cloned = gateway.clone();
+			let cloned_backend = &cloned.backend;
+			assert_eq!(Arc::strong_count(cloned_backend), 2);
+		}
+
+		Ok(())
 	}
 }

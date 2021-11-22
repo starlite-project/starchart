@@ -292,57 +292,16 @@ impl Backend for JsonBackend {
 
 #[cfg(all(test, feature = "json"))]
 mod tests {
-	use std::{
-		ffi::OsStr,
-		fmt::Debug,
-		fs,
-		io::Result as IoResult,
-		path::{Path, PathBuf},
-	};
+	use std::{fmt::Debug, fs, path::PathBuf};
 
 	use static_assertions::assert_impl_all;
 
-	use crate::backend::{Backend, JsonBackend, JsonError};
+	use crate::{
+		backend::{Backend, JsonBackend, JsonError},
+		test_utils::FsCleanup as Cleanup,
+	};
 
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
-
-	// TODO: Extract this to another module when creating more fs backends
-	#[derive(Debug, Clone)]
-	struct Cleanup(PathBuf);
-
-	impl Cleanup {
-		pub fn new(test_name: &str, should_create: bool) -> IoResult<Self> {
-			let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-				.join("target")
-				.join("tests")
-				.join(test_name);
-
-			if should_create {
-				fs::create_dir_all(&path)?;
-			}
-
-			Ok(Self(path))
-		}
-	}
-
-	impl AsRef<Path> for Cleanup {
-		fn as_ref(&self) -> &Path {
-			self.0.as_ref()
-		}
-	}
-
-	impl AsRef<OsStr> for Cleanup {
-		fn as_ref(&self) -> &OsStr {
-			self.0.as_ref()
-		}
-	}
-
-	impl Drop for Cleanup {
-		#[allow(clippy::let_underscore_drop)]
-		fn drop(&mut self) {
-			let _ = fs::remove_dir_all(&self.0);
-		}
-	}
 
 	#[test]
 	fn new() -> Result<(), JsonError> {
