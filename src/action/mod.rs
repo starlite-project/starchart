@@ -589,11 +589,11 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 mod tests {
 	use serde::{Deserialize, Serialize};
 
-	use super::{Action, ActionKind, EntryTarget, OperationTarget, ReadOperation};
-	use crate::{
-		action::{CreateOperation, TableTarget},
-		IndexEntry,
+	use super::{
+		Action, ActionKind, CreateOperation, DeleteOperation, EntryTarget, OperationTarget,
+		ReadOperation, TableTarget, UpdateOperation,
 	};
+	use crate::IndexEntry;
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -686,6 +686,70 @@ mod tests {
 				option: false,
 				value: 79
 			}))
+		);
+	}
+
+	#[test]
+	fn constructor_methods() {
+		assert_eq!(
+			Action::<Settings, CreateOperation, EntryTarget>::create().kind(),
+			ActionKind::Create
+		);
+		assert_eq!(
+			Action::<Settings, ReadOperation, EntryTarget>::read().kind(),
+			ActionKind::Read
+		);
+		assert_eq!(
+			Action::<Settings, UpdateOperation, EntryTarget>::update().kind(),
+			ActionKind::Update
+		);
+		assert_eq!(
+			Action::<Settings, DeleteOperation, EntryTarget>::delete().kind(),
+			ActionKind::Delete
+		);
+		assert_eq!(
+			Action::<Settings, ReadOperation, TableTarget>::table().target(),
+			OperationTarget::Table
+		);
+		assert_eq!(
+			Action::<Settings, ReadOperation, EntryTarget>::entry().target(),
+			OperationTarget::Entry
+		);
+
+		let create_table: Action<Settings, CreateOperation, TableTarget> = Action::create_table();
+		assert_eq!(
+			(create_table.kind(), create_table.target()),
+			(ActionKind::Create, OperationTarget::Table)
+		);
+
+		let read_entry: Action<Settings, ReadOperation, EntryTarget> = Action::read_entry();
+		assert_eq!(
+			(read_entry.kind(), read_entry.target()),
+			(ActionKind::Read, OperationTarget::Entry)
+		);
+
+		let update_entry: Action<Settings, UpdateOperation, EntryTarget> = Action::update_entry();
+		assert_eq!(
+			(update_entry.kind(), update_entry.target()),
+			(ActionKind::Update, OperationTarget::Entry)
+		);
+
+		let delete_entry: Action<Settings, DeleteOperation, EntryTarget> = Action::delete_entry();
+		assert_eq!(
+			(delete_entry.kind(), delete_entry.target()),
+			(ActionKind::Delete, OperationTarget::Entry)
+		);
+
+		let read_table: Action<Settings, ReadOperation, TableTarget> = Action::read_table();
+		assert_eq!(
+			(read_table.kind(), read_table.target()),
+			(ActionKind::Read, OperationTarget::Table)
+		);
+
+		let delete_table: Action<Settings, DeleteOperation, TableTarget> = Action::delete_table();
+		assert_eq!(
+			(delete_table.kind(), delete_table.target()),
+			(ActionKind::Delete, OperationTarget::Table)
 		);
 	}
 }
