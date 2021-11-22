@@ -21,6 +21,19 @@ use super::{
 };
 use crate::Entry;
 
+macro_rules! handle_io_result {
+	($res:expr, $name:ident, $okay:expr) => {
+		handle_io_result!($res, $name, $okay, Ok(None))
+	};
+	($res:expr, $name:ident, $okay:expr, $not_found:expr) => {
+		match $res {
+			Ok($name) => $okay,
+			Err(err) if err.kind() == ::std::io::ErrorKind::NotFound => $not_found,
+			Err(e) => Err($crate::error::JsonError::from(e)),
+		}
+	};
+}
+
 /// An error returned from the [`JsonBackend`].
 ///
 /// [`JsonBackend`]: crate::backend::JsonBackend
@@ -129,11 +142,7 @@ impl Backend for JsonBackend {
 		Box::pin(async move {
 			let result = fs::read_dir(self.resolve_path(&[table])).await;
 
-			match result {
-				Ok(_) => Ok(true),
-				Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-				Err(e) => Err(JsonError::from(e)), // coverage:ignore-line
-			}
+			handle_io_result!(result, _val, Ok(true), Ok(false))
 		})
 	}
 
@@ -190,14 +199,10 @@ impl Backend for JsonBackend {
 		Box::pin(async move {
 			let filename = id.to_owned() + ".json";
 			let path = self.resolve_path(&[table, filename.as_str()]);
-			match fs::File::open(&path).await {
-				Ok(file) => {
-					let reader = io::BufReader::<StdFile>::new(file.into_std().await);
-					Ok(Some(serde_json::from_reader(reader)?))
-				}
-				Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
-				Err(e) => Err(e.into()), // coverage:ignore-line
-			}
+			handle_io_result!(fs::File::open(&path).await, file, {
+				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
+				Ok(Some(serde_json::from_reader(reader)?))
+			})
 		})
 	}
 
@@ -206,11 +211,7 @@ impl Backend for JsonBackend {
 			let filename = id.to_owned() + ".json";
 			let file = fs::read(self.resolve_path(&[table, filename.as_str()])).await;
 
-			match file {
-				Ok(_) => Ok(true),
-				Err(err) if err.kind() == ErrorKind::NotFound => Ok(false),
-				Err(e) => Err(e.into()), // coverage:ignore-line
-			}
+			handle_io_result!(file, _val, Ok(true), Ok(false))
 		})
 	}
 
