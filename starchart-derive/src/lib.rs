@@ -17,7 +17,7 @@ const KEY_IDENT: &str = "key";
 const ID_IDENT: &str = "id";
 
 use proc_macro2::TokenStream;
-use quote::{quote_spanned, quote};
+use quote::{quote, quote_spanned};
 use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Error, Field, Fields, Result};
 
 #[proc_macro_derive(IndexEntry, attributes(key))]
