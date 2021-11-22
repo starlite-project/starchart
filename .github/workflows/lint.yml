@@ -10,6 +10,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    if: ${{ !always() }}
 
     steps:
       - name: Checkout sources
