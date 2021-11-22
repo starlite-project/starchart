@@ -8,5 +8,16 @@
     "rust-analyzer.assist.importEnforceGranularity": true,
     "rust-analyzer.assist.importGranularity": "crate",
     "rust-analyzer.cargo.runBuildScripts": true,
-    "rust-analyzer.checkOnSave.command": "clippy"
+    "rust-analyzer.checkOnSave.extraArgs": [
+        "--tests"
+    ],
+    "rust-analyzer.diagnostics.warningsAsInfo": [
+        "unused_variables",
+        "dead_code"
+    ],
+    "errorLens.enabledDiagnosticLevels": [
+        "error",
+        "warning",
+        "hint"
+    ]
 }

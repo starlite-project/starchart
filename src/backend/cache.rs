@@ -1,7 +1,6 @@
 use std::iter::FromIterator;
 
 use dashmap::{mapref::one::Ref, DashMap};
-use serde::{Deserialize, Serialize};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use thiserror::Error;
 
@@ -12,6 +11,7 @@ use super::{
 	},
 	Backend,
 };
+use crate::Entry;
 
 /// An error returned from the [`CacheBackend`].
 #[doc(cfg(feature = "cache"))]
@@ -96,7 +96,7 @@ impl Backend for CacheBackend {
 
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync,
+		D: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -125,7 +125,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> CreateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -149,7 +149,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> UpdateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -167,7 +167,7 @@ impl Backend for CacheBackend {
 		value: &'a S,
 	) -> ReplaceFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			self.update(table, id, value).await?;
@@ -196,10 +196,9 @@ mod tests {
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
 
-	use super::{CacheBackend, CacheError};
-	use crate::{backend::Backend, test_utils::SyncFuture};
+	use crate::backend::{Backend, CacheBackend, CacheError};
 
-	assert_impl_all!(CacheBackend: Clone, Debug, Default, crate::backend::Backend);
+	assert_impl_all!(CacheBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 	struct Settings {
@@ -231,46 +230,50 @@ mod tests {
 		Ok(())
 	}
 
-	#[test]
-	fn has_table() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn has_table() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		assert!(!cache_backend.has_table("test").wait()?);
+		assert!(!cache_backend.has_table("test").await?);
 
 		Ok(())
 	}
 
-	#[test]
-	fn create_table() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn create_table() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		assert!(cache_backend.tables.contains_key("test"));
 
 		Ok(())
 	}
 
-	#[test]
-	fn delete_table() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn delete_table() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		assert!(cache_backend.tables.contains_key("test"));
 
-		cache_backend.delete_table("test").wait()?;
+		cache_backend.delete_table("test").await?;
 
 		assert!(!cache_backend.tables.contains_key("test"));
 
 		Ok(())
 	}
 
-	#[test]
-	fn get_keys() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		cache_backend
 			.tables
@@ -278,15 +281,16 @@ mod tests {
 			.unwrap()
 			.insert("key".to_owned(), to_value("value")?);
 
-		let keys = cache_backend.get_keys::<Vec<_>>("test").wait()?;
+		let keys = cache_backend.get_keys::<Vec<_>>("test").await?;
 
 		assert_eq!(keys, vec!["key".to_owned()]);
 
 		Ok(())
 	}
 
-	#[test]
-	fn get_and_create() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
 		let settings = Settings {
@@ -294,11 +298,11 @@ mod tests {
 			times: 42,
 		};
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
-		cache_backend.create("test", "foo", &settings).wait()?;
+		cache_backend.create("test", "foo", &settings).await?;
 
-		let settings = cache_backend.get::<Settings>("test", "foo").wait()?;
+		let settings = cache_backend.get::<Settings>("test", "foo").await?;
 
 		assert_eq!(
 			settings,
@@ -308,23 +312,24 @@ mod tests {
 			})
 		);
 
-		let not_existing = cache_backend.get::<Settings>("test", "bar").wait()?;
+		let not_existing = cache_backend.get::<Settings>("test", "bar").await?;
 
 		assert_eq!(not_existing, None);
 
 		assert!(cache_backend
 			.create("test", "foo", &settings)
-			.wait()
+			.await
 			.is_err());
 
 		Ok(())
 	}
 
-	#[test]
-	fn has() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn has() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		cache_backend
 			.create(
@@ -335,20 +340,21 @@ mod tests {
 					times: 42,
 				},
 			)
-			.wait()?;
+			.await?;
 
-		assert!(cache_backend.has("test", "foo").wait()?);
+		assert!(cache_backend.has("test", "foo").await?);
 
-		assert!(!cache_backend.has("test", "bar").wait()?);
+		assert!(!cache_backend.has("test", "bar").await?);
 
 		Ok(())
 	}
 
-	#[test]
-	fn update_and_replace() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_replace() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		cache_backend
 			.create(
@@ -359,7 +365,7 @@ mod tests {
 					times: 42,
 				},
 			)
-			.wait()?;
+			.await?;
 
 		cache_backend
 			.update(
@@ -370,10 +376,10 @@ mod tests {
 					times: 43,
 				},
 			)
-			.wait()?;
+			.await?;
 
 		assert_eq!(
-			cache_backend.get::<Settings>("test", "foo").wait()?,
+			cache_backend.get::<Settings>("test", "foo").await?,
 			Some(Settings {
 				option: false,
 				times: 43
@@ -389,10 +395,10 @@ mod tests {
 					times: 44,
 				},
 			)
-			.wait()?;
+			.await?;
 
 		assert_eq!(
-			cache_backend.get::<Settings>("test", "foo").wait()?,
+			cache_backend.get::<Settings>("test", "foo").await?,
 			Some(Settings {
 				option: true,
 				times: 44
@@ -402,11 +408,12 @@ mod tests {
 		Ok(())
 	}
 
-	#[test]
-	fn delete() -> Result<(), CacheError> {
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn delete() -> Result<(), CacheError> {
 		let cache_backend = CacheBackend::new();
 
-		cache_backend.create_table("test").wait()?;
+		cache_backend.create_table("test").await?;
 
 		cache_backend
 			.create(
@@ -417,13 +424,13 @@ mod tests {
 					times: 42,
 				},
 			)
-			.wait()?;
+			.await?;
 
-		assert!(cache_backend.has("test", "foo").wait()?);
+		assert!(cache_backend.has("test", "foo").await?);
 
-		cache_backend.delete("test", "foo").wait()?;
+		cache_backend.delete("test", "foo").await?;
 
-		assert!(!cache_backend.has("test", "foo").wait()?);
+		assert!(!cache_backend.has("test", "foo").await?);
 
 		Ok(())
 	}

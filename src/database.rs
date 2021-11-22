@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
 
 use thiserror::Error;

@@ -5,6 +5,7 @@
 	clippy::suspicious,
 	clippy::str_to_string,
 	clippy::string_to_string,
+	clippy::undocumented_unsafe_blocks,
 	missing_copy_implementations,
 	missing_docs
 )]
@@ -12,7 +13,6 @@
 #![allow(
 	clippy::module_name_repetitions,
 	clippy::no_effect_underscore_binding,
-	dead_code,
 	deprecated
 )]
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
@@ -24,8 +24,6 @@ mod database;
 mod entry;
 pub mod error;
 pub mod gateway;
-#[cfg(test)]
-mod test_utils;
 
 #[doc(inline)]
 pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};

@@ -10,6 +10,8 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    # FIXME: remove once https://github.com/rust-lang/rust-clippy/issues/8020 is fixed
+    if: ${{ !always() }}
 
     steps:
       - name: Checkout sources
@@ -33,7 +35,7 @@ jobs:
           RUSTFLAGS: "-C target-cpu=haswell"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --tests --workspace
+          args: --all-features --tests --workspace
 
   rustfmt:
     name: Format

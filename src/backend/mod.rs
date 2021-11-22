@@ -4,13 +4,12 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
-use serde::{Deserialize, Serialize};
-
 use self::future::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
+use crate::Entry;
 
 pub mod future;
 
@@ -101,16 +100,16 @@ pub trait Backend: Send + Sync {
 		entries: &'a [&str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync,
+		D: Entry,
 		I: FromIterator<D>,
 	{
 		Box::pin(async move {
 			let mut output = Vec::with_capacity(entries.len());
 
 			for key in entries.iter().copied() {
-				let value = self.get(table, key).await?;
+				let value: Option<D> = self.get(table, key).await?;
 				if value.is_none() {
-					continue;
+					continue; // coverage:ignore-line
 				}
 				output.push(unsafe { value.unwrap_unchecked() });
 			}
@@ -127,7 +126,7 @@ pub trait Backend: Send + Sync {
 	/// Gets a certain entry from a table.
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
-		D: for<'de> Deserialize<'de> + Send + Sync;
+		D: Entry;
 
 	/// Checks if an entry exists in a table.
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error>;
@@ -140,7 +139,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> CreateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Ensures a value exists in the table.
 	fn ensure<'a, S>(
@@ -150,7 +149,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> EnsureFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync,
+		S: Entry,
 	{
 		Box::pin(async move {
 			if !self.has(table, id).await? {
@@ -169,7 +168,7 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> UpdateFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Replaces an existing entry in a table.
 	fn replace<'a, S>(
@@ -179,8 +178,91 @@ pub trait Backend: Send + Sync {
 		value: &'a S,
 	) -> ReplaceFuture<'a, Self::Error>
 	where
-		S: Serialize + Send + Sync;
+		S: Entry;
 
 	/// Deletes an entry from a table.
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
+}
+
+// need to cfg for cache because otherwise we would get errors if someone just ran `cargo test`
+#[cfg(all(test, feature = "cache"))]
+mod tests {
+
+	use super::{Backend, CacheBackend, CacheError};
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn init() {
+		let backend = CacheBackend::new();
+
+		assert!(Backend::init(&backend).await.is_ok());
+	}
+
+	// The default impl does nothing, this is just for coverage
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn shutdown() {
+		let backend = CacheBackend::new();
+
+		unsafe {
+			Backend::shutdown(&backend).await;
+		}
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn ensure_table() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		let table_name = "test";
+		assert!(!backend.has_table(table_name).await?);
+
+		Backend::ensure_table(&backend, table_name).await?;
+
+		assert!(backend.has_table(table_name).await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn ensure() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		let table_name = "test";
+		let id = "id";
+		let value = "value".to_owned();
+
+		backend.create_table(table_name).await?;
+
+		assert!(!backend.has(table_name, id).await?);
+
+		Backend::ensure(&backend, table_name, id, &value).await?;
+
+		assert!(backend.has(table_name, id).await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_all() -> Result<(), CacheError> {
+		let backend = CacheBackend::new();
+
+		backend.create_table("test").await?;
+
+		backend.create("test", "id", &"value".to_owned()).await?;
+		backend.create("test", "id2", &"value2".to_owned()).await?;
+
+		let keys = vec!["id", "id2", "doesn't exist"];
+		let mut values: Vec<String> = backend.get_all("test", &keys).await?;
+		let mut expected = vec!["value".to_owned(), "value2".to_owned()];
+
+		values.sort();
+		expected.sort();
+
+		assert_eq!(values, expected);
+
+		Ok(())
+	}
 }
