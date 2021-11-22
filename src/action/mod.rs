@@ -751,5 +751,11 @@ mod tests {
 			(delete_table.kind(), delete_table.target()),
 			(ActionKind::Delete, OperationTarget::Table)
 		);
+
+		let create_entry: Action<Settings, CreateOperation, EntryTarget> = Action::create_entry();
+		assert_eq!(
+			(create_entry.kind(), create_entry.target()),
+			(ActionKind::Create, OperationTarget::Entry)
+		);
 	}
 }
