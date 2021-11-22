@@ -1,3 +1,5 @@
+#![allow(clippy::undocumented_unsafe_blocks)]
+
 use std::{
 	ffi::OsStr,
 	fs,
@@ -61,14 +63,12 @@ impl Drop for FsCleanup {
 #[error(transparent)]
 pub struct MockBackendError(#[from] CacheError);
 
-#[cfg(feature = "cache")]
 #[derive(Debug, Default)]
 pub struct MockBackend {
 	inner: CacheBackend,
 	initialized: AtomicBool,
 }
 
-#[cfg(feature = "cache")]
 impl MockBackend {
 	pub fn new() -> Self {
 		Self {
