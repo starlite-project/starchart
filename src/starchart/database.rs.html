@@ -189,7 +189,11 @@
 <span id="189">189</span>
 <span id="190">190</span>
 <span id="191">191</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
+<span id="192">192</span>
+<span id="193">193</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
+
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 

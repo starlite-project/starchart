@@ -428,10 +428,16 @@
 <span id="428">428</span>
 <span id="429">429</span>
 <span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::iter::FromIterator</span>;
 
 <span class="kw">use</span> <span class="ident">dashmap</span>::{<span class="ident">mapref::one::Ref</span>, <span class="ident">DashMap</span>};
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">serde_value</span>::{<span class="ident">to_value</span>, <span class="ident">DeserializerError</span>, <span class="ident">SerializerError</span>, <span class="ident">Value</span>};
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
@@ -442,6 +448,7 @@
 	},
 	<span class="ident">Backend</span>,
 };
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Entry</span>;
 
 <span class="doccomment">/// An error returned from the [`CacheBackend`].</span>
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>))]</span>
@@ -526,7 +533,7 @@
 
 	<span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">D</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">GetFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">D</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
-		<span class="ident">D</span>: <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="ident">Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;de</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+		<span class="ident">D</span>: <span class="ident">Entry</span>,
 	{
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
 			<span class="kw">let</span> <span class="ident">table_value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_table</span>(<span class="ident">table</span>)<span class="question-mark">?</span>;
@@ -555,7 +562,7 @@
 		<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>,
 	) -&gt; <span class="ident">CreateFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
-		<span class="ident">S</span>: <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+		<span class="ident">S</span>: <span class="ident">Entry</span>,
 	{
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
 			<span class="kw">let</span> <span class="ident">table_value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_table</span>(<span class="ident">table</span>)<span class="question-mark">?</span>;
@@ -579,7 +586,7 @@
 		<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>,
 	) -&gt; <span class="ident">UpdateFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
-		<span class="ident">S</span>: <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+		<span class="ident">S</span>: <span class="ident">Entry</span>,
 	{
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
 			<span class="kw">let</span> <span class="ident">table_value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_table</span>(<span class="ident">table</span>)<span class="question-mark">?</span>;
@@ -597,7 +604,7 @@
 		<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">S</span>,
 	) -&gt; <span class="ident">ReplaceFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
-		<span class="ident">S</span>: <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+		<span class="ident">S</span>: <span class="ident">Entry</span>,
 	{
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
 			<span class="self">self</span>.<span class="ident">update</span>(<span class="ident">table</span>, <span class="ident">id</span>, <span class="ident">value</span>).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -626,10 +633,9 @@
 	<span class="kw">use</span> <span class="ident">serde_value::to_value</span>;
 	<span class="kw">use</span> <span class="ident">static_assertions::assert_impl_all</span>;
 
-	<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">CacheBackend</span>, <span class="ident">CacheError</span>};
-	<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">backend::Backend</span>, <span class="ident">test_utils::SyncFuture</span>};
+	<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::backend</span>::{<span class="ident">Backend</span>, <span class="ident">CacheBackend</span>, <span class="ident">CacheError</span>};
 
-	<span class="macro">assert_impl_all!</span>(<span class="ident">CacheBackend</span>: <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident"><span class="kw">crate</span>::backend::Backend</span>);
+	<span class="macro">assert_impl_all!</span>(<span class="ident">CacheBackend</span>: <span class="ident">Backend</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Send</span>, <span class="ident">Sync</span>);
 
 	<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 	<span class="kw">struct</span> <span class="ident">Settings</span> {
@@ -661,46 +667,50 @@
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">has_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">has_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>);
+		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>);
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">create_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">tables</span>.<span class="ident">contains_key</span>(<span class="string">&quot;test&quot;</span>));
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">delete_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">tables</span>.<span class="ident">contains_key</span>(<span class="string">&quot;test&quot;</span>));
 
-		<span class="ident">cache_backend</span>.<span class="ident">delete_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">delete_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">tables</span>.<span class="ident">contains_key</span>(<span class="string">&quot;test&quot;</span>));
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">get_keys</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_keys</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="ident">cache_backend</span>
 			.<span class="ident">tables</span>
@@ -708,15 +718,16 @@
 			.<span class="ident">unwrap</span>()
 			.<span class="ident">insert</span>(<span class="string">&quot;key&quot;</span>.<span class="ident">to_owned</span>(), <span class="ident">to_value</span>(<span class="string">&quot;value&quot;</span>)<span class="question-mark">?</span>);
 
-		<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert_eq!</span>(<span class="ident">keys</span>, <span class="macro">vec!</span>[<span class="string">&quot;key&quot;</span>.<span class="ident">to_owned</span>()]);
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">get_and_create</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_and_create</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
 		<span class="kw">let</span> <span class="ident">settings</span> <span class="op">=</span> <span class="ident">Settings</span> {
@@ -724,11 +735,11 @@
 			<span class="ident">times</span>: <span class="number">42</span>,
 		};
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="ident">cache_backend</span>.<span class="ident">create</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">settings</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">settings</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="kw">let</span> <span class="ident">settings</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">settings</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert_eq!</span>(
 			<span class="ident">settings</span>,
@@ -738,23 +749,24 @@
 			})
 		);
 
-		<span class="kw">let</span> <span class="ident">not_existing</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;bar&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">not_existing</span> <span class="op">=</span> <span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;bar&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert_eq!</span>(<span class="ident">not_existing</span>, <span class="prelude-val">None</span>);
 
 		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>
 			.<span class="ident">create</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">settings</span>)
-			.<span class="ident">wait</span>()
+			.<span class="kw">await</span>
 			.<span class="ident">is_err</span>());
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">has</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">has</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="ident">cache_backend</span>
 			.<span class="ident">create</span>(
@@ -765,20 +777,21 @@
 					<span class="ident">times</span>: <span class="number">42</span>,
 				},
 			)
-			.<span class="ident">wait</span>()<span class="question-mark">?</span>;
+			.<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>);
+		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>);
 
-		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;bar&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>);
+		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;bar&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>);
 
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">update_and_replace</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">update_and_replace</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="ident">cache_backend</span>
 			.<span class="ident">create</span>(
@@ -789,7 +802,7 @@
 					<span class="ident">times</span>: <span class="number">42</span>,
 				},
 			)
-			.<span class="ident">wait</span>()<span class="question-mark">?</span>;
+			.<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="ident">cache_backend</span>
 			.<span class="ident">update</span>(
@@ -800,10 +813,10 @@
 					<span class="ident">times</span>: <span class="number">43</span>,
 				},
 			)
-			.<span class="ident">wait</span>()<span class="question-mark">?</span>;
+			.<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert_eq!</span>(
-			<span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>,
+			<span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>,
 			<span class="prelude-val">Some</span>(<span class="ident">Settings</span> {
 				<span class="ident">option</span>: <span class="bool-val">false</span>,
 				<span class="ident">times</span>: <span class="number">43</span>
@@ -819,10 +832,10 @@
 					<span class="ident">times</span>: <span class="number">44</span>,
 				},
 			)
-			.<span class="ident">wait</span>()<span class="question-mark">?</span>;
+			.<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert_eq!</span>(
-			<span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>,
+			<span class="ident">cache_backend</span>.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>,
 			<span class="prelude-val">Some</span>(<span class="ident">Settings</span> {
 				<span class="ident">option</span>: <span class="bool-val">true</span>,
 				<span class="ident">times</span>: <span class="number">44</span>
@@ -832,11 +845,12 @@
 		<span class="prelude-val">Ok</span>(())
 	}
 
-	<span class="attribute">#[<span class="ident">test</span>]</span>
-	<span class="kw">fn</span> <span class="ident">delete</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
+	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">cache_backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
 
-		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="ident">cache_backend</span>
 			.<span class="ident">create</span>(
@@ -847,13 +861,13 @@
 					<span class="ident">times</span>: <span class="number">42</span>,
 				},
 			)
-			.<span class="ident">wait</span>()<span class="question-mark">?</span>;
+			.<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>);
+		<span class="macro">assert!</span>(<span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>);
 
-		<span class="ident">cache_backend</span>.<span class="ident">delete</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>;
+		<span class="ident">cache_backend</span>.<span class="ident">delete</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="ident">wait</span>()<span class="question-mark">?</span>);
+		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">cache_backend</span>.<span class="ident">has</span>(<span class="string">&quot;test&quot;</span>, <span class="string">&quot;foo&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>);
 
 		<span class="prelude-val">Ok</span>(())
 	}
