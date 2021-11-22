@@ -306,6 +306,7 @@ impl<S: IndexEntry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	}
 }
 
+#[cfg(not(tarpaulin_include))]
 impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("Action")
