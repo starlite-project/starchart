@@ -33,7 +33,7 @@ jobs:
           RUSTFLAGS: "-C target-cpu=haswell"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --tests --workspace
+          args: --all-features --tests --workspace
 
   rustfmt:
     name: Format
