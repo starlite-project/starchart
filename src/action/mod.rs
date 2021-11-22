@@ -157,27 +157,6 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		}
 	}
 
-	/// Sets the key for the action.
-	///
-	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
-	/// entry will automatically call this.
-	///
-	/// This is unused on [`OperationTarget::Table`] actions.
-	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
-		self.key = Some(key.to_key());
-
-		self // coverage:ignore-line
-	}
-
-	/// Sets the data for the action.
-	///
-	/// This is unused on [`OperationTarget::Table`] actions.
-	pub fn set_data(&mut self, entity: &S) -> &mut Self {
-		self.data = Some(Box::new(entity.clone()));
-
-		self // coverage:ignore-line
-	}
-
 	fn validate_key(&self) -> Result<(), ActionValidationError> {
 		if self.key.is_none() {
 			return Err(ActionValidationError::Key);
@@ -200,6 +179,30 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		}
 
 		Ok(())
+	}
+}
+
+// Entry helpers
+impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
+	/// Sets the key for the action.
+	///
+	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
+	/// entry will automatically call this.
+	///
+	/// This is unused on [`OperationTarget::Table`] actions.
+	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
+		self.key = Some(key.to_key());
+
+		self // coverage:ignore-line
+	}
+
+	/// Sets the data for the action.
+	///
+	/// This is unused on [`OperationTarget::Table`] actions.
+	pub fn set_data(&mut self, entity: &S) -> &mut Self {
+		self.data = Some(Box::new(entity.clone()));
+
+		self // coverage:ignore-line
 	}
 }
 
@@ -299,7 +302,7 @@ impl<S: Entry> DeleteEntryAction<S> {
 	}
 }
 
-impl<S: IndexEntry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
+impl<S: IndexEntry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
 	pub fn set_entry(&mut self, entity: &S) -> &mut Self {
 		self.set_key(&entity.key()).set_data(entity)
