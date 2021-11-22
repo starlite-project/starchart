@@ -31,3 +31,41 @@ pub trait IndexEntry: Entry {
 	/// Returns the valid key for the database to index from.
 	fn key(&self) -> Self::Key;
 }
+
+#[cfg(test)]
+mod tests {
+	use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
+
+	use serde::{de::DeserializeOwned, Deserialize, Serialize};
+	use static_assertions::assert_impl_all;
+
+	use super::{Entry, Key};
+
+	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+	struct Settings {
+		id: u32,
+		name: String,
+	}
+
+	#[derive(Debug, Clone)]
+	struct Keyable {
+		inner: String,
+	}
+
+	impl Display for Keyable {
+		fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+			Display::fmt(&self.inner, f)
+		}
+	}
+
+	assert_impl_all!(Settings: Clone, Debug, DeserializeOwned, Entry, Serialize);
+
+	#[test]
+	fn to_key() {
+		let keyable = Keyable {
+			inner: "12345".to_string(),
+		};
+
+		assert_eq!(keyable.to_key(), "12345".to_string());
+	}
+}

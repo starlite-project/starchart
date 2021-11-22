@@ -13,11 +13,11 @@
     ],
     "rust-analyzer.diagnostics.warningsAsInfo": [
         "unused_variables",
-        "dead_code"
+        "dead_code",
+        "unused_imports"
     ],
     "errorLens.enabledDiagnosticLevels": [
         "error",
         "warning",
-        "hint"
     ]
 }
