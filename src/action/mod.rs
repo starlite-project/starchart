@@ -166,7 +166,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
 		self.key = Some(key.to_key());
 
-		self
+		self // coverage:ignore-line
 	}
 
 	/// Sets the data for the action.
@@ -175,7 +175,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn set_data(&mut self, entity: &S) -> &mut Self {
 		self.data = Some(Box::new(entity.clone()));
 
-		self
+		self // coverage:ignore-line
 	}
 
 	fn validate_key(&self) -> Result<(), ActionValidationError> {
