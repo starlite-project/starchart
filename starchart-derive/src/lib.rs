@@ -17,7 +17,7 @@ const KEY_IDENT: &str = "key";
 const ID_IDENT: &str = "id";
 
 use proc_macro2::TokenStream;
-use quote::quote_spanned;
+use quote::{quote_spanned, quote};
 use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Error, Field, Fields, Result};
 
 #[proc_macro_derive(IndexEntry, attributes(key))]
@@ -36,7 +36,7 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
 		_ => {
 			return Err(Error::new_spanned(
 				input,
-				"Key can only be derived on structs",
+				"IndexEntry can only be derived on structs",
 			))
 		}
 	};
@@ -46,7 +46,7 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
 		_ => {
 			return Err(Error::new_spanned(
 				&data.fields,
-				"Key can only be derived on a struct with named fields",
+				"IndexEntry can only be derived on a struct with named fields",
 			))
 		}
 	};
@@ -68,18 +68,26 @@ fn parse(input: DeriveInput) -> Result<TokenStream> {
 		Some(f) => f,
 	};
 
+	let id_type = id_field.ty.clone();
+
 	let id_span = id_field.span();
 
 	let implementation = quote_spanned! {id_span=>
 		#[automatically_derived]
 		impl ::starchart::IndexEntry for #ident {
-			fn key(&self) -> std::string::String {
+			type Key = #id_type;
+
+			fn key(&self) -> Self::Key {
 				self.#id_ident
 			}
 		}
 	};
 
-	Ok(implementation)
+	let quote_impl = quote! {
+		#implementation
+	};
+
+	Ok(quote_impl)
 }
 
 fn get_id_field(fields: &[Field]) -> Option<&Field> {

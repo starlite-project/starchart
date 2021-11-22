@@ -32,229 +32,20 @@ use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
-	for Action<S, CreateOperation, EntryTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		// Create the lock outside of the async block, as the guard is invalid if created in async context.
-		let lock = gateway.guard.write();
-		let res = Box::pin(async move {
-			// SAFETY: Action::validate should be called beforehand.
-			let table_name = self.table.unwrap_unchecked();
-
-			let key = self.key.unwrap_unchecked();
-
-			let entry = self.data.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			if backend.has(&table_name, &key).await? {
-				return Ok(());
-			}
-
-			backend.create(&table_name, &key, &*entry).await?;
-
-			Ok(())
-		});
-
-		RwLockWriteGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()?;
-		self.validate_key()
-	}
-}
-
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
-
-impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
-	for Action<S, ReadOperation, EntryTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.read();
-		let res = Box::pin(async move {
-			let table_name = self.table.unwrap_unchecked();
-
-			let key = self.key.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			Ok(backend.get(&table_name, &key).await?)
-		});
-
-		RwLockReadGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()?;
-		self.validate_key()
-	}
-}
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
-	for Action<S, UpdateOperation, EntryTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.write();
-		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
-
-			let key = self.key.unwrap_unchecked();
-			let new_data = self.data.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			backend.update(&table, &key, &new_data).await?;
-
-			Ok(())
-		});
-
-		RwLockWriteGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()?;
-		self.validate_key()?;
-		self.validate_data()
-	}
-}
-
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
-
-impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
-	for Action<S, DeleteOperation, EntryTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.write();
-		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
-
-			let key = self.key.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			let exists = backend.has(&table, &key).await?;
-
-			backend.delete(&table, &key).await?;
-
-			let after_exists = backend.has(&table, &key).await?;
-
-			Ok(exists != after_exists)
-		});
-
-		RwLockWriteGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()?;
-		self.validate_key()
-	}
-}
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
-	for Action<S, CreateOperation, TableTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.write();
-		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			backend.create_table(&table).await?;
-
-			Ok(())
-		});
-
-		RwLockWriteGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()
-	}
-}
-
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
-
-// this is only here to satisfy the `clippy::type_complexity` lint
-type ReadTableResult<'a, S> =
-	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send + 'a>>;
-
-impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
-	for Action<S, ReadOperation, TableTarget>
-{
-	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<'_, S>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.read();
-		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			let keys = backend.get_keys::<Vec<_>>(&table).await?;
-
-			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
-
-			let data = backend.get_all(&table, &keys_borrowed).await?;
-
-			Ok(data)
-		});
-
-		RwLockReadGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()
-	}
-}
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
 ///
@@ -263,40 +54,6 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
-
-impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
-	for Action<S, DeleteOperation, TableTarget>
-{
-	unsafe fn run<B: Backend>(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
-		let lock = gateway.guard.write();
-		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
-
-			let backend = gateway.backend();
-
-			let exists = backend.has_table(&table).await?;
-
-			backend.delete_table(&table).await?;
-
-			let new_exists = backend.has_table(&table).await?;
-
-			Ok(exists != new_exists)
-		});
-
-		RwLockWriteGuard::unlock_fair(lock);
-		res
-	}
-
-	fn validate(&self) -> Result<(), ActionValidationError> {
-		self.validate_table()
-	}
-}
 
 /// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
 ///
@@ -545,11 +302,7 @@ impl<S: Entry> DeleteEntryAction<S> {
 impl<S: IndexEntry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
 	pub fn set_entry(&mut self, entity: &S) -> &mut Self {
-		self.set_key(&entity.key());
-
-		self.set_data(entity);
-
-		self
+		self.set_key(&entity.key()).set_data(entity)
 	}
 }
 
@@ -586,5 +339,353 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 			kind: PhantomData,
 			target: PhantomData,
 		}
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+	for Action<S, CreateOperation, EntryTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		// Create the lock outside of the async block, as the guard is invalid if created in async context.
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
+			// SAFETY: Action::validate should be called beforehand.
+			let table_name = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+
+			let entry = self.data.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			if backend.has(&table_name, &key).await? {
+				return Ok(());
+			}
+
+			backend.create(&table_name, &key, &*entry).await?;
+
+			Ok(())
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()?;
+		self.validate_key()
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
+	for Action<S, ReadOperation, EntryTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.read();
+		let res = Box::pin(async move {
+			let table_name = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			Ok(backend.get(&table_name, &key).await?)
+		});
+
+		RwLockReadGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()?;
+		self.validate_key()
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+	for Action<S, UpdateOperation, EntryTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+			let new_data = self.data.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			backend.update(&table, &key, &new_data).await?;
+
+			Ok(())
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()?;
+		self.validate_key()?;
+		self.validate_data()
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+	for Action<S, DeleteOperation, EntryTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let key = self.key.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let exists = backend.has(&table, &key).await?;
+
+			backend.delete(&table, &key).await?;
+
+			let after_exists = backend.has(&table, &key).await?;
+
+			Ok(exists != after_exists)
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()?;
+		self.validate_key()
+	}
+}
+
+// this is only here to satisfy the `clippy::type_complexity` lint
+type ReadTableResult<'a, S> =
+	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send + 'a>>;
+
+impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
+	for Action<S, ReadOperation, TableTarget>
+{
+	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<'_, S>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.read();
+		let res = Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+
+			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
+
+			let data = backend.get_all(&table, &keys_borrowed).await?;
+
+			Ok(data)
+		});
+
+		RwLockReadGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+	for Action<S, CreateOperation, TableTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			backend.create_table(&table).await?;
+
+			Ok(())
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()
+	}
+}
+
+impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+	for Action<S, DeleteOperation, TableTarget>
+{
+	unsafe fn run<B: Backend>(
+		self,
+		gateway: &Gateway<B>,
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
+	where
+		ActionRunError: From<<B as Backend>::Error>,
+	{
+		let lock = gateway.guard.write();
+		let res = Box::pin(async move {
+			let table = self.table.unwrap_unchecked();
+
+			let backend = gateway.backend();
+
+			let exists = backend.has_table(&table).await?;
+
+			backend.delete_table(&table).await?;
+
+			let new_exists = backend.has_table(&table).await?;
+
+			Ok(exists != new_exists)
+		});
+
+		RwLockWriteGuard::unlock_fair(lock);
+		res
+	}
+
+	fn validate(&self) -> Result<(), ActionValidationError> {
+		self.validate_table()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use serde::{Deserialize, Serialize};
+
+	use super::{Action, ActionKind, EntryTarget, OperationTarget, ReadOperation};
+	use crate::{
+		action::{CreateOperation, TableTarget},
+		IndexEntry,
+	};
+
+	#[derive(
+		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	)]
+	struct Settings {
+		id: u64,
+		option: bool,
+		value: u8,
+	}
+
+	impl IndexEntry for Settings {
+		type Key = u64;
+
+		fn key(&self) -> Self::Key {
+			self.id
+		}
+	}
+
+	#[test]
+	fn new_kind_and_target() {
+		let action: Action<Settings, ReadOperation, EntryTarget> = Action::new();
+
+		assert_eq!(action.kind(), ActionKind::Read);
+		assert_eq!(action.target(), OperationTarget::Entry);
+	}
+
+	#[test]
+	fn into_operation_and_target() {
+		let action: Action<Settings, ReadOperation, EntryTarget> = Action::new();
+
+		assert_eq!(action.kind(), ActionKind::Read);
+		let new_action = action.into_operation::<CreateOperation>();
+		assert_eq!(new_action.kind(), ActionKind::Create);
+
+		assert_eq!(new_action.target(), OperationTarget::Entry);
+		let new_target = new_action.into_target::<TableTarget>();
+		assert_eq!(new_target.target(), OperationTarget::Table);
+	}
+
+	#[test]
+	fn conversion_methods() {
+		let action: Action<Settings, ReadOperation, EntryTarget> = Action::new();
+
+		let create = action.into_create();
+		assert_eq!(create.kind(), ActionKind::Create);
+
+		let read = create.into_read();
+		assert_eq!(read.kind(), ActionKind::Read);
+
+		let update = read.into_update();
+		assert_eq!(update.kind(), ActionKind::Update);
+
+		let delete = update.into_delete();
+		assert_eq!(delete.kind(), ActionKind::Delete);
+
+		let table = delete.into_table();
+		assert_eq!(table.target(), OperationTarget::Table);
+
+		let entry = table.into_entry();
+		assert_eq!(entry.target(), OperationTarget::Entry);
+
+		#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+		struct NewSettings;
+
+		let new_entry = entry.with_entry::<NewSettings>();
+		assert!(new_entry.data.is_none());
+	}
+
+	#[test]
+	fn set_methods() {
+		let mut action: Action<Settings, ReadOperation, EntryTarget> =
+			Action::read_entry().set_entry(&Settings::default()).clone();
+
+		assert_eq!(action.data, Some(Box::new(Settings::default())));
+		assert_eq!(action.key, Some(String::from("0")));
+
+		let mut action = action.set_key(&"1").clone();
+		assert_eq!(action.key, Some(String::from("1")));
+
+		let action = action.set_data(&Settings {
+			id: 7,
+			option: false,
+			value: 79,
+		});
+
+		assert_eq!(
+			action.data,
+			Some(Box::new(Settings {
+				id: 7,
+				option: false,
+				value: 79
+			}))
+		);
 	}
 }
