@@ -156,3 +156,85 @@ mod private {
 	impl Sealed for EntryTarget {}
 	impl<S: Entry, C: CrudOperation, T: OpTarget> Sealed for Action<S, C, T> {}
 }
+
+#[cfg(test)]
+mod tests {
+	use std::fmt::Debug;
+
+	use serde::{Deserialize, Serialize};
+	use static_assertions::assert_impl_all;
+
+	use super::{
+		CreateOperation, DeleteOperation, EntryTarget, ReadOperation, TableTarget, UpdateOperation,
+	};
+	use crate::action::{ActionKind, CrudOperation, OpTarget, OperationTarget};
+
+	assert_impl_all!(
+		CreateOperation: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+	assert_impl_all!(
+		ReadOperation: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+	assert_impl_all!(
+		UpdateOperation: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+	assert_impl_all!(
+		DeleteOperation: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+	assert_impl_all!(
+		TableTarget: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+	assert_impl_all!(
+		EntryTarget: Clone,
+		Copy,
+		Debug,
+		Deserialize<'static>,
+		Send,
+		Serialize,
+		Sync
+	);
+
+	#[test]
+	fn kind() {
+		assert_eq!(CreateOperation::kind(), ActionKind::Create);
+		assert_eq!(ReadOperation::kind(), ActionKind::Read);
+		assert_eq!(UpdateOperation::kind(), ActionKind::Update);
+		assert_eq!(DeleteOperation::kind(), ActionKind::Delete);
+	}
+
+	#[test]
+	fn target() {
+		assert_eq!(TableTarget::target(), OperationTarget::Table);
+		assert_eq!(EntryTarget::target(), OperationTarget::Entry);
+	}
+}
