@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-
 //! The action structs for CRUD operations.
 
 // TODO: Add overwrite option.

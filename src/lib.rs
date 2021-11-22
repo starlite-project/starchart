@@ -13,7 +13,6 @@
 #![allow(
 	clippy::module_name_repetitions,
 	clippy::no_effect_underscore_binding,
-	dead_code,
 	deprecated
 )]
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]

@@ -24,6 +24,7 @@ use crate::{
 	since = "0.3.0",
 	note = "direct database interaction is deprecated, users should use Actions instead."
 )]
+#[cfg(not(tarpaulin_include))]
 pub struct DbRef<'a, B>
 where
 	B: Backend,
@@ -31,6 +32,7 @@ where
 	inner: Ref<'a, String, Database<B>>,
 }
 
+#[cfg(not(tarpaulin_include))]
 impl<'a, B> DbRef<'a, B>
 where
 	B: Backend,
@@ -52,6 +54,7 @@ where
 	}
 }
 
+#[cfg(not(tarpaulin_include))]
 impl<B> Debug for DbRef<'_, B>
 where
 	B: Backend + Debug,
@@ -63,6 +66,7 @@ where
 	}
 }
 
+#[cfg(not(tarpaulin_include))]
 impl<'a, B> Deref for DbRef<'a, B>
 where
 	B: Backend,
