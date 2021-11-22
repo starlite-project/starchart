@@ -2,7 +2,7 @@ use std::{
 	ffi::OsString,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	fs::File as StdFile,
-	io::{self, ErrorKind},
+	io,
 	iter::FromIterator,
 	path::{Path, PathBuf},
 };
@@ -431,10 +431,13 @@ mod tests {
 		backend.create("table", "id", &1).await?;
 		backend.create("table", "id2", &2).await?;
 
-		assert_eq!(
-			backend.get_keys::<Vec<_>>("table").await?,
-			vec!["id".to_owned(), "id2".to_owned()]
-		);
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+		let mut expected = vec!["id".to_owned(), "id2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected,);
 
 		Ok(())
 	}

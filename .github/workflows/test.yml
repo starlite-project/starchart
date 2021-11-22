@@ -93,10 +93,9 @@ jobs:
         uses: Swatinem/rust-cache@v1
       
       - name: Install xargo
-        uses: actions-rs/install@v0.1
+        uses: baptiste0928/cargo-install@v1
         with:
           crate: xargo
-          use-tool-cache: true
 
       - name: Run cargo clean
         uses: actions-rs/cargo@v1

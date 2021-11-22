@@ -255,9 +255,13 @@ mod tests {
 		backend.create("test", "id2", &"value2".to_owned()).await?;
 
 		let keys = vec!["id", "id2", "doesn't exist"];
-		let values: Vec<String> = backend.get_all("test", &keys).await?;
+		let mut values: Vec<String> = backend.get_all("test", &keys).await?;
+		let mut expected = vec!["value".to_owned(), "value2".to_owned()];
 
-		assert_eq!(values, vec!["value".to_owned(), "value2".to_owned()]);
+		values.sort();
+		expected.sort();
+
+		assert_eq!(values, expected);
 
 		Ok(())
 	}
