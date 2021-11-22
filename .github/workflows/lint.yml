@@ -10,6 +10,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    # FIXME: remove once https://github.com/rust-lang/rust-clippy/issues/8020 is fixed
     if: ${{ !always() }}
 
     steps:
