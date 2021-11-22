@@ -381,18 +381,22 @@ mod tests {
 			})
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.has_table(table).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.create_table(table).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.delete_table(table).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
 		where
 			I: FromIterator<String>,
@@ -400,6 +404,7 @@ mod tests {
 			Box::pin(async move { Ok(self.inner.get_keys(table).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 		where
 			D: Entry,
@@ -407,10 +412,12 @@ mod tests {
 			Box::pin(async move { Ok(self.inner.get(table, id).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.has(table, id).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn create<'a, S>(
 			&'a self,
 			table: &'a str,
@@ -423,6 +430,7 @@ mod tests {
 			Box::pin(async move { Ok(self.inner.create(table, id, value).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn update<'a, S>(
 			&'a self,
 			table: &'a str,
@@ -435,6 +443,7 @@ mod tests {
 			Box::pin(async move { Ok(self.inner.update(table, id, value).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn replace<'a, S>(
 			&'a self,
 			table: &'a str,
@@ -447,6 +456,7 @@ mod tests {
 			Box::pin(async move { Ok(self.inner.replace(table, id, value).await?) })
 		}
 
+		#[cfg(not(tarpaulin_include))]
 		fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.delete(table, id).await?) })
 		}
