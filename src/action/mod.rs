@@ -157,6 +157,13 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		}
 	}
 
+	/// Sets the table for this action.
+	pub fn set_table(&mut self, table_name: &str) -> &mut Self {
+		self.table = Some(table_name.to_owned());
+
+		self
+	}
+
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
 		if self.table.is_none() {
 			return Err(ActionValidationError::Table);
@@ -761,7 +768,9 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn basic_run() -> Result<(), super::error::ActionError<CacheError>> {
 		let gateway = setup_gateway().await.unwrap();
-		let action: Action<Settings, CreateOperation, TableTarget> = Action::new();
+		let mut action: Action<Settings, CreateOperation, TableTarget> = Action::new();
+
+		action.set_table("table");
 
 		gateway.run(action).await??;
 
