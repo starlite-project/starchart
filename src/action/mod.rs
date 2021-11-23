@@ -157,25 +157,9 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		}
 	}
 
-	fn validate_key(&self) -> Result<(), ActionValidationError> {
-		if self.key.is_none() {
-			return Err(ActionValidationError::Key);
-		}
-
-		Ok(())
-	}
-
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
 		if self.table.is_none() {
 			return Err(ActionValidationError::Table);
-		}
-
-		Ok(())
-	}
-
-	fn validate_data(&self) -> Result<(), ActionValidationError> {
-		if self.data.is_none() {
-			return Err(ActionValidationError::Data);
 		}
 
 		Ok(())
@@ -203,6 +187,22 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 		self.data = Some(Box::new(entity.clone()));
 
 		self // coverage:ignore-line
+	}
+
+	fn validate_key(&self) -> Result<(), ActionValidationError> {
+		if self.key.is_none() {
+			return Err(ActionValidationError::Key);
+		}
+
+		Ok(())
+	}
+
+	fn validate_data(&self) -> Result<(), ActionValidationError> {
+		if self.data.is_none() {
+			return Err(ActionValidationError::Data);
+		}
+
+		Ok(())
 	}
 }
 
