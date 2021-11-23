@@ -129,7 +129,7 @@ impl<B: Backend> Gateway<B> {
 	/// [`Action`]: crate::action::Action
 	pub async fn run<Success, Failure>(
 		&self,
-		action: impl ActionRunner<Success, Failure>,
+		action: impl ActionRunner<B, Success, Failure>,
 	) -> Result<Result<Success, Failure>, ActionValidationError>
 	where
 		Failure: From<<B as Backend>::Error>,

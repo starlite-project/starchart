@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 #[doc(inline)]
 pub use self::{
-	error::{ActionRunError, ActionValidationError},
+	error::{ActionError, ActionRunError, ActionValidationError},
 	kind::ActionKind,
 	r#impl::{
 		ActionRunner, CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget,
@@ -346,16 +346,13 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		// Create the lock outside of the async block, as the guard is invalid if created in async context.
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
@@ -387,16 +384,13 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, EntryTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
+	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
 			let table_name = self.table.unwrap_unchecked();
@@ -418,16 +412,13 @@ impl<S: Entry + 'static> ActionRunner<Option<S>, ActionRunError>
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, UpdateOperation, EntryTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
@@ -453,16 +444,13 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, EntryTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
@@ -491,16 +479,13 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 }
 
 // this is only here to satisfy the `clippy::type_complexity` lint
-type ReadTableResult<'a, S> =
-	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError>> + Send + 'a>>;
+type ReadTableResult<'a, B, S> =
+	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError<B>>> + Send + 'a>>;
 
-impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, TableTarget>
 {
-	unsafe fn run<B: Backend>(self, gateway: &Gateway<B>) -> ReadTableResult<'_, S>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
-	{
+	unsafe fn run(self, gateway: &Gateway<B>) -> ReadTableResult<'_, B::Error, S> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
@@ -525,15 +510,13 @@ impl<S: Entry + 'static> ActionRunner<Vec<S>, ActionRunError>
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, TableTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>>
 	{
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
@@ -555,15 +538,13 @@ impl<S: Entry + 'static> ActionRunner<(), ActionRunError>
 	}
 }
 
-impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, TableTarget>
 {
-	unsafe fn run<B: Backend>(
+	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError>> + Send + '_>>
-	where
-		ActionRunError: From<<B as Backend>::Error>,
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>>
 	{
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
@@ -589,7 +570,7 @@ impl<S: Entry + 'static> ActionRunner<bool, ActionRunError>
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "cache"))]
 mod tests {
 	use serde::{Deserialize, Serialize};
 
@@ -597,7 +578,7 @@ mod tests {
 		Action, ActionKind, CreateOperation, DeleteOperation, EntryTarget, OperationTarget,
 		ReadOperation, TableTarget, UpdateOperation,
 	};
-	use crate::IndexEntry;
+	use crate::{backend::CacheBackend, error::CacheError, Gateway, IndexEntry};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -614,6 +595,11 @@ mod tests {
 		fn key(&self) -> Self::Key {
 			self.id
 		}
+	}
+
+	async fn setup_gateway() -> Result<Gateway<CacheBackend>, CacheError> {
+		let backend = CacheBackend::new();
+		Gateway::new(backend).await
 	}
 
 	#[test]
@@ -769,5 +755,16 @@ mod tests {
 
 		assert!(default.data.is_none());
 		assert!(default.key.is_none());
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn basic_run() -> Result<(), super::error::ActionError<CacheError>> {
+		let gateway = setup_gateway().await.unwrap();
+		let action: Action<Settings, CreateOperation, TableTarget> = Action::new();
+
+		gateway.run(action).await??;
+
+		Ok(())
 	}
 }

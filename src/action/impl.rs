@@ -14,7 +14,7 @@ use crate::{backend::Backend, Gateway};
 ///
 /// [`Gateway::run`]: crate::Gateway::run
 /// [`Actions trait-implementations`]: crate::action::Action#trait-implementations
-pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
+pub trait ActionRunner<B: Backend, Success, Failure>: private::Sealed + Send {
 	/// Runs the action through the [`Gateway`].
 	///
 	/// # Safety
@@ -25,13 +25,10 @@ pub trait ActionRunner<Success, Failure>: private::Sealed + Send {
 	/// any issues found will be reported before.
 	///
 	/// [`Action`]: crate::action::Action
-	unsafe fn run<'a, B: Backend>(
+	unsafe fn run<'a>(
 		self,
 		gateway: &'a Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send + 'a>>
-	where
-		Failure: From<<B as Backend>::Error>;
-
+	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send + 'a>>;
 	/// Validates that the [`Action`] has been created correctly.
 	///
 	/// Each individual implementation of this is specialized, for example,
