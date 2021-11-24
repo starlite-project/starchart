@@ -194,7 +194,7 @@
 <span id="193">193</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
 
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::TypeId</span>, <span class="ident">convert::Infallible</span>, <span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>, <span class="ident">sync::Arc</span>};
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
@@ -206,7 +206,7 @@
 	<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.3.0&quot;</span>,
 	<span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;direct database interaction is deprecated, users should use Actions instead.&quot;</span>
 )]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Error</span> <span class="op">=</span> <span class="op">!</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DatabaseError</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Infallible</span><span class="op">&gt;</span> {
 	<span class="doccomment">/// An invalid generic type was passed to [`Gateway::get`].</span>
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// [`Gateway::get`]: crate::gateway::Gateway::get</span>

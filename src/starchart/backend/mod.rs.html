@@ -278,7 +278,7 @@
 	<span class="ident">EnsureTableFuture</span>, <span class="ident">GetAllFuture</span>, <span class="ident">GetFuture</span>, <span class="ident">GetKeysFuture</span>, <span class="ident">HasFuture</span>, <span class="ident">HasTableFuture</span>,
 	<span class="ident">InitFuture</span>, <span class="ident">ReplaceFuture</span>, <span class="ident">ShutdownFuture</span>, <span class="ident">UpdateFuture</span>,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Entry</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">util::InnerUnwrap</span>, <span class="ident">Entry</span>};
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">future</span>;
 
@@ -380,7 +380,7 @@
 				<span class="kw">if</span> <span class="ident">value</span>.<span class="ident">is_none</span>() {
 					<span class="kw">continue</span>; <span class="comment">// coverage:ignore-line</span>
 				}
-				<span class="ident">output</span>.<span class="ident">push</span>(<span class="kw">unsafe</span> { <span class="ident">value</span>.<span class="ident">unwrap_unchecked</span>() });
+				<span class="ident">output</span>.<span class="ident">push</span>(<span class="kw">unsafe</span> { <span class="ident">value</span>.<span class="ident">inner_unwrap</span>() });
 			}
 
 			<span class="prelude-val">Ok</span>(<span class="ident">output</span>.<span class="ident">into_iter</span>().<span class="ident">collect</span>())

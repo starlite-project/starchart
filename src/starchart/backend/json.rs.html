@@ -545,7 +545,7 @@
 	},
 	<span class="ident">Backend</span>,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Entry</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">util::InnerUnwrap</span>, <span class="ident">Entry</span>};
 
 <span class="macro">macro_rules!</span> <span class="ident">handle_io_result</span> {
 	(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">res</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">okay</span>:<span class="ident">expr</span>) =&gt; {
@@ -563,7 +563,7 @@
 <span class="doccomment">/// An error returned from the [`JsonBackend`].</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`JsonBackend`]: crate::backend::JsonBackend</span>
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)))]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
 <span class="attribute">#[<span class="ident">non_exhaustive</span>]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">JsonError</span> {
@@ -585,7 +585,7 @@
 }
 
 <span class="doccomment">/// A JSON based backend, uses [`serde_json`] to read and write files.</span>
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)))]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">tarpaulin_include</span>, <span class="ident">derive</span>(<span class="ident">Debug</span>))]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JsonBackend</span> {
@@ -631,7 +631,7 @@
 			.<span class="ident">map</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> <span class="ident">ext</span>.<span class="ident">eq_ignore_ascii_case</span>(<span class="string">&quot;json&quot;</span>))
 			<span class="op">==</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)
 		{
-			<span class="kw">let</span> <span class="ident">range</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">stringified</span>.<span class="ident">rfind</span>(<span class="string">&quot;.json&quot;</span>).<span class="ident">unwrap_unchecked</span>().. };
+			<span class="kw">let</span> <span class="ident">range</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">stringified</span>.<span class="ident">rfind</span>(<span class="string">&quot;.json&quot;</span>).<span class="ident">inner_unwrap</span>().. };
 
 			<span class="ident">stringified</span>.<span class="ident">replace_range</span>(<span class="ident">range</span>, <span class="string">&quot;&quot;</span>);
 
@@ -711,7 +711,7 @@
 					<span class="kw">continue</span>; <span class="comment">// coverage:ignore-line</span>
 				}
 
-				<span class="ident">output</span>.<span class="ident">push</span>(<span class="kw">unsafe</span> { <span class="ident">filename</span>.<span class="ident">unwrap_unchecked</span>() });
+				<span class="ident">output</span>.<span class="ident">push</span>(<span class="kw">unsafe</span> { <span class="ident">filename</span>.<span class="ident">inner_unwrap</span>() });
 			}
 
 			<span class="prelude-val">Ok</span>(<span class="ident">output</span>.<span class="ident">into_iter</span>().<span class="ident">collect</span>())
