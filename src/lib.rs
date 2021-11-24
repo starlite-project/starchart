@@ -1,4 +1,3 @@
-#![feature(never_type, try_trait_v2)]
 #![warn(
 	clippy::pedantic,
 	clippy::nursery,

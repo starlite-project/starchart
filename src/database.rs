@@ -1,6 +1,6 @@
 #![cfg(not(tarpaulin_include))]
 
-use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc};
+use std::{any::TypeId, error::Error, fmt::Debug, sync::Arc, convert::Infallible};
 
 use thiserror::Error;
 
@@ -12,7 +12,7 @@ use crate::{backend::Backend, Entry};
 	since = "0.3.0",
 	note = "direct database interaction is deprecated, users should use Actions instead."
 )]
-pub enum DatabaseError<E: Error = !> {
+pub enum DatabaseError<E: Error = Infallible> {
 	/// An invalid generic type was passed to [`Gateway::get`].
 	///
 	/// [`Gateway::get`]: crate::gateway::Gateway::get
