@@ -2,10 +2,19 @@ use std::error::Error;
 
 use thiserror::Error;
 
+/// A general [`Action`] error.
+///
+/// [`Action`]: crate::action::Action
 #[derive(Debug, Error)]
 pub enum ActionError<E: Error + 'static> {
+	/// An error occurred during [`Action::run`].
+	///
+	/// [`Action::run`]: crate::action::ActionRunner::run
 	#[error(transparent)]
 	Run(#[from] ActionRunError<E>),
+	/// An error occurred during [`Action::validate`].
+	///
+	/// [`Action::validate`]: crate::action::ActionRunner::validate
 	#[error(transparent)]
 	Validation(#[from] ActionValidationError),
 }
