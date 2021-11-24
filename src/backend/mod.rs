@@ -36,7 +36,7 @@ pub trait Backend: Send + Sync {
 	/// The [`Error`] type that the backend will report up.
 	///
 	/// [`Error`]: std::error::Error
-	type Error: Send + Sync + StdError;
+	type Error: Send + Sync + StdError + 'static;
 
 	/// An optional initialization function, useful for making connections to the database.
 	///

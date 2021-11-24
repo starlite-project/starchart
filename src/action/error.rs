@@ -1,4 +1,14 @@
+use std::error::Error;
+
 use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ActionError<E: Error + 'static> {
+	#[error(transparent)]
+	Run(#[from] ActionRunError<E>),
+	#[error(transparent)]
+	Validation(#[from] ActionValidationError),
+}
 
 /// An error occurred during validation of an [`Action`].
 ///
@@ -22,7 +32,6 @@ pub enum ActionValidationError {
 /// [`Action`]: crate::action::Action
 #[derive(Debug, Error)]
 #[error("an error occurred running the action")]
-pub struct ActionRunError {
-	#[from]
-	source: Box<dyn std::error::Error + Send + Sync>,
+pub enum ActionRunError<E: Error> {
+	Backend(#[from] E),
 }

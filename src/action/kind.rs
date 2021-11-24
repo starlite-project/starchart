@@ -42,3 +42,39 @@ impl Default for ActionKind {
 		Self::Read
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use std::fmt::{Debug, Display};
+
+	use serde::{Deserialize, Serialize};
+	use static_assertions::assert_impl_all;
+
+	use super::ActionKind;
+
+	assert_impl_all!(
+		ActionKind: Clone,
+		Copy,
+		Debug,
+		Default,
+		Deserialize<'static>,
+		Display,
+		PartialEq,
+		Send,
+		Serialize,
+		Sync
+	);
+
+	#[test]
+	fn default() {
+		assert_eq!(ActionKind::default(), ActionKind::Read);
+	}
+
+	#[test]
+	fn display() {
+		assert_eq!(ActionKind::Create.to_string(), "Create");
+		assert_eq!(ActionKind::Read.to_string(), "Read");
+		assert_eq!(ActionKind::Update.to_string(), "Update");
+		assert_eq!(ActionKind::Delete.to_string(), "Delete");
+	}
+}
