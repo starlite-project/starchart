@@ -34,6 +34,11 @@ pub enum ActionValidationError {
 	/// No table was provided.
 	#[error("no table was provided")]
 	Table,
+	/// A provided key or table name was "metadata", which is restricted
+	#[cfg(feature = "metadata")]
+	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
+	#[error("the `metadata` key is restricted")]
+	Metadata
 }
 
 /// An error that occurred from running an [`Action`].

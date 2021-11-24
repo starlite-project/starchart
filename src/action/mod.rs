@@ -170,6 +170,18 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 			return Err(ActionValidationError::Table);
 		}
 
+		#[cfg(feature = "metadata")] // coverage:ignore-line
+		self.validate_metadata(self.table.as_deref())?;
+
+		Ok(())
+	}
+
+	#[cfg(feature = "metadata")]
+	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
+		if key == Some("metadata") {
+			return Err(ActionValidationError::Metadata);
+		}
+
 		Ok(())
 	}
 }
@@ -201,6 +213,9 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 		if self.key.is_none() {
 			return Err(ActionValidationError::Key);
 		}
+
+		#[cfg(feature = "metadata")] // coverage:ignore-line
+		self.validate_metadata(self.key.as_deref())?;
 
 		Ok(())
 	}
@@ -576,7 +591,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-#[cfg(all(test, feature = "cache"))]
+#[cfg(all(test, feature = "cache", feature = "metadata"))]
 mod tests {
 	use serde::{Deserialize, Serialize};
 
@@ -786,6 +801,12 @@ mod tests {
 		assert!(action.validate_data().is_err());
 		action.set_data(&Settings::default());
 		assert!(action.validate_data().is_ok());
+
+		action.set_key(&"metadata");
+		assert!(action.validate_key().is_err());
+
+		action.set_table("metadata");
+		assert!(action.validate_table().is_err());
 
 		Ok(())
 	}

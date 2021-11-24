@@ -68,9 +68,10 @@ lto = "fat"
 
 [features]
 cache = ["serde-value"]
-default = ["json"]
+default = ["json", "metadata"]
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
+metadata = []
 json = ["serde_json", "fs"]
 
 [workspace]
