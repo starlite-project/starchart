@@ -37,7 +37,7 @@ macro_rules! handle_io_result {
 /// An error returned from the [`JsonBackend`].
 ///
 /// [`JsonBackend`]: crate::backend::JsonBackend
-#[doc(cfg(feature = "json"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum JsonError {
@@ -59,7 +59,7 @@ pub enum JsonError {
 }
 
 /// A JSON based backend, uses [`serde_json`] to read and write files.
-#[doc(cfg(feature = "json"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 #[derive(Default, Clone)]
 #[cfg_attr(tarpaulin_include, derive(Debug))]
 pub struct JsonBackend {
