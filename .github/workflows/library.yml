@@ -110,43 +110,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  min_vers:
-    name: Minimal crate versions
-    needs: MSRV
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
-
-      - name: Install cargo-hack
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-hack
-
-      - name: Prepare minimal versions
-        run: |
-          cargo hack --remove-dev-deps --workspace
-
-          sed -i '/examples/d' Cargo.toml
-
-          cargo +nightly update -Z minimal-versions
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v1
-
-      - name: Check minimal versions
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
-
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
