@@ -21,8 +21,7 @@ pub use crate::{
 
 /// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
-pub enum ChartError<B: Backend>
-{
+pub enum ChartError<B: Backend> {
 	/// A [`JsonError`] has occurred.
 	#[cfg(feature = "json")]
 	#[doc(cfg(feature = "json"))]

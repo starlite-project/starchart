@@ -1,5 +1,6 @@
-use thiserror::Error;
 use std::error::Error;
+
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ActionError<E: Error + 'static> {

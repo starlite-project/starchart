@@ -17,9 +17,10 @@ use std::{
 use parking_lot::{RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 
+#[doc(hidden)]
+pub use self::error::{ActionError, ActionRunError, ActionValidationError};
 #[doc(inline)]
 pub use self::{
-	error::{ActionError, ActionRunError, ActionValidationError},
 	kind::ActionKind,
 	r#impl::{
 		ActionRunner, CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget,
@@ -161,7 +162,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 	pub fn set_table(&mut self, table_name: &str) -> &mut Self {
 		self.table = Some(table_name.to_owned());
 
-		self
+		self // coverage:ignore-line
 	}
 
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
@@ -523,8 +524,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>>
-	{
+	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
@@ -551,8 +551,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	unsafe fn run(
 		self,
 		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>>
-	{
+	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.unwrap_unchecked();
@@ -582,8 +581,10 @@ mod tests {
 	use serde::{Deserialize, Serialize};
 
 	use super::{
-		Action, ActionKind, CreateOperation, DeleteOperation, EntryTarget, OperationTarget,
-		ReadOperation, TableTarget, UpdateOperation,
+		error::ActionError, Action, ActionKind, ActionValidationError, CreateEntryAction,
+		CreateOperation, CreateTableAction, DeleteEntryAction, DeleteOperation, DeleteTableAction,
+		EntryTarget, OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
+		UpdateEntryAction, UpdateOperation,
 	};
 	use crate::{backend::CacheBackend, error::CacheError, Gateway, IndexEntry};
 
@@ -604,9 +605,15 @@ mod tests {
 		}
 	}
 
-	async fn setup_gateway() -> Result<Gateway<CacheBackend>, CacheError> {
+	async fn setup_gateway() -> Gateway<CacheBackend> {
 		let backend = CacheBackend::new();
-		Gateway::new(backend).await
+		Gateway::new(backend).await.unwrap()
+	}
+
+	async fn setup_table(gateway: &Gateway<CacheBackend>) {
+		let action: CreateTableAction<Settings> = Action::new().set_table("table").clone();
+
+		gateway.run(action).await.unwrap().unwrap()
 	}
 
 	#[test]
@@ -764,15 +771,172 @@ mod tests {
 		assert!(default.key.is_none());
 	}
 
+	#[test]
+	fn validation_methods() -> Result<(), ActionValidationError> {
+		let mut action: Action<Settings, ReadOperation, EntryTarget> = Action::default();
+
+		assert!(action.validate_key().is_err());
+		action.set_key(&"foo");
+		assert!(action.validate_key().is_ok());
+
+		assert!(action.validate_table().is_err());
+		action.set_table("test");
+		assert!(action.validate_table().is_ok());
+
+		assert!(action.validate_data().is_err());
+		action.set_data(&Settings::default());
+		assert!(action.validate_data().is_ok());
+
+		Ok(())
+	}
+
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn basic_run() -> Result<(), super::error::ActionError<CacheError>> {
-		let gateway = setup_gateway().await.unwrap();
+	async fn basic_run() -> Result<(), ActionError<CacheError>> {
+		let gateway = setup_gateway().await;
 		let mut action: Action<Settings, CreateOperation, TableTarget> = Action::new();
 
 		action.set_table("table");
 
 		gateway.run(action).await??;
+
+		for i in 0..3 {
+			let settings = Settings {
+				id: i,
+				option: false,
+				value: 8,
+			};
+			let mut action: CreateEntryAction<Settings> = Action::new();
+
+			action.set_table("table").set_entry(&settings);
+
+			gateway.run(action).await??;
+		}
+
+		let mut read_table: ReadTableAction<Settings> = Action::new();
+
+		read_table.set_table("table");
+
+		let mut values: Vec<Settings> = gateway.run(read_table).await??;
+		let mut expected = vec![
+			Settings {
+				id: 0,
+				option: false,
+				value: 8,
+			},
+			Settings {
+				id: 1,
+				option: false,
+				value: 8,
+			},
+			Settings {
+				id: 2,
+				option: false,
+				value: 8,
+			},
+		];
+
+		values.sort();
+		expected.sort();
+
+		assert_eq!(values, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn duplicate_creates() -> Result<(), ActionError<CacheError>> {
+		let gateway = setup_gateway().await;
+		setup_table(&gateway).await;
+
+		let mut create_action: CreateEntryAction<Settings> = Action::new();
+
+		create_action
+			.set_table("table")
+			.set_entry(&Settings::default());
+
+		let double_create = create_action.clone();
+
+		assert!(gateway.run(create_action).await?.is_ok());
+
+		assert!(gateway.run(double_create).await?.is_ok());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn read_and_update() -> Result<(), ActionError<CacheError>> {
+		let gateway = setup_gateway().await;
+		setup_table(&gateway).await;
+		{
+			let mut create_action: CreateEntryAction<Settings> = Action::new();
+			create_action
+				.set_table("table")
+				.set_entry(&Settings::default());
+			gateway.run(create_action).await??;
+		}
+
+		let mut read_action: ReadEntryAction<Settings> = Action::new();
+
+		read_action.set_key(&0_u32).set_table("table");
+
+		let reread_action = read_action.clone();
+
+		let value = gateway.run(read_action).await??;
+		assert_eq!(value, Some(Settings::default()));
+
+		let new_settings = Settings {
+			id: 0,
+			option: true,
+			value: 42,
+		};
+
+		let mut update_action: UpdateEntryAction<Settings> = Action::new();
+
+		update_action
+			.set_table("table")
+			.set_key(&0_u32)
+			.set_data(&new_settings);
+
+		gateway.run(update_action).await??;
+
+		assert_eq!(gateway.run(reread_action).await??, Some(new_settings));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn deletes() -> Result<(), ActionError<CacheError>> {
+		let gateway = setup_gateway().await;
+		setup_table(&gateway).await;
+
+		{
+			let mut create_action = CreateEntryAction::<Settings>::new();
+
+			create_action
+				.set_table("table")
+				.set_entry(&Settings::default());
+
+			gateway.run(create_action).await??;
+		}
+
+		let mut delete_action: DeleteEntryAction<Settings> = Action::new();
+		delete_action.set_table("table").set_key(&0_u32);
+		assert!(gateway.run(delete_action).await??);
+		let mut read_action: ReadEntryAction<Settings> = Action::new();
+		read_action.set_table("table").set_key(&0_u32);
+		assert_eq!(gateway.run(read_action).await??, None);
+
+		let mut delete_table_action: DeleteTableAction<Settings> = Action::new();
+		delete_table_action.set_table("table");
+		assert!(gateway.run(delete_table_action).await??);
+		let mut read_table: ReadTableAction<Settings> = Action::new();
+		read_table.set_table("table");
+
+		assert!(gateway.run(read_table).await?.is_err());
 
 		Ok(())
 	}
