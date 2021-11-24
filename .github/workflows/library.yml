@@ -3,6 +3,12 @@ name: Testing actions
 on: [push, pull_request]
 
 jobs:
+  foo:
+    name: foo
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo "foo 1"
   test:
     name: Test
     runs-on: ubuntu-latest
