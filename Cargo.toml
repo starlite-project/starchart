@@ -62,6 +62,10 @@ static_assertions = "1.0.0"
 features = ["test-util", "macros"]
 version = "1"
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
 [features]
 cache = ["serde-value"]
 default = ["json"]
