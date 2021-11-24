@@ -38,7 +38,7 @@ pub enum ActionValidationError {
 	#[cfg(feature = "metadata")]
 	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
 	#[error("the `metadata` key is restricted")]
-	Metadata
+	Metadata,
 }
 
 /// An error that occurred from running an [`Action`].

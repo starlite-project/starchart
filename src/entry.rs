@@ -58,7 +58,14 @@ mod tests {
 		}
 	}
 
-	assert_impl_all!(Settings: Clone, Debug, Default, DeserializeOwned, Entry, Serialize);
+	assert_impl_all!(
+		Settings: Clone,
+		Debug,
+		Default,
+		DeserializeOwned,
+		Entry,
+		Serialize
+	);
 
 	#[test]
 	fn to_key() {
