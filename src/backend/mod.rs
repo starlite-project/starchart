@@ -9,7 +9,7 @@ use self::future::{
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
-use crate::Entry;
+use crate::{Entry, util::InnerUnwrap};
 
 pub mod future;
 
@@ -111,7 +111,7 @@ pub trait Backend: Send + Sync {
 				if value.is_none() {
 					continue; // coverage:ignore-line
 				}
-				output.push(unsafe { value.unwrap_unchecked() });
+				output.push(unsafe { value.inner_unwrap() });
 			}
 
 			Ok(output.into_iter().collect())

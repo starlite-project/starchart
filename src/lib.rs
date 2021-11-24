@@ -24,6 +24,8 @@ mod database;
 mod entry;
 pub mod error;
 pub mod gateway;
+#[cfg(not(tarpaulin_include))]
+mod util;
 
 #[doc(inline)]
 pub use self::{action::Action, error::ChartError as Error, gateway::Gateway};

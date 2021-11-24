@@ -19,7 +19,7 @@ use super::{
 	},
 	Backend,
 };
-use crate::Entry;
+use crate::{Entry, util::InnerUnwrap};
 
 macro_rules! handle_io_result {
 	($res:expr, $name:ident, $okay:expr) => {
@@ -105,7 +105,7 @@ impl JsonBackend {
 			.map(|ext| ext.eq_ignore_ascii_case("json"))
 			== Some(true)
 		{
-			let range = unsafe { stringified.rfind(".json").unwrap_unchecked().. };
+			let range = unsafe { stringified.rfind(".json").inner_unwrap().. };
 
 			stringified.replace_range(range, "");
 
@@ -185,7 +185,7 @@ impl Backend for JsonBackend {
 					continue; // coverage:ignore-line
 				}
 
-				output.push(unsafe { filename.unwrap_unchecked() });
+				output.push(unsafe { filename.inner_unwrap() });
 			}
 
 			Ok(output.into_iter().collect())

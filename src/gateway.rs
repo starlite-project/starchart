@@ -16,6 +16,7 @@ use crate::{
 	backend::Backend,
 	database::DatabaseError,
 	Database, Entry,
+	util::InnerUnwrap,
 };
 
 /// An immutable reference to a [`Database`].
@@ -169,7 +170,7 @@ impl<B: Backend> Gateway<B> {
 		let exists = self.get::<S>(&table_name)?;
 
 		if exists.is_some() {
-			return Ok(unsafe { exists.unwrap_unchecked() });
+			return Ok(unsafe { exists.inner_unwrap() });
 		}
 
 		self.create::<S>(table_name).await
@@ -223,7 +224,7 @@ impl<B: Backend> Gateway<B> {
 				return Ok(None);
 			}
 
-			temp.unwrap_unchecked()
+			temp.inner_unwrap()
 		};
 
 		map_ref.value().check::<S>()?;
@@ -279,7 +280,7 @@ impl<B: Backend> Gateway<B> {
 		self.backend
 			.delete_table(&table.name)
 			.await
-			.unwrap_unchecked();
+			.inner_unwrap();
 
 		self.databases.remove(&table.name);
 	}
@@ -298,9 +299,9 @@ impl<B: Backend> Gateway<B> {
 	where
 		S: Entry + 'static,
 	{
-		let map_ref = self.databases.get(table_name).unwrap_unchecked();
+		let map_ref = self.databases.get(table_name).inner_unwrap();
 
-		map_ref.value().check::<S>().unwrap_unchecked();
+		map_ref.value().check::<S>().inner_unwrap();
 
 		DbRef::new(map_ref)
 	}

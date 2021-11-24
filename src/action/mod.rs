@@ -28,7 +28,7 @@ pub use self::{
 	},
 	target::OperationTarget,
 };
-use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key};
+use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key, util::InnerUnwrap};
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
@@ -365,11 +365,11 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
-			let table_name = self.table.unwrap_unchecked();
+			let table_name = self.table.inner_unwrap();
 
-			let key = self.key.unwrap_unchecked();
+			let key = self.key.inner_unwrap();
 
-			let entry = self.data.unwrap_unchecked();
+			let entry = self.data.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -401,9 +401,9 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table_name = self.table.unwrap_unchecked();
+			let table_name = self.table.inner_unwrap();
 
-			let key = self.key.unwrap_unchecked();
+			let key = self.key.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -429,10 +429,10 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
+			let table = self.table.inner_unwrap();
 
-			let key = self.key.unwrap_unchecked();
-			let new_data = self.data.unwrap_unchecked();
+			let key = self.key.inner_unwrap();
+			let new_data = self.data.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -461,9 +461,9 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
+			let table = self.table.inner_unwrap();
 
-			let key = self.key.unwrap_unchecked();
+			let key = self.key.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -496,7 +496,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 	unsafe fn run(self, gateway: &Gateway<B>) -> ReadTableResult<'_, B::Error, S> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
+			let table = self.table.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -527,7 +527,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
+			let table = self.table.inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -554,7 +554,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.unwrap_unchecked();
+			let table = self.table.inner_unwrap();
 
 			let backend = gateway.backend();
 
