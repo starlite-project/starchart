@@ -2,9 +2,6 @@ name: Library
 
 on: [push, pull_request]
 
-env:
-  RUSTFLAGS: -C target-cpu=haswell
-
 jobs:
   MSRV:
     name: Minimum supported Rust version
