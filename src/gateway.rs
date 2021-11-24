@@ -15,8 +15,8 @@ use crate::{
 	action::{ActionRunner, ActionValidationError},
 	backend::Backend,
 	database::DatabaseError,
-	Database, Entry,
 	util::InnerUnwrap,
+	Database, Entry,
 };
 
 /// An immutable reference to a [`Database`].
@@ -277,10 +277,7 @@ impl<B: Backend> Gateway<B> {
 	{
 		let table = self.get_unchecked::<S>(table_name);
 
-		self.backend
-			.delete_table(&table.name)
-			.await
-			.inner_unwrap();
+		self.backend.delete_table(&table.name).await.inner_unwrap();
 
 		self.databases.remove(&table.name);
 	}

@@ -9,7 +9,7 @@ use self::future::{
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
-use crate::{Entry, util::InnerUnwrap};
+use crate::{util::InnerUnwrap, Entry};
 
 pub mod future;
 

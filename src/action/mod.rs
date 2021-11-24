@@ -28,7 +28,7 @@ pub use self::{
 	},
 	target::OperationTarget,
 };
-use crate::{backend::Backend, Entry, Gateway, IndexEntry, Key, util::InnerUnwrap};
+use crate::{backend::Backend, util::InnerUnwrap, Entry, Gateway, IndexEntry, Key};
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;

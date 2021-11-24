@@ -96,7 +96,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: target/doc
           allow_empty_commit: true
-  
+
   audit:
     name: Security Audit
     needs: MSRV
@@ -104,7 +104,7 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-      
+
       - name: Run security audit
         uses: actions-rs/audit-check@v1
         with:
@@ -114,7 +114,7 @@ jobs:
     name: Minimal crate versions
     needs: MSRV
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -243,7 +243,7 @@ jobs:
 
       - name: Add problem matchers
         run: echo "::add-matcher::.github/problemMatchers/rust.json"
-      
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
@@ -256,13 +256,13 @@ jobs:
     needs: test
 
     container:
-        image: xd009642/tarpaulin:develop-nightly
-        options: --security-opt seccomp=unconfined
+      image: xd009642/tarpaulin:develop-nightly
+      options: --security-opt seccomp=unconfined
 
-    steps: 
+    steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-      
+
       - name: Collect coverage
         uses: actions-rs/cargo@v1
         with:
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
-      
+
       - name: Archive code coverage
         uses: actions/upload-artifact@v2
         with:
@@ -285,7 +285,7 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-      
+
       - name: Set dynamic values
         id: values
         run: |
@@ -300,7 +300,7 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
-      
+
       - name: Install xargo
         uses: baptiste0928/cargo-install@v1
         with:

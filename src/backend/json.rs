@@ -19,7 +19,7 @@ use super::{
 	},
 	Backend,
 };
-use crate::{Entry, util::InnerUnwrap};
+use crate::{util::InnerUnwrap, Entry};
 
 macro_rules! handle_io_result {
 	($res:expr, $name:ident, $okay:expr) => {
