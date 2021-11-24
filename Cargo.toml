@@ -62,6 +62,10 @@ static_assertions = "1.0.0"
 features = ["test-util", "macros"]
 version = "1"
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+
 [features]
 cache = ["serde-value"]
 default = ["json"]
@@ -74,5 +78,9 @@ members = [
   "./starchart-derive",
 ]
 
+[package.metadata]
+msrv = "1.46.0"
+
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-flags = ["--cfg", "docsrs"]

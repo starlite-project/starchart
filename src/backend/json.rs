@@ -19,7 +19,7 @@ use super::{
 	},
 	Backend,
 };
-use crate::Entry;
+use crate::{util::InnerUnwrap, Entry};
 
 macro_rules! handle_io_result {
 	($res:expr, $name:ident, $okay:expr) => {
@@ -37,7 +37,7 @@ macro_rules! handle_io_result {
 /// An error returned from the [`JsonBackend`].
 ///
 /// [`JsonBackend`]: crate::backend::JsonBackend
-#[doc(cfg(feature = "json"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum JsonError {
@@ -59,7 +59,7 @@ pub enum JsonError {
 }
 
 /// A JSON based backend, uses [`serde_json`] to read and write files.
-#[doc(cfg(feature = "json"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 #[derive(Default, Clone)]
 #[cfg_attr(tarpaulin_include, derive(Debug))]
 pub struct JsonBackend {
@@ -105,7 +105,7 @@ impl JsonBackend {
 			.map(|ext| ext.eq_ignore_ascii_case("json"))
 			== Some(true)
 		{
-			let range = unsafe { stringified.rfind(".json").unwrap_unchecked().. };
+			let range = unsafe { stringified.rfind(".json").inner_unwrap().. };
 
 			stringified.replace_range(range, "");
 
@@ -185,7 +185,7 @@ impl Backend for JsonBackend {
 					continue; // coverage:ignore-line
 				}
 
-				output.push(unsafe { filename.unwrap_unchecked() });
+				output.push(unsafe { filename.inner_unwrap() });
 			}
 
 			Ok(output.into_iter().collect())

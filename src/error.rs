@@ -4,10 +4,10 @@ use thiserror::Error;
 
 use crate::backend::Backend;
 #[cfg(feature = "cache")]
-#[doc(cfg(feature = "cache"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 pub use crate::backend::CacheError;
 #[cfg(feature = "json")]
-#[doc(cfg(feature = "json"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 pub use crate::backend::JsonError;
 #[doc(inline)]
 pub use crate::{
@@ -24,12 +24,12 @@ pub use crate::{
 pub enum ChartError<B: Backend> {
 	/// A [`JsonError`] has occurred.
 	#[cfg(feature = "json")]
-	#[doc(cfg(feature = "json"))]
+	#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 	#[error(transparent)]
 	Json(#[from] JsonError),
 	/// A [`CacheError`] has occurred.
 	#[cfg(feature = "cache")]
-	#[doc(cfg(feature = "cache"))]
+	#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 	#[error(transparent)]
 	Cache(#[from] CacheError),
 	/// A [`DatabaseError`] has occurred.
