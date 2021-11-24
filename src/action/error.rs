@@ -42,5 +42,8 @@ pub enum ActionValidationError {
 #[derive(Debug, Error)]
 #[error("an error occurred running the action")]
 pub enum ActionRunError<E: Error> {
+	/// An error occurred from the [`Backend`].
+	/// 
+	/// [`Backend`]: crate::backend::Backend
 	Backend(#[from] E),
 }
