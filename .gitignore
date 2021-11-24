@@ -4,3 +4,4 @@ expanded.rs
 /foo/*
 tarpaulin-report.html
 cobertura.xml
+cargo-timing*.html
