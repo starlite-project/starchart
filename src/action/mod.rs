@@ -8,6 +8,7 @@ mod kind;
 mod target;
 
 use std::{
+	any::type_name,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	marker::PhantomData,
@@ -29,6 +30,9 @@ pub use self::{
 	target::OperationTarget,
 };
 use crate::{backend::Backend, util::InnerUnwrap, Entry, Gateway, IndexEntry, Key};
+
+#[cfg(feature = "metadata")]
+const METADATA_KEY: &str = "__metadata__";
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
@@ -63,9 +67,9 @@ pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 #[derive(Serialize, Deserialize)]
 #[must_use = "an action alone has no side effects"]
 pub struct Action<S, C: CrudOperation, T: OpTarget> {
-	data: Option<Box<S>>,
-	key: Option<String>,
-	table: Option<String>,
+	pub(crate) data: Option<Box<S>>,
+	pub(crate) key: Option<String>,
+	pub(crate) table: Option<String>,
 	kind: PhantomData<C>,
 	target: PhantomData<T>,
 }
@@ -178,7 +182,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 
 	#[cfg(feature = "metadata")]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		if key == Some("metadata") {
+		if key == Some(METADATA_KEY) {
 			return Err(ActionValidationError::Metadata);
 		}
 
@@ -392,6 +396,14 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 				return Ok(());
 			}
 
+			#[cfg(feature = "metadata")]
+			{
+				backend
+					.get::<S>(&table_name, &METADATA_KEY)
+					.await
+					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.clone()))?;
+			}
+
 			backend.create(&table_name, &key, &*entry).await?;
 
 			Ok(())
@@ -422,6 +434,14 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 
 			let backend = gateway.backend();
 
+			#[cfg(feature = "metadata")]
+			{
+				backend
+					.get::<S>(&table_name, &METADATA_KEY)
+					.await
+					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.clone()))?;
+			}
+
 			Ok(backend.get(&table_name, &key).await?)
 		});
 
@@ -450,6 +470,14 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 			let new_data = self.data.inner_unwrap();
 
 			let backend = gateway.backend();
+
+			#[cfg(feature = "metadata")]
+			{
+				backend
+					.get::<S>(&table, &METADATA_KEY)
+					.await
+					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table.clone()))?;
+			}
 
 			backend.update(&table, &key, &new_data).await?;
 
@@ -515,7 +543,20 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 
 			let backend = gateway.backend();
 
-			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+			#[cfg(feature = "metadata")]
+			{
+				backend
+					.get::<S>(&table, &METADATA_KEY)
+					.await
+					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table.clone()))?;
+			}
+
+			let keys = backend
+				.get_keys::<Vec<_>>(&table)
+				.await?
+				.into_iter()
+				.filter(|value| value != &METADATA_KEY)
+				.collect::<Vec<_>>();
 
 			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
 
@@ -546,7 +587,13 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			let backend = gateway.backend();
 
-			backend.create_table(&table).await?;
+			backend.ensure_table(&table).await?;
+
+			#[cfg(feature = "metadata")]
+			{
+				let metadata = S::default();
+				backend.ensure(&table, &METADATA_KEY, &metadata).await?;
+			}
 
 			Ok(())
 		});
@@ -802,10 +849,10 @@ mod tests {
 		action.set_data(&Settings::default());
 		assert!(action.validate_data().is_ok());
 
-		action.set_key(&"metadata");
+		action.set_key(&"__metadata__");
 		assert!(action.validate_key().is_err());
 
-		action.set_table("metadata");
+		action.set_table("__metadata__");
 		assert!(action.validate_table().is_err());
 
 		Ok(())
