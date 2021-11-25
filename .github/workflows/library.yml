@@ -264,11 +264,6 @@ jobs:
         with:
           crate: xargo
 
-      - name: Run cargo clean
-        uses: actions-rs/cargo@v1
-        with:
-          command: clean
-
       - name: Run Miri UB check
         uses: actions-rs/cargo@v1
         with:
