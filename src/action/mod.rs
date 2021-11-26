@@ -31,7 +31,7 @@ pub use self::{
 };
 use crate::{backend::Backend, util::InnerUnwrap, Entry, Gateway, IndexEntry, Key};
 
-#[cfg(feature = "metadata")]
+#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 const METADATA_KEY: &str = "__metadata__";
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
@@ -174,13 +174,13 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 			return Err(ActionValidationError::Table);
 		}
 
-		#[cfg(feature = "metadata")] // coverage:ignore-line
+		#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 		self.validate_metadata(self.table.as_deref())?;
 
 		Ok(())
 	}
 
-	#[cfg(feature = "metadata")]
+	#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
 		if key == Some(METADATA_KEY) {
 			return Err(ActionValidationError::Metadata);
@@ -218,7 +218,7 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 			return Err(ActionValidationError::Key);
 		}
 
-		#[cfg(feature = "metadata")] // coverage:ignore-line
+		#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 		self.validate_metadata(self.key.as_deref())?;
 
 		Ok(())
@@ -396,7 +396,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 				return Ok(());
 			}
 
-			#[cfg(feature = "metadata")]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 			{
 				backend
 					.get::<S>(&table_name, &METADATA_KEY)
@@ -434,7 +434,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 
 			let backend = gateway.backend();
 
-			#[cfg(feature = "metadata")]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 			{
 				backend
 					.get::<S>(&table_name, &METADATA_KEY)
@@ -471,7 +471,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			let backend = gateway.backend();
 
-			#[cfg(feature = "metadata")]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 			{
 				backend
 					.get::<S>(&table, &METADATA_KEY)
@@ -543,7 +543,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 
 			let backend = gateway.backend();
 
-			#[cfg(feature = "metadata")]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 			{
 				backend
 					.get::<S>(&table, &METADATA_KEY)
@@ -589,7 +589,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			backend.ensure_table(&table).await?;
 
-			#[cfg(feature = "metadata")]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 			{
 				let metadata = S::default();
 				backend.ensure(&table, &METADATA_KEY, &metadata).await?;
