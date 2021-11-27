@@ -1,0 +1,12 @@
+codecov:
+  require_ci_to_pass: true
+  branch: main
+
+coverage:
+  precision: 2
+  round: down
+  range: "60..100"
+
+comment:
+  require_changes: true
+  layout: "reach,diff,flags,files,footer"
