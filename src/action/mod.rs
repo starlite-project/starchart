@@ -9,7 +9,6 @@ mod target;
 
 use std::{
 	any::type_name,
-	error::Error,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	marker::PhantomData,
