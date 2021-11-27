@@ -9,6 +9,7 @@ mod target;
 
 use std::{
 	any::type_name,
+	error::Error,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	marker::PhantomData,
@@ -167,6 +168,19 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self.table = Some(table_name.to_owned());
 
 		self // coverage:ignore-line
+	}
+
+	#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+	async fn check_metadata<B: Backend>(
+		&self,
+		backend: &B,
+		table_name: &str,
+	) -> Result<(), ActionRunError<B::Error>> {
+		backend
+			.get::<S>(table_name, &METADATA_KEY)
+			.await
+			.map(|_| {})
+			.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.to_owned()))
 	}
 
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
@@ -337,7 +351,7 @@ impl<S: IndexEntry, C: CrudOperation> Action<S, C, EntryTarget> {
 }
 
 #[cfg(not(tarpaulin_include))]
-impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
+impl<S: Entry, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("Action")
 			.field("kind", &self.kind())
@@ -349,7 +363,7 @@ impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> 
 	}
 }
 
-impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
+impl<S: Entry, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
 	fn clone(&self) -> Self {
 		Self {
 			data: self.data.clone(),
@@ -464,20 +478,15 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.inner_unwrap();
+			let table = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
-			let new_data = self.data.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
+			let new_data = self.data.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-			{
-				backend
-					.get::<S>(&table, &METADATA_KEY)
-					.await
-					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table.clone()))?;
-			}
+			self.check_metadata(backend, &table).await?;
 
 			backend.update(&table, &key, &new_data).await?;
 
@@ -539,17 +548,12 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 	unsafe fn run(self, gateway: &Gateway<B>) -> ReadTableResult<'_, B::Error, S> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table = self.table.inner_unwrap();
+			let table = self.table.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-			{
-				backend
-					.get::<S>(&table, &METADATA_KEY)
-					.await
-					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table.clone()))?;
-			}
+			self.check_metadata(backend, &table).await?;
 
 			let keys = backend
 				.get_keys::<Vec<_>>(&table)

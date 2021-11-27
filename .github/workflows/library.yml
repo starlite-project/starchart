@@ -62,6 +62,8 @@ jobs:
         with:
           command: doc
           args: --workspace --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -D rustdoc::broken_intra_doc_links
 
       - name: Cache docs
         uses: actions/cache@v2
