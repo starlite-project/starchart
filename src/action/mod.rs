@@ -397,6 +397,10 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	}
 }
 
+unsafe impl<S: Entry + Send, C: CrudOperation, T: OpTarget> Send for Action<S, C, T> {}
+
+unsafe impl<S: Entry + Sync, C: CrudOperation, T: OpTarget> Sync for Action<S, C, T> {}
+
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, EntryTarget>
 {
