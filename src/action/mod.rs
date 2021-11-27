@@ -543,14 +543,15 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			self.check_metadata(backend, &table).await?;
 
-			// coverage:ignore-start
-			let keys = backend
-				.get_keys::<Vec<_>>(&table)
-				.await?
-				.into_iter()
-				.filter(|value| value != METADATA_KEY)
-				.collect::<Vec<_>>();
-			// coverage:ignore-end
+			#[cfg(not(tarpaulin_include))] // coverage:ignore-line
+			let keys = {
+				backend
+					.get_keys::<Vec<_>>(&table)
+					.await?
+					.into_iter()
+					.filter(|value| value != METADATA_KEY)
+					.collect::<Vec<_>>()
+			};
 
 			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
 
