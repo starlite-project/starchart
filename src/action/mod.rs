@@ -169,7 +169,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self // coverage:ignore-line
 	}
 
-	#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+	#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 	async fn check_metadata<B: Backend>(
 		&self,
 		backend: &B,
@@ -397,11 +397,11 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
-			let table_name = self.table.inner_unwrap();
+			let table_name = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
 
-			let entry = self.data.inner_unwrap();
+			let entry = self.data.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
@@ -409,13 +409,8 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 				return Ok(());
 			}
 
-			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-			{
-				backend
-					.get::<S>(&table_name, &METADATA_KEY)
-					.await
-					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.clone()))?;
-			}
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			self.check_metadata(backend, &table_name).await?;
 
 			backend.create(&table_name, &key, &*entry).await?;
 
@@ -441,19 +436,14 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError<B::Error>>> + Send + '_>> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table_name = self.table.inner_unwrap();
+			let table_name = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-			{
-				backend
-					.get::<S>(&table_name, &METADATA_KEY)
-					.await
-					.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.clone()))?;
-			}
+			self.check_metadata(backend, &table_name).await?;
 
 			Ok(backend.get(&table_name, &key).await?)
 		});
@@ -484,7 +474,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			let backend = gateway.backend();
 
-			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			self.check_metadata(backend, &table).await?;
 
 			backend.update(&table, &key, &new_data).await?;
@@ -592,7 +582,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			backend.ensure_table(&table).await?;
 
-			#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			{
 				let metadata = S::default();
 				backend.ensure(&table, &METADATA_KEY, &metadata).await?;
