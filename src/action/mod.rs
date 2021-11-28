@@ -533,6 +533,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, TableTarget>
 {
+	#[cfg(not(tarpaulin_include))]
 	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Vec<S>, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
@@ -543,7 +544,6 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			self.check_metadata(backend, &table).await?;
 
-			#[cfg(not(tarpaulin_include))] // coverage:ignore-line
 			let keys = {
 				backend
 					.get_keys::<Vec<_>>(&table)
