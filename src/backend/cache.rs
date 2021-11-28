@@ -200,7 +200,9 @@ mod tests {
 
 	assert_impl_all!(CacheBackend: Backend, Clone, Debug, Default, Send, Sync);
 
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+	#[derive(
+		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+	)]
 	struct Settings {
 		option: bool,
 		times: u32,

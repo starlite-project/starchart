@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, fmt::Debug};
 
 use thiserror::Error;
 
@@ -34,16 +34,28 @@ pub enum ActionValidationError {
 	/// No table was provided.
 	#[error("no table was provided")]
 	Table,
+	/// A provided key or table name was "metadata", which is restricted
+	#[cfg(feature = "metadata")]
+	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
+	#[error("the `__metadata__` key is restricted")]
+	Metadata,
 }
 
 /// An error that occurred from running an [`Action`].
 ///
 /// [`Action`]: crate::action::Action
 #[derive(Debug, Error)]
-#[error("an error occurred running the action")]
 pub enum ActionRunError<E: Error> {
 	/// An error occurred from the [`Backend`].
 	///
 	/// [`Backend`]: crate::backend::Backend
+	#[error(transparent)]
 	Backend(#[from] E),
+	/// An invalid [`Entry`] was provided.
+	///
+	/// [`Entry`]: crate::Entry
+	#[cfg(feature = "metadata")]
+	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
+	#[error("invalid entry was provided, {0} does not match the metadata for table `{1}`")]
+	Metadata(&'static str, String),
 }

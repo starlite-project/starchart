@@ -19,9 +19,9 @@ impl<T: ToString> Key for T {
 /// This signifies that the type can be stored within a [`Gateway`].
 ///
 /// [`Gateway`]: crate::Gateway
-pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Send + Sync {}
+pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync {}
 
-impl<T: Clone + Serialize + DeserializeOwned + Debug + Send + Sync> Entry for T {}
+impl<T: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync> Entry for T {}
 
 /// An indexable entry, used for any [`Entry`] that can be indexed by a [`Key`] that it owns.
 pub trait IndexEntry: Entry {
@@ -41,7 +41,7 @@ mod tests {
 
 	use super::{Entry, Key};
 
-	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+	#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 	struct Settings {
 		id: u32,
 		name: String,
@@ -58,7 +58,14 @@ mod tests {
 		}
 	}
 
-	assert_impl_all!(Settings: Clone, Debug, DeserializeOwned, Entry, Serialize);
+	assert_impl_all!(
+		Settings: Clone,
+		Debug,
+		Default,
+		DeserializeOwned,
+		Entry,
+		Serialize
+	);
 
 	#[test]
 	fn to_key() {

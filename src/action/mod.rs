@@ -8,6 +8,7 @@ mod kind;
 mod target;
 
 use std::{
+	any::type_name,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	marker::PhantomData,
@@ -29,6 +30,12 @@ pub use self::{
 	target::OperationTarget,
 };
 use crate::{backend::Backend, util::InnerUnwrap, Entry, Gateway, IndexEntry, Key};
+
+#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+const METADATA_KEY: &str = "__metadata__";
+
+type ActionRunFuture<'a, S, B> =
+	Pin<Box<dyn Future<Output = Result<S, ActionRunError<<B as Backend>::Error>>> + Send + 'a>>;
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
@@ -63,9 +70,9 @@ pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 #[derive(Serialize, Deserialize)]
 #[must_use = "an action alone has no side effects"]
 pub struct Action<S, C: CrudOperation, T: OpTarget> {
-	data: Option<Box<S>>,
-	key: Option<String>,
-	table: Option<String>,
+	pub(crate) data: Option<Box<S>>,
+	pub(crate) key: Option<String>,
+	pub(crate) table: Option<String>,
 	kind: PhantomData<C>,
 	target: PhantomData<T>,
 }
@@ -165,9 +172,42 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		self // coverage:ignore-line
 	}
 
+	#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+	#[cfg_attr(
+		all(feature = "metadata", not(tarpaulin_include)),
+		allow(clippy::future_not_send)
+	)]
+	async fn check_metadata<B: Backend>(
+		&self,
+		backend: &B,
+		table_name: &str,
+	) -> Result<(), ActionRunError<B::Error>> {
+		backend
+			.get::<S>(table_name, METADATA_KEY)
+			.await // coverage:ignore-line
+			.map(|_| {})
+			.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.to_owned()))
+	}
+
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
 		if self.table.is_none() {
 			return Err(ActionValidationError::Table);
+		}
+
+		#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+		self.validate_metadata(self.table.as_deref())?;
+
+		Ok(())
+	}
+
+	#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+	#[cfg_attr(
+		all(feature = "metadata", not(tarpaulin_include)),
+		allow(clippy::unused_self)
+	)]
+	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
+		if key == Some(METADATA_KEY) {
+			return Err(ActionValidationError::Metadata);
 		}
 
 		Ok(())
@@ -201,6 +241,9 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 		if self.key.is_none() {
 			return Err(ActionValidationError::Key);
 		}
+
+		#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+		self.validate_metadata(self.key.as_deref())?;
 
 		Ok(())
 	}
@@ -318,7 +361,7 @@ impl<S: IndexEntry, C: CrudOperation> Action<S, C, EntryTarget> {
 }
 
 #[cfg(not(tarpaulin_include))]
-impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
+impl<S: Entry, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("Action")
 			.field("kind", &self.kind())
@@ -330,7 +373,7 @@ impl<S: Entry + Debug, C: CrudOperation, T: OpTarget> Debug for Action<S, C, T> 
 	}
 }
 
-impl<S: Entry + Clone, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
+impl<S: Entry, C: CrudOperation, T: OpTarget> Clone for Action<S, C, T> {
 	fn clone(&self) -> Self {
 		Self {
 			data: self.data.clone(),
@@ -354,28 +397,32 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Default for Action<S, C, T> {
 	}
 }
 
+unsafe impl<S: Entry + Send, C: CrudOperation, T: OpTarget> Send for Action<S, C, T> {}
+
+unsafe impl<S: Entry + Sync, C: CrudOperation, T: OpTarget> Sync for Action<S, C, T> {}
+
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
 		// Create the lock outside of the async block, as the guard is invalid if created in async context.
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			// SAFETY: Action::validate should be called beforehand.
-			let table_name = self.table.inner_unwrap();
+			let table_name = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
 
-			let entry = self.data.inner_unwrap();
+			let entry = self.data.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
 			if backend.has(&table_name, &key).await? {
 				return Ok(());
 			}
+
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			self.check_metadata(backend, &table_name).await?;
 
 			backend.create(&table_name, &key, &*entry).await?;
 
@@ -395,17 +442,17 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, EntryTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Option<S>, ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Option<S>, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table_name = self.table.inner_unwrap();
+			let table_name = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
 
 			let backend = gateway.backend();
+
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			self.check_metadata(backend, &table_name).await?;
 
 			Ok(backend.get(&table_name, &key).await?)
 		});
@@ -423,18 +470,18 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, UpdateOperation, EntryTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
-			let table = self.table.inner_unwrap();
+			let table = self.table.clone().inner_unwrap();
 
-			let key = self.key.inner_unwrap();
-			let new_data = self.data.inner_unwrap();
+			let key = self.key.clone().inner_unwrap();
+			let new_data = self.data.clone().inner_unwrap();
 
 			let backend = gateway.backend();
+
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			self.check_metadata(backend, &table).await?;
 
 			backend.update(&table, &key, &new_data).await?;
 
@@ -455,10 +502,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, EntryTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, bool, B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
@@ -486,21 +530,26 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-// this is only here to satisfy the `clippy::type_complexity` lint
-type ReadTableResult<'a, B, S> =
-	Pin<Box<dyn Future<Output = Result<Vec<S>, ActionRunError<B>>> + Send + 'a>>;
-
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, TableTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ReadTableResult<'_, B::Error, S> {
+	#[cfg(not(tarpaulin_include))]
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Vec<S>, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
-			let table = self.table.inner_unwrap();
+			let table = self.table.clone().inner_unwrap();
 
 			let backend = gateway.backend();
 
-			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			self.check_metadata(backend, &table).await?;
+
+			let keys = backend
+				.get_keys::<Vec<_>>(&table)
+				.await?
+				.into_iter()
+				.filter(|value| value != METADATA_KEY)
+				.collect::<Vec<_>>();
 
 			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
 
@@ -521,17 +570,20 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, TableTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<(), ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
 
 			let backend = gateway.backend();
 
-			backend.create_table(&table).await?;
+			backend.ensure_table(&table).await?;
+
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			{
+				let metadata = S::default();
+				backend.ensure(&table, METADATA_KEY, &metadata).await?;
+			}
 
 			Ok(())
 		});
@@ -548,10 +600,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, TableTarget>
 {
-	unsafe fn run(
-		self,
-		gateway: &Gateway<B>,
-	) -> Pin<Box<dyn Future<Output = Result<bool, ActionRunError<B::Error>>> + Send + '_>> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, bool, B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
@@ -576,14 +625,14 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-#[cfg(all(test, feature = "cache"))]
+#[cfg(all(test, feature = "cache", feature = "metadata"))]
 mod tests {
 	use serde::{Deserialize, Serialize};
 
 	use super::{
-		error::ActionError, Action, ActionKind, ActionValidationError, CreateEntryAction,
-		CreateOperation, CreateTableAction, DeleteEntryAction, DeleteOperation, DeleteTableAction,
-		EntryTarget, OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
+		error::ActionError, Action, ActionKind, CreateEntryAction, CreateOperation,
+		CreateTableAction, DeleteEntryAction, DeleteOperation, DeleteTableAction, EntryTarget,
+		OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
 		UpdateEntryAction, UpdateOperation,
 	};
 	use crate::{backend::CacheBackend, error::CacheError, Gateway, IndexEntry};
@@ -772,7 +821,7 @@ mod tests {
 	}
 
 	#[test]
-	fn validation_methods() -> Result<(), ActionValidationError> {
+	fn validation_methods() {
 		let mut action: Action<Settings, ReadOperation, EntryTarget> = Action::default();
 
 		assert!(action.validate_key().is_err());
@@ -787,7 +836,11 @@ mod tests {
 		action.set_data(&Settings::default());
 		assert!(action.validate_data().is_ok());
 
-		Ok(())
+		action.set_key(&"__metadata__");
+		assert!(action.validate_key().is_err());
+
+		action.set_table("__metadata__");
+		assert!(action.validate_table().is_err());
 	}
 
 	#[tokio::test]
