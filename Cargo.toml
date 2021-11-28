@@ -15,6 +15,14 @@ dashmap = "4.0"
 parking_lot = "0.11.2"
 thiserror = "1.0.30"
 
+[dependencies.tempfile]
+optional = true
+version = "3.2"
+
+[dependencies.erased-serde]
+version = "0.3"
+optional = true
+
 [dependencies.futures]
 default-features = false
 features = ["executor"]
@@ -70,9 +78,9 @@ lto = "fat"
 cache = ["serde-value"]
 default = ["json", "metadata"]
 derive = ["starchart-derive"]
-fs = ["tokio", "tokio-stream"]
-metadata = []
+fs = ["tokio", "tokio-stream", "tempfile", "erased-serde"]
 json = ["serde_json", "fs"]
+metadata = []
 
 [workspace]
 members = [
