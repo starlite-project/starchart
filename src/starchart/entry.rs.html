@@ -70,6 +70,13 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
 
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">de::DeserializeOwned</span>, <span class="ident">Serialize</span>};
@@ -91,9 +98,9 @@
 <span class="doccomment">/// This signifies that the type can be stored within a [`Gateway`].</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`Gateway`]: crate::Gateway</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Entry</span>: <span class="ident">Clone</span> <span class="op">+</span> <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {}
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Entry</span>: <span class="ident">Clone</span> <span class="op">+</span> <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">Default</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Clone</span> <span class="op">+</span> <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> <span class="ident">Entry</span> <span class="kw">for</span> <span class="ident">T</span> {}
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Clone</span> <span class="op">+</span> <span class="ident">Serialize</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span> <span class="op">+</span> <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">Default</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> <span class="ident">Entry</span> <span class="kw">for</span> <span class="ident">T</span> {}
 
 <span class="doccomment">/// An indexable entry, used for any [`Entry`] that can be indexed by a [`Key`] that it owns.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IndexEntry</span>: <span class="ident">Entry</span> {
@@ -113,7 +120,7 @@
 
 	<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Entry</span>, <span class="ident">Key</span>};
 
-	<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
+	<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 	<span class="kw">struct</span> <span class="ident">Settings</span> {
 		<span class="ident">id</span>: <span class="ident">u32</span>,
 		<span class="ident">name</span>: <span class="ident">String</span>,
@@ -130,7 +137,14 @@
 		}
 	}
 
-	<span class="macro">assert_impl_all!</span>(<span class="ident">Settings</span>: <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">DeserializeOwned</span>, <span class="ident">Entry</span>, <span class="ident">Serialize</span>);
+	<span class="macro">assert_impl_all!</span>(
+		<span class="ident">Settings</span>: <span class="ident">Clone</span>,
+		<span class="ident">Debug</span>,
+		<span class="ident">Default</span>,
+		<span class="ident">DeserializeOwned</span>,
+		<span class="ident">Entry</span>,
+		<span class="ident">Serialize</span>
+	);
 
 	<span class="attribute">#[<span class="ident">test</span>]</span>
 	<span class="kw">fn</span> <span class="ident">to_key</span>() {

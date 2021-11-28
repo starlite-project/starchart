@@ -436,6 +436,8 @@
 <span id="435">435</span>
 <span id="436">436</span>
 <span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::iter::FromIterator</span>;
 
 <span class="kw">use</span> <span class="ident">dashmap</span>::{<span class="ident">mapref::one::Ref</span>, <span class="ident">DashMap</span>};
@@ -638,7 +640,9 @@
 
 	<span class="macro">assert_impl_all!</span>(<span class="ident">CacheBackend</span>: <span class="ident">Backend</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Send</span>, <span class="ident">Sync</span>);
 
-	<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
+	<span class="attribute">#[<span class="ident">derive</span>(
+		<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>,
+	)]</span>
 	<span class="kw">struct</span> <span class="ident">Settings</span> {
 		<span class="ident">option</span>: <span class="ident">bool</span>,
 		<span class="ident">times</span>: <span class="ident">u32</span>,
