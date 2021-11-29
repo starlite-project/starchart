@@ -1,31 +1,43 @@
 use std::{
-	ffi::OsString,
-	fmt::{Debug, Formatter, Result as FmtResult},
-	fs::File as StdFile,
+	fmt::Debug,
 	io,
-	iter::FromIterator,
 	path::{Path, PathBuf},
 };
 
-use futures_util::StreamExt;
-use thiserror::Error;
-use tokio::fs;
-use tokio_stream::wrappers::ReadDirStream;
+use super::fs::{FsBackend, FsError};
+use crate::Entry;
 
-use super::{
-	fs::{FsBackend, FsReadWrite},
-	future::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
-		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
-	},
-	Backend, FsError,
-};
-use crate::{util::InnerUnwrap, Entry};
+/// A type alias for an [`FsError`].
+#[deprecated(
+	since = "0.7.0",
+	note = "the JsonError alias will be removed, consider using the `FsError` instead."
+)]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+pub type JsonError = FsError;
 
-#[derive(Debug, Clone, Copy)]
-struct JsonRW;
+/// A JSON based backend.
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+pub struct JsonBackend {
+	base_directory: PathBuf,
+}
 
-impl FsReadWrite for JsonRW {
+impl JsonBackend {
+	/// Create a new [`JsonBackend`].
+	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, JsonError> {
+		let path = path.as_ref().to_path_buf();
+
+		if path.is_file() {
+			Err(FsError::PathNotDirectory(path))
+		} else {
+			Ok(Self {
+				base_directory: path,
+			})
+		}
+	}
+}
+
+impl FsBackend for JsonBackend {
 	const EXTENSION: &'static str = "json";
 
 	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
@@ -33,118 +45,18 @@ impl FsReadWrite for JsonRW {
 		R: io::Read,
 		T: Entry,
 	{
-		serde_json::from_reader(rdr).map_err(|e| FsError::Serde)
+		serde_json::from_reader(rdr).map_err(|_| FsError::Serde)
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_json::to_vec(value).map_err(|e| FsError::Serde)
-	}
-}
-
-/// An error returned from the [`JsonBackend`].
-///
-/// [`JsonBackend`]: crate::backend::JsonBackend
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-pub type JsonError = FsError;
-
-/// A JSON based backend, uses [`serde_json`] to read and write files.
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-#[derive(Debug, Default, Clone)]
-pub struct JsonBackend {
-	inner: FsBackend<JsonRW>,
-}
-
-impl JsonBackend {
-	/// Creates a new [`JsonBackend`].
-	///
-	/// # Errors
-	///
-	/// Returns a [`JsonError::Io`] if the path appears to be a file.
-	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, JsonError> {
-		Ok(Self {
-			inner: FsBackend::new(path, JsonRW)?,
-		})
-	}
-}
-
-impl Backend for JsonBackend {
-	type Error = JsonError;
-
-	fn init(&self) -> InitFuture<'_, JsonError> {
-		self.inner.init()
+		serde_json::to_vec(value).map_err(|_| FsError::Serde)
 	}
 
-	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
-		self.inner.has_table(table)
-	}
-
-	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
-		self.inner.create_table(table)
-	}
-
-	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-		self.inner.delete_table(table)
-	}
-
-	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
-	where
-		D: Entry,
-	{
-		self.inner.get(table, id)
-	}
-
-	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
-	where
-		I: FromIterator<String>,
-	{
-		self.inner.get_keys(table)
-	}
-
-	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
-		self.inner.has(table, id)
-	}
-
-	fn create<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> CreateFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		self.inner.create(table, id, value)
-	}
-
-	fn update<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> UpdateFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		self.inner.update(table, id, value)
-	}
-
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		self.inner.replace(table, id, value)
-	}
-
-	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
-		self.inner.delete(table, id)
+	fn base_directory(&self) -> PathBuf {
+		self.base_directory.clone()
 	}
 }
 
@@ -207,7 +119,7 @@ mod tests {
 		let _blank = Cleanup::new("", true)?;
 		let backend = JsonBackend::new(&path)?;
 
-		assert_eq!(backend.inner.base_directory, PathBuf::from(&path));
+		assert_eq!(backend.base_directory, PathBuf::from(&path));
 
 		let file_path = Cleanup::new("file.txt", false)?;
 
@@ -271,7 +183,7 @@ mod tests {
 		keys.sort();
 		expected.sort();
 
-		assert_eq!(keys, expected,);
+		assert_eq!(keys, expected);
 
 		Ok(())
 	}

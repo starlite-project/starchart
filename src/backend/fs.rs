@@ -1,15 +1,13 @@
+//! Helpers for creating file-system based backends.
+
 use std::{
-	ffi::OsString,
-	fmt::{Debug, Formatter, Result as FmtResult},
+	fmt::Debug,
 	fs::File as StdFile,
-	io::{self, Read, Write},
+	io::{self, Read},
 	iter::FromIterator,
-	marker::PhantomData,
 	path::{Path, PathBuf},
 };
 
-use erased_serde::Serialize;
-use tempfile::{NamedTempFile, PersistError};
 use thiserror::Error;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
@@ -23,24 +21,24 @@ use super::{
 };
 use crate::{util::InnerUnwrap, Entry};
 
+/// An error occurred from an [`FsBackend`].
 #[derive(Debug, Error)]
 pub enum FsError {
+	/// An IO error occurred.
 	#[error(transparent)]
 	Io(#[from] io::Error),
+	/// The path provided was not a directory.
 	#[error("path {0} is not a directory")]
 	PathNotDirectory(PathBuf),
+	/// A serde error occurred.
 	#[error("a serialization error occurred")]
 	Serde,
+	/// A file was found to be invalid.
 	#[error("file {} is invalid", .0.display())]
 	InvalidFile(PathBuf),
+	/// A file already exists.
 	#[error("file {} already exists", .0.display())]
 	FileAlreadyExists(PathBuf),
-}
-
-impl From<PersistError> for FsError {
-	fn from(err: PersistError) -> Self {
-		Self::Io(err.error)
-	}
 }
 
 macro_rules! handle_io_result {
@@ -56,27 +54,32 @@ macro_rules! handle_io_result {
 	};
 }
 
-pub struct FsBackend<RW: FsReadWrite> {
-	pub base_directory: PathBuf,
-	inner: PhantomData<RW>,
-}
+/// The trait for all File System based backends to implement
+///
+/// This makes it easier to implement different file-system based databases.
+pub trait FsBackend: Send + Sync {
+	/// The base extension of the files.
+	const EXTENSION: &'static str;
 
-impl<RW: FsReadWrite> FsBackend<RW> {
-	pub fn new<P: AsRef<Path>>(base_directory: P, read_writer: RW) -> Result<Self, FsError> {
-		let path = base_directory.as_ref().to_path_buf();
+	/// Turn a [`Read`]er into an [`Entry`].
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	where
+		R: Read,
+		T: Entry;
 
-		if path.is_file() {
-			Err(FsError::PathNotDirectory(path))
-		} else {
-			Ok(Self {
-				base_directory: path,
-				inner: PhantomData,
-			})
-		}
+	/// Turn a [`Entry`] into a writable [`Vec`].
+	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	where
+		T: Entry;
+
+	/// Turns a key into a valid filename, with the extension.
+	fn filename(id: &str) -> String {
+		id.to_string() + "." + Self::EXTENSION
 	}
 
-	pub fn resolve_path<P: AsRef<Path>>(&self, path: &[P]) -> PathBuf {
-		let mut base = self.base_directory.clone();
+	/// Resolves the path of a file.
+	fn resolve_path<P: AsRef<Path>>(&self, path: &[P]) -> PathBuf {
+		let mut base = self.base_directory();
 
 		for value in path {
 			base = base.join(value);
@@ -85,19 +88,15 @@ impl<RW: FsReadWrite> FsBackend<RW> {
 		base // coverage:ignore-line
 	}
 
-	pub fn resolve_key<P: AsRef<Path>>(&self, p: P) -> Result<String, FsError> {
+	/// Turns a filename into a valid key.
+	fn resolve_key<P: AsRef<Path>>(&self, p: P) -> Result<String, FsError> {
 		let path = p.as_ref().to_path_buf();
 
 		let mut stringified = path.display().to_string();
 
-		let extension = ".".to_string() + RW::EXTENSION;
+		let extension = ".".to_owned() + Self::EXTENSION;
 
-		if stringified
-			.rsplit('.')
-			.next()
-			.map(|ext| ext.eq_ignore_ascii_case(&extension))
-			== Some(true)
-		{
+		if stringified.ends_with(&extension) {
 			let range = unsafe { stringified.rfind(&extension).inner_unwrap().. };
 
 			stringified.replace_range(range, "");
@@ -107,58 +106,18 @@ impl<RW: FsReadWrite> FsBackend<RW> {
 			Err(FsError::InvalidFile(path))
 		}
 	}
+
+	/// The base directory of the Fs database.
+	fn base_directory(&self) -> PathBuf;
 }
 
-impl<RW: FsReadWrite> Debug for FsBackend<RW> {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		f.debug_struct("FsBackend")
-			.field("base_directory", &self.base_directory)
-			.finish()
-	}
-}
-
-impl<RW: FsReadWrite> Clone for FsBackend<RW> {
-	fn clone(&self) -> Self {
-		Self {
-			base_directory: self.base_directory.clone(),
-			inner: PhantomData,
-		}
-	}
-}
-
-impl<RW: FsReadWrite> Default for FsBackend<RW> {
-	fn default() -> Self {
-		Self {
-			inner: PhantomData,
-			base_directory: PathBuf::default(),
-		}
-	}
-}
-
-pub trait FsReadWrite: Copy + Send + Sync {
-	const EXTENSION: &'static str;
-
-	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
-	where
-		R: Read,
-		T: Entry;
-
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
-	where
-		T: Entry;
-
-	fn filename(id: &str) -> String {
-		id.to_string() + "." + Self::EXTENSION
-	}
-}
-
-impl<RW: FsReadWrite> Backend for FsBackend<RW> {
+impl<RW: FsBackend> Backend for RW {
 	type Error = FsError;
 
 	fn init(&self) -> InitFuture<'_, FsError> {
 		Box::pin(async move {
-			if fs::read_dir(&self.base_directory).await.is_err() {
-				fs::create_dir_all(&self.base_directory).await?;
+			if fs::read_dir(&self.base_directory()).await.is_err() {
+				fs::create_dir_all(&self.base_directory()).await?;
 			}
 			Ok(())
 		})
@@ -263,11 +222,7 @@ impl<RW: FsReadWrite> Backend for FsBackend<RW> {
 
 			let serialized = RW::to_bytes(value)?;
 
-			let mut file = NamedTempFile::new()?;
-
-			file.write_all(&serialized)?;
-
-			file.persist(&path)?;
+			fs::write(path, serialized).await?;
 
 			Ok(())
 		})
@@ -288,11 +243,7 @@ impl<RW: FsReadWrite> Backend for FsBackend<RW> {
 
 			let path = self.resolve_path(&[table, filepath.as_str()]);
 
-			let mut file = NamedTempFile::new()?;
-
-			file.write_all(&serialized)?;
-
-			file.persist(&path)?;
+			fs::write(path, serialized).await?;
 
 			Ok(())
 		})
