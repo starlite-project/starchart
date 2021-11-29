@@ -57,7 +57,7 @@ jobs:
       - name: Add problem matchers
         run: echo "::add-matcher::.github/problemMatchers/rust.json"
 
-      - name: Check docs
+      - name: Build docs
         uses: actions-rs/cargo@v1
         with:
           command: doc
@@ -67,6 +67,7 @@ jobs:
 
       - name: Cache docs
         uses: actions/cache@v2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: restore-docs
         with:
           path: ./target/doc/
