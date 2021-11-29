@@ -31,9 +31,6 @@ pub use self::cache::CacheError;
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
-#[cfg(feature = "json")]
-#[cfg_attr(feature = "json", doc(hidden))]
-pub use self::json::JsonError;
 
 /// The backend to be used with a [`Database`].
 ///

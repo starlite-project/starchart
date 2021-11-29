@@ -662,7 +662,7 @@ mod tests {
 	async fn setup_table(gateway: &Gateway<CacheBackend>) {
 		let action: CreateTableAction<Settings> = Action::new().set_table("table").clone();
 
-		gateway.run(action).await.unwrap().unwrap()
+		gateway.run(action).await.unwrap().unwrap();
 	}
 
 	#[test]
@@ -688,6 +688,9 @@ mod tests {
 
 	#[test]
 	fn conversion_methods() {
+		#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+		struct NewSettings;
+
 		let action: Action<Settings, ReadOperation, EntryTarget> = Action::new();
 
 		let create = action.into_create();
@@ -707,9 +710,6 @@ mod tests {
 
 		let entry = table.into_entry();
 		assert_eq!(entry.target(), OperationTarget::Entry);
-
-		#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-		struct NewSettings;
 
 		let new_entry = entry.with_entry::<NewSettings>();
 		assert!(new_entry.data.is_none());

@@ -70,9 +70,9 @@ mod tests {
 	#[test]
 	fn to_key() {
 		let keyable = Keyable {
-			inner: "12345".to_string(),
+			inner: "12345".to_owned(),
 		};
 
-		assert_eq!(keyable.to_key(), "12345".to_string());
+		assert_eq!(keyable.to_key(), "12345".to_owned());
 	}
 }
