@@ -32,6 +32,10 @@ pub use self::{
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type ChartResult<T, B> = Result<T, Error<B>>;
 
+/// A type alias for a [`Starchart`].
+#[deprecated(since = "0.8.0", note = "Gateway has been renamed to `Starchart`")]
+pub type Gateway<B> = Starchart<B>;
+
 /// The helper derive macro for easily implementing [`IndexEntry`].
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
