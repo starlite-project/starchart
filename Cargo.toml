@@ -71,8 +71,8 @@ cache = ["serde-value"]
 default = ["json", "metadata"]
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
-metadata = []
 json = ["serde_json", "fs"]
+metadata = []
 
 [workspace]
 members = [

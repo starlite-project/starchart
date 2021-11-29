@@ -6,6 +6,9 @@ use crate::backend::Backend;
 #[cfg(feature = "cache")]
 #[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 pub use crate::backend::CacheError;
+#[cfg(feature = "fs")]
+#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
+pub use crate::backend::FsError;
 #[cfg(feature = "json")]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 pub use crate::backend::JsonError;
@@ -22,16 +25,16 @@ pub use crate::{
 /// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
 pub enum ChartError<B: Backend> {
-	/// A [`JsonError`] has occurred.
-	#[cfg(feature = "json")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-	#[error(transparent)]
-	Json(#[from] JsonError),
 	/// A [`CacheError`] has occurred.
 	#[cfg(feature = "cache")]
 	#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
 	#[error(transparent)]
 	Cache(#[from] CacheError),
+	/// A [`FsError`] has occurred.
+	#[cfg(feature = "fs")]
+	#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
+	#[error(transparent)]
+	Fs(#[from] FsError),
 	/// A [`DatabaseError`] has occurred.
 	#[error(transparent)]
 	Database(#[from] DatabaseError<B::Error>),

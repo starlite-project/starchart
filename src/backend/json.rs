@@ -1,292 +1,62 @@
 use std::{
-	ffi::OsString,
-	fmt::{Debug, Formatter, Result as FmtResult},
-	fs::File as StdFile,
+	fmt::Debug,
 	io,
-	iter::FromIterator,
 	path::{Path, PathBuf},
 };
 
-use futures_util::StreamExt;
-use thiserror::Error;
-use tokio::fs;
-use tokio_stream::wrappers::ReadDirStream;
+use super::fs::{FsBackend, FsError};
+use crate::Entry;
 
-use super::{
-	future::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
-		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
-	},
-	Backend,
-};
-use crate::{util::InnerUnwrap, Entry};
-
-macro_rules! handle_io_result {
-	($res:expr, $name:ident, $okay:expr) => {
-		handle_io_result!($res, $name, $okay, Ok(None))
-	};
-	($res:expr, $name:ident, $okay:expr, $not_found:expr) => {
-		match $res {
-			Ok($name) => $okay,
-			Err(err) if err.kind() == ::std::io::ErrorKind::NotFound => $not_found,
-			Err(e) => Err($crate::error::JsonError::from(e)),
-		}
-	};
-}
-
-/// An error returned from the [`JsonBackend`].
-///
-/// [`JsonBackend`]: crate::backend::JsonBackend
+/// A type alias for an [`FsError`].
+#[deprecated(
+	since = "0.7.0",
+	note = "the JsonError alias will be removed, consider using the `FsError` instead."
+)]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-#[derive(Debug, Error)]
-#[non_exhaustive]
-pub enum JsonError {
-	/// The path provided was not a directory.
-	#[error("path {0} is not a directory")]
-	PathNotDirectory(PathBuf),
-	/// An IO error occurred.
-	#[error("an IO error occurred: {0}")]
-	Io(#[from] io::Error),
-	/// An error occurred serializing data.
-	#[error("a JSON error occurred")]
-	SerdeJson(#[from] serde_json::Error),
-	/// A file was found to be invalid.
-	#[error("file {} is invalid", .0.display())]
-	InvalidFile(PathBuf),
-	/// The file already exists
-	#[error("file {} already exists", .0.display())]
-	FileAlreadyExists(PathBuf),
-}
+pub type JsonError = FsError;
 
-/// A JSON based backend, uses [`serde_json`] to read and write files.
+/// A JSON based backend.
+#[derive(Debug, Default, Clone)]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-#[derive(Default, Clone)]
-#[cfg_attr(tarpaulin_include, derive(Debug))]
 pub struct JsonBackend {
 	base_directory: PathBuf,
 }
 
 impl JsonBackend {
-	/// Creates a new [`JsonBackend`].
-	///
-	/// # Errors
-	///
-	/// Returns a [`JsonError::Io`] if the path appears to be a file.
+	/// Create a new [`JsonBackend`].
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, JsonError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(JsonError::PathNotDirectory(path))
+			Err(FsError::PathNotDirectory(path))
 		} else {
 			Ok(Self {
 				base_directory: path,
 			})
 		}
 	}
-
-	fn resolve_path<P: AsRef<Path>>(&self, path: &[P]) -> PathBuf {
-		let mut base = self.base_directory.clone();
-
-		for value in path {
-			base = base.join(value);
-		}
-
-		base // coverage:ignore-line
-	}
-
-	fn resolve_key(file: OsString) -> Result<String, JsonError> {
-		let path: PathBuf = file.into();
-
-		let mut stringified = path.display().to_string();
-
-		if stringified
-			.rsplit('.')
-			.next()
-			.map(|ext| ext.eq_ignore_ascii_case("json"))
-			== Some(true)
-		{
-			let range = unsafe { stringified.rfind(".json").inner_unwrap().. };
-
-			stringified.replace_range(range, "");
-
-			Ok(stringified)
-		} else {
-			Err(JsonError::InvalidFile(path))
-		}
-	}
 }
 
-#[cfg(not(tarpaulin_include))]
-impl Debug for JsonBackend {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		f.debug_struct("JsonBackend")
-			.field("base_directory", &self.base_directory.display().to_string())
-			.finish()
-	}
-}
+impl FsBackend for JsonBackend {
+	const EXTENSION: &'static str = "json";
 
-impl Backend for JsonBackend {
-	type Error = JsonError;
-
-	fn init(&self) -> InitFuture<'_, JsonError> {
-		Box::pin(async move {
-			if fs::read_dir(&self.base_directory).await.is_err() {
-				fs::create_dir_all(&self.base_directory).await?;
-			}
-
-			Ok(())
-		})
-	}
-
-	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, JsonError> {
-		Box::pin(async move {
-			let result = fs::read_dir(self.resolve_path(&[table])).await;
-
-			handle_io_result!(result, _val, Ok(true), Ok(false))
-		})
-	}
-
-	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, JsonError> {
-		Box::pin(async move {
-			fs::create_dir(self.resolve_path(&[table])).await?;
-
-			Ok(())
-		})
-	}
-
-	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, JsonError> {
-		Box::pin(async move {
-			if self.has_table(table).await? {
-				fs::remove_dir_all(self.resolve_path(&[table])).await?;
-			}
-
-			Ok(())
-		})
-	}
-
-	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, JsonError>
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
 	where
-		I: FromIterator<String>,
+		R: io::Read,
+		T: Entry,
 	{
-		Box::pin(async move {
-			let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(&[table])).await?);
-			let mut output = Vec::new();
-
-			while let Some(raw) = stream.next().await {
-				let entry = raw?;
-
-				if entry.file_type().await?.is_dir() {
-					continue; // coverage:ignore-line
-				}
-
-				let filename = Self::resolve_key(entry.file_name()).ok();
-
-				if filename.is_none() {
-					continue; // coverage:ignore-line
-				}
-
-				output.push(unsafe { filename.inner_unwrap() });
-			}
-
-			Ok(output.into_iter().collect())
-		})
+		serde_json::from_reader(rdr).map_err(|_| FsError::Serde)
 	}
 
-	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, JsonError>
+	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
-		D: Entry,
+		T: Entry,
 	{
-		Box::pin(async move {
-			let filename = id.to_owned() + ".json";
-			let path = self.resolve_path(&[table, filename.as_str()]);
-			handle_io_result!(fs::File::open(&path).await, file, {
-				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
-				Ok(Some(serde_json::from_reader(reader)?))
-			})
-		})
+		serde_json::to_vec(value).map_err(|_| FsError::Serde)
 	}
 
-	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, JsonError> {
-		Box::pin(async move {
-			let filename = id.to_owned() + ".json";
-			let file = fs::read(self.resolve_path(&[table, filename.as_str()])).await;
-
-			handle_io_result!(file, _val, Ok(true), Ok(false))
-		})
-	}
-
-	fn create<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> CreateFuture<'a, JsonError>
-	where
-		S: Entry,
-	{
-		Box::pin(async move {
-			let filepath = id.to_owned() + ".json";
-
-			let path = self.resolve_path(&[table, filepath.as_str()]);
-
-			if self.has(table, id).await? {
-				return Err(JsonError::FileAlreadyExists(path));
-			}
-
-			let serialized = serde_json::to_string(value)?.into_bytes();
-
-			fs::write(path, serialized).await?;
-
-			Ok(())
-		})
-	}
-
-	fn update<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> UpdateFuture<'a, JsonError>
-	where
-		S: Entry,
-	{
-		Box::pin(async move {
-			let serialized = serde_json::to_string(value)?.into_bytes();
-
-			let filepath = id.to_owned() + ".json";
-
-			let path = self.resolve_path(&[table, filepath.as_str()]);
-
-			fs::write(path, serialized).await?;
-
-			Ok(())
-		})
-	}
-
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, JsonError>
-	where
-		S: Entry,
-	{
-		Box::pin(async move {
-			self.update(table, id, value).await?;
-
-			Ok(())
-		})
-	}
-
-	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, JsonError> {
-		Box::pin(async move {
-			let filename = id.to_owned() + ".json";
-
-			fs::remove_file(self.resolve_path(&[table, filename.as_str()])).await?;
-
-			Ok(())
-		})
+	fn base_directory(&self) -> PathBuf {
+		self.base_directory.clone()
 	}
 }
 
@@ -362,29 +132,6 @@ mod tests {
 		Ok(())
 	}
 
-	#[test]
-	fn resolve_path() -> Result<(), JsonError> {
-		let path = Cleanup::new("resolve_path", true)?;
-		let backend = JsonBackend::new(&path)?;
-
-		let resolved = backend.resolve_path(&["table", "id.json"]);
-
-		assert_eq!(resolved, PathBuf::from(&path).join("table/id.json"));
-
-		Ok(())
-	}
-
-	#[test]
-	fn resolve_key() -> Result<(), JsonError> {
-		let path = PathBuf::new().join("foo.json");
-
-		assert_eq!(JsonBackend::resolve_key(path.into())?, "foo");
-
-		assert!(JsonBackend::resolve_key("foo".into()).is_err());
-
-		Ok(())
-	}
-
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), JsonError> {
@@ -436,7 +183,7 @@ mod tests {
 		keys.sort();
 		expected.sort();
 
-		assert_eq!(keys, expected,);
+		assert_eq!(keys, expected);
 
 		Ok(())
 	}
