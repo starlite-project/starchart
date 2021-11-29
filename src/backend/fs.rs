@@ -103,7 +103,7 @@ pub trait FsBackend: Send + Sync {
 
 			Ok(stringified)
 		} else {
-			Err(FsError::InvalidFile(path))
+			Err(FsError::InvalidFile(path)) // coverage:ignore-line
 		}
 	}
 
