@@ -84,4 +84,4 @@ msrv = "1.46.0"
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-flags = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs"]
