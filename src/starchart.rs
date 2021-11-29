@@ -15,12 +15,12 @@ use crate::{
 /// The inner data is wrapped in an [`Arc`], so cloning
 /// is cheap and will allow multiple accesses to the data.
 #[derive(Debug, Default)]
-pub struct Gateway<B: Backend> {
+pub struct Starchart<B: Backend> {
 	backend: Arc<B>,
 	pub(crate) guard: Arc<RwLock<()>>,
 }
 
-impl<B: Backend> Gateway<B> {
+impl<B: Backend> Starchart<B> {
 	/// Gives access to the raw [`Backend`] instance.
 	///
 	/// # Safety
@@ -33,7 +33,7 @@ impl<B: Backend> Gateway<B> {
 		&*self.backend
 	}
 
-	/// Creates a new [`Gateway`], and initializes the [`Backend`].
+	/// Creates a new [`Starchart`], and initializes the [`Backend`].
 	///
 	/// # Errors
 	///
@@ -67,7 +67,7 @@ impl<B: Backend> Gateway<B> {
 	}
 }
 
-impl<B: Backend> Clone for Gateway<B> {
+impl<B: Backend> Clone for Starchart<B> {
 	fn clone(&self) -> Self {
 		Self {
 			backend: self.backend.clone(),
@@ -76,7 +76,7 @@ impl<B: Backend> Clone for Gateway<B> {
 	}
 }
 
-impl<B: Backend> Drop for Gateway<B> {
+impl<B: Backend> Drop for Starchart<B> {
 	fn drop(&mut self) {
 		block_on(unsafe { self.backend.shutdown() });
 	}
@@ -105,7 +105,7 @@ mod tests {
 			Backend, CacheBackend,
 		},
 		error::CacheError,
-		Entry, Gateway,
+		Entry, Starchart,
 	};
 
 	#[derive(Debug, Error)]
@@ -222,16 +222,16 @@ mod tests {
 		}
 	}
 
-	assert_impl_all!(Gateway<MockBackend>: Clone, Debug, Default, Drop);
+	assert_impl_all!(Starchart<MockBackend>: Clone, Debug, Default, Drop);
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn new_and_drop() -> Result<(), MockBackendError> {
 		let backend = MockBackend::new();
-		let gateway = Gateway::new(backend).await?;
+		let starchart = Starchart::new(backend).await?;
 
 		// SAFETY: this is a test
-		let backend = unsafe { gateway.backend() };
+		let backend = unsafe { starchart.backend() };
 
 		assert!(backend.is_initialized());
 
@@ -243,10 +243,10 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn clone() -> Result<(), MockBackendError> {
 		let backend = MockBackend::new();
-		let gateway = Gateway::new(backend).await?;
+		let starchart = Starchart::new(backend).await?;
 
 		{
-			let cloned = gateway.clone();
+			let cloned = starchart.clone();
 			let cloned_backend = &cloned.backend;
 			assert_eq!(Arc::strong_count(cloned_backend), 2);
 		}

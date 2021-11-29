@@ -1,6 +1,6 @@
-//! The backend that fetches and provides data for a [`Database`].
+//! The backend that fetches and provides data for the [`Starchart`].
 //!
-//! [`Database`]: crate::database::Database
+//! [`Starchart`]: crate::Starchart
 
 use std::{error::Error as StdError, iter::FromIterator};
 
@@ -32,9 +32,7 @@ pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
 
-/// The backend to be used with a [`Database`].
-///
-/// [`Database`]: crate::Database
+/// The backend to be used to manage data.
 pub trait Backend: Send + Sync {
 	/// The [`Error`] type that the backend will report up.
 	///
@@ -54,11 +52,11 @@ pub trait Backend: Send + Sync {
 	///
 	/// # Safety
 	///
-	/// This should not fail, as it's ran upon dropping the [`Gateway`],
+	/// This should not fail, as it's ran upon dropping the [`Starchart`],
 	/// and panicking during a drop means resources haven't adequately been cleaned up,
 	/// which isn't inherintly UB however it should still be documented.
 	///
-	/// [`Gateway`]: crate::Gateway
+	/// [`Starchart`]: crate::Starchart
 	unsafe fn shutdown(&self) -> ShutdownFuture {
 		Box::pin(async {})
 	}

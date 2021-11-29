@@ -62,9 +62,9 @@ pub trait FsBackend: Send + Sync {
 	const EXTENSION: &'static str;
 
 	/// Turn a [`Read`]er into an [`Entry`].
-	/// 
+	///
 	/// # Errors
-	/// 
+	///
 	/// Implementors should return a [`FsError::Serde`] error upon failure.
 	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
 	where
@@ -72,9 +72,9 @@ pub trait FsBackend: Send + Sync {
 		T: Entry;
 
 	/// Turn a [`Entry`] into a writable [`Vec`].
-	/// 
+	///
 	/// # Errors
-	/// 
+	///
 	/// Implementors should return a [`FsError::Serde`] error upon failure.
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
@@ -98,9 +98,9 @@ pub trait FsBackend: Send + Sync {
 	}
 
 	/// Turns a filename into a valid key.
-	/// 
+	///
 	/// # Errors
-	/// 
+	///
 	/// Returns a [`FsError::InvalidFile`] when the file path does not have the correct extension.
 	fn resolve_key<P: AsRef<Path>>(&self, p: P) -> Result<String, FsError> {
 		let path = p.as_ref().to_path_buf();

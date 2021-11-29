@@ -29,7 +29,7 @@ pub use self::{
 	},
 	target::OperationTarget,
 };
-use crate::{backend::Backend, util::InnerUnwrap, Entry, Gateway, IndexEntry, Key};
+use crate::{backend::Backend, util::InnerUnwrap, Entry, IndexEntry, Key, Starchart};
 
 #[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 const METADATA_KEY: &str = "__metadata__";
@@ -63,10 +63,10 @@ pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
-/// An [`Action`] for easy [`CRUD`] operations within a [`Gateway`].
+/// An [`Action`] for easy [`CRUD`] operations within a [`Starchart`].
 ///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-/// [`Gateway`]: crate::Gateway
+/// [`Starchart`]: crate::Starchart
 #[derive(Serialize, Deserialize)]
 #[must_use = "an action alone has no side effects"]
 pub struct Action<S, C: CrudOperation, T: OpTarget> {
@@ -404,7 +404,7 @@ unsafe impl<S: Entry + Sync, C: CrudOperation, T: OpTarget> Sync for Action<S, C
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, EntryTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
 		// Create the lock outside of the async block, as the guard is invalid if created in async context.
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
@@ -442,7 +442,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, EntryTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Option<S>, B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, Option<S>, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
 			let table_name = self.table.clone().inner_unwrap();
@@ -470,7 +470,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, UpdateOperation, EntryTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.clone().inner_unwrap();
@@ -502,7 +502,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, EntryTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, bool, B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, bool, B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
@@ -534,7 +534,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 	for Action<S, ReadOperation, TableTarget>
 {
 	#[cfg(not(tarpaulin_include))]
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Vec<S>, B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, Vec<S>, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
 			let table = self.table.clone().inner_unwrap();
@@ -570,7 +570,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
 	for Action<S, CreateOperation, TableTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, (), B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
@@ -600,7 +600,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
 	for Action<S, DeleteOperation, TableTarget>
 {
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, bool, B> {
+	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, bool, B> {
 		let lock = gateway.guard.write();
 		let res = Box::pin(async move {
 			let table = self.table.inner_unwrap();
@@ -635,7 +635,7 @@ mod tests {
 		OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
 		UpdateEntryAction, UpdateOperation,
 	};
-	use crate::{backend::CacheBackend, error::CacheError, Gateway, IndexEntry};
+	use crate::{backend::CacheBackend, error::CacheError, IndexEntry, Starchart};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -654,12 +654,12 @@ mod tests {
 		}
 	}
 
-	async fn setup_gateway() -> Gateway<CacheBackend> {
+	async fn setup_gateway() -> Starchart<CacheBackend> {
 		let backend = CacheBackend::new();
-		Gateway::new(backend).await.unwrap()
+		Starchart::new(backend).await.unwrap()
 	}
 
-	async fn setup_table(gateway: &Gateway<CacheBackend>) {
+	async fn setup_table(gateway: &Starchart<CacheBackend>) {
 		let action: CreateTableAction<Settings> = Action::new().set_table("table").clone();
 
 		gateway.run(action).await.unwrap().unwrap();

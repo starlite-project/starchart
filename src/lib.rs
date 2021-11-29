@@ -17,7 +17,7 @@ pub mod action;
 pub mod backend;
 mod entry;
 pub mod error;
-pub mod gateway;
+mod starchart;
 #[cfg(not(tarpaulin_include))]
 mod util;
 
@@ -26,7 +26,7 @@ pub use self::{
 	action::Action,
 	entry::{Entry, IndexEntry, Key},
 	error::ChartError as Error,
-	gateway::Gateway,
+	starchart::Starchart,
 };
 
 /// A type alias for a [`Result`] that wraps around [`Error`].

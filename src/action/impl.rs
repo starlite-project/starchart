@@ -3,19 +3,19 @@ use std::{fmt::Debug, future::Future, pin::Pin};
 use serde::{Deserialize, Serialize};
 
 use super::{ActionKind, OperationTarget};
-use crate::{backend::Backend, Gateway};
+use crate::{backend::Backend, Starchart};
 
 /// The marker trait for all action runs, this trait should not be used and is only used
-/// to make the return type of [`Gateway::run`] easily known.
+/// to make the return type of [`Starchart::run`] easily known.
 ///
 /// See [`Actions trait-implementations`] for more information.
 ///
 /// This trait is sealed and cannot be implemented outside of this crate.
 ///
-/// [`Gateway::run`]: crate::Gateway::run
+/// [`Starchart::run`]: crate::Starchart::run
 /// [`Actions trait-implementations`]: crate::action::Action#trait-implementations
 pub trait ActionRunner<B: Backend, Success, Failure>: private::Sealed + Send {
-	/// Runs the action through the [`Gateway`].
+	/// Runs the action through the [`Starchart`].
 	///
 	/// # Safety
 	///
@@ -27,7 +27,7 @@ pub trait ActionRunner<B: Backend, Success, Failure>: private::Sealed + Send {
 	/// [`Action`]: crate::action::Action
 	unsafe fn run<'a>(
 		self,
-		gateway: &'a Gateway<B>,
+		gateway: &'a Starchart<B>,
 	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send + 'a>>;
 	/// Validates that the [`Action`] has been created correctly.
 	///

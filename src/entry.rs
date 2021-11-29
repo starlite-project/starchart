@@ -14,11 +14,11 @@ impl<T: ToString> Key for T {
 	}
 }
 
-/// A marker trait for use within the [`Gateway`].
+/// A marker trait for use within the [`Starchart`].
 ///
-/// This signifies that the type can be stored within a [`Gateway`].
+/// This signifies that the type can be stored within a [`Starchart`].
 ///
-/// [`Gateway`]: crate::Gateway
+/// [`Starchart`]: crate::Starchart
 pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync {}
 
 impl<T: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync> Entry for T {}

@@ -16,9 +16,9 @@ pub struct JsonBackend {
 
 impl JsonBackend {
 	/// Create a new [`JsonBackend`].
-	/// 
+	///
 	/// # Errors
-	/// 
+	///
 	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
