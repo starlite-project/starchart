@@ -61,27 +61,17 @@ pub trait Backend: Send + Sync {
 		Box::pin(async {})
 	}
 
-	/// Check if a table exists in the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Check if a table exists.
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error>;
 
-	/// Inserts or creates a table in the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Inserts or creates a table.
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error>;
 
-	/// Deletes or drops a table from the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Deletes or drops a table.
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error>;
 
-	/// Ensures a table exists in the [`Database`].
-	/// Uses [`has_table`] first, then [`create_table`] if it returns false.
-	///
-	/// [`Database`]: crate::Database
-	/// [`has_table`]: Self::has_table
-	/// [`create_table`]: Self::create_table
+	/// Ensures a table exists.
+	/// Uses [`Self::has_table`] first, then [`Self::create_table`] if it returns false.
 	fn ensure_table<'a>(&'a self, table: &'a str) -> EnsureTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if !self.has_table(table).await? {

@@ -10,7 +10,7 @@ use crate::{
 	backend::Backend,
 };
 
-/// The base structure for managing [`Database`]s.
+/// The base structure for managing data.
 ///
 /// The inner data is wrapped in an [`Arc`], so cloning
 /// is cheap and will allow multiple accesses to the data.
