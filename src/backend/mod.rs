@@ -24,6 +24,8 @@ mod json;
 mod ron;
 #[cfg(feature = "yaml")]
 mod yaml;
+#[cfg(feature = "toml")]
+mod toml;
 
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
@@ -39,6 +41,8 @@ pub use self::json::JsonBackend;
 pub use self::ron::RonBackend;
 #[cfg(feature = "yaml")]
 pub use self::yaml::YamlBackend;
+#[cfg(feature = "toml")]
+pub use self::toml::TomlBackend;
 
 /// The backend to be used to manage data.
 pub trait Backend: Send + Sync {

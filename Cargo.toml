@@ -25,7 +25,7 @@ default-features = false
 features = ["std"]
 version = "0.3"
 
-[dependencies.ron_sys]
+[dependencies.serde_ron]
 optional = true
 package = "ron"
 version = "0.7"
@@ -63,6 +63,11 @@ features = ["fs"]
 optional = true
 version = "0.1"
 
+[dependencies.serde_toml]
+package = "toml"
+version = "0.5"
+optional = true
+
 [dev-dependencies]
 static_assertions = "1.0.0"
 
@@ -85,7 +90,8 @@ derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
 json = ["serde_json", "fs"]
 yaml = ["serde_yaml", "fs"]
-ron = ["ron_sys", "fs"]
+ron = ["serde_ron", "fs"]
+toml = ["serde_toml", "fs"]
 metadata = []
 
 [workspace]
