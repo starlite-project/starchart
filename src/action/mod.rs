@@ -11,6 +11,7 @@ use std::{
 	any::type_name,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
+	iter::FromIterator,
 	marker::PhantomData,
 	pin::Pin,
 };
@@ -530,11 +531,13 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::Error>>
+impl<I, B: Backend, S: Entry + 'static> ActionRunner<B, I, ActionRunError<B::Error>>
 	for Action<S, ReadOperation, TableTarget>
+where
+	I: FromIterator<S>,
 {
 	#[cfg(not(tarpaulin_include))]
-	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, Vec<S>, B> {
+	unsafe fn run(self, gateway: &Gateway<B>) -> ActionRunFuture<'_, I, B> {
 		let lock = gateway.guard.read();
 		let res = Box::pin(async move {
 			let table = self.table.clone().inner_unwrap();
@@ -553,7 +556,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Vec<S>, ActionRunError<B::E
 
 			let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
 
-			let data = backend.get_all(&table, &keys_borrowed).await?;
+			let data = backend.get_all::<S, I>(&table, &keys_borrowed).await?;
 
 			Ok(data)
 		});
@@ -635,7 +638,9 @@ mod tests {
 		OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
 		UpdateEntryAction, UpdateOperation,
 	};
-	use crate::{backend::CacheBackend, error::CacheError, Gateway, IndexEntry};
+	use crate::{
+		action::ActionRunError, backend::CacheBackend, error::CacheError, Gateway, IndexEntry,
+	};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -989,7 +994,9 @@ mod tests {
 		let mut read_table: ReadTableAction<Settings> = Action::new();
 		read_table.set_table("table");
 
-		assert!(gateway.run(read_table).await?.is_err());
+		let res: Result<Vec<_>, ActionRunError<CacheError>> = gateway.run(read_table).await?;
+
+		assert!(res.is_err());
 
 		Ok(())
 	}
