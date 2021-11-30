@@ -81,5 +81,4 @@ pub mod testing {
 			let _ = fs::remove_dir_all(&self.0);
 		}
 	}
-
 }

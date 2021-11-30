@@ -20,6 +20,8 @@ mod cache;
 pub mod fs;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "yaml")]
+mod yaml;
 
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
@@ -31,6 +33,8 @@ pub use self::cache::CacheError;
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(feature = "yaml")]
+pub use self::yaml::YamlBackend;
 
 /// The backend to be used to manage data.
 pub trait Backend: Send + Sync {

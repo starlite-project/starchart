@@ -10,9 +10,7 @@ use crate::Entry;
 /// A JSON based backend.
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-pub struct JsonBackend {
-	base_directory: PathBuf,
-}
+pub struct JsonBackend(PathBuf);
 
 impl JsonBackend {
 	/// Create a new [`JsonBackend`].
@@ -26,9 +24,7 @@ impl JsonBackend {
 		if path.is_file() {
 			Err(FsError::PathNotDirectory(path))
 		} else {
-			Ok(Self {
-				base_directory: path,
-			})
+			Ok(Self(path))
 		}
 	}
 }
@@ -52,7 +48,7 @@ impl FsBackend for JsonBackend {
 	}
 
 	fn base_directory(&self) -> PathBuf {
-		self.base_directory.clone()
+		self.0.clone()
 	}
 }
 
@@ -75,7 +71,7 @@ mod tests {
 		let _blank = Cleanup::new("", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
-		assert_eq!(backend.base_directory, PathBuf::from(&path));
+		assert_eq!(backend.0, PathBuf::from(&path));
 
 		let file_path = Cleanup::new("file.txt", "json", false)?;
 

@@ -319,7 +319,11 @@ mod tests {
 		}
 
 		fn base_directory(&self) -> PathBuf {
-			PathBuf::new().join(".").join("target").join("tests").join("fs")
+			PathBuf::new()
+				.join(".")
+				.join("target")
+				.join("tests")
+				.join("fs")
 		}
 	}
 
