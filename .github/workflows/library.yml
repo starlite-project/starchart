@@ -124,7 +124,7 @@ jobs:
           while IFS= read -r file
           do
             echo $file
-            if [[ $file != "*/Cargo.toml" || $file != "*/Cargo.lock" || file != "./.github/workflows/*" ]]; then
+            if [[ $file != "*/Cargo.toml" || $file != "*/Cargo.lock" || file != ".github/workflows/*" ]]; then
               echo "This modified file is not what we're looking for"
               echo "::set-output name=run_job::false"
             else
