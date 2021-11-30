@@ -299,6 +299,7 @@ mod tests {
 	#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 	struct MockFsBackend;
 
+	#[cfg(not(tarpaulin_include))]
 	impl FsBackend for MockFsBackend {
 		const EXTENSION: &'static str = "test";
 
