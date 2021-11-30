@@ -26,7 +26,6 @@ features = ["std"]
 version = "0.3"
 
 [dependencies.serde]
-default-features = false
 features = ["derive"]
 version = "1"
 
@@ -72,7 +71,7 @@ required-features = ["json", "derive"]
 
 [features]
 cache = ["serde-value"]
-default = ["json", "metadata"]
+default = []
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
 json = ["serde_json", "fs"]

@@ -7,8 +7,9 @@ mod r#impl;
 mod kind;
 mod target;
 
+#[cfg(feature = "metadata")]
+use std::any::type_name;
 use std::{
-	any::type_name,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	iter::FromIterator,
@@ -547,9 +548,10 @@ where
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			self.check_metadata(backend, &table).await?;
 
-			let keys = backend
-				.get_keys::<Vec<_>>(&table)
-				.await?
+			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+
+			#[cfg(feature = "metadata")]
+			let keys = keys
 				.into_iter()
 				.filter(|value| value != METADATA_KEY)
 				.collect::<Vec<_>>();

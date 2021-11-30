@@ -288,3 +288,52 @@ impl<RW: FsBackend> Backend for RW {
 		})
 	}
 }
+
+#[cfg(all(test, feature = "fs"))]
+mod tests {
+	use std::{io, path::PathBuf};
+
+	use super::{FsBackend, FsError};
+	use crate::Entry;
+
+	#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+	struct MockFsBackend;
+
+	impl FsBackend for MockFsBackend {
+		const EXTENSION: &'static str = "test";
+
+		fn from_reader<R, T>(_: R) -> Result<T, FsError>
+		where
+			R: io::Read,
+			T: Entry,
+		{
+			Err(FsError::Serde)
+		}
+
+		fn to_bytes<T>(_: &T) -> Result<Vec<u8>, FsError>
+		where
+			T: Entry,
+		{
+			Err(FsError::Serde)
+		}
+
+		fn base_directory(&self) -> PathBuf {
+			PathBuf::new().join(".").join("target").join("tests").join("fs")
+		}
+	}
+
+	#[test]
+	fn resolve_key() -> Result<(), FsError> {
+		let backend = MockFsBackend;
+
+		let key = "foo.test";
+
+		assert_eq!(backend.resolve_key(key)?, "foo");
+
+		let invalid = "bar.json";
+
+		assert!(backend.resolve_key(invalid).is_err());
+
+		Ok(())
+	}
+}
