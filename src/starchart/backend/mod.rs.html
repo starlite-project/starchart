@@ -258,24 +258,9 @@
 <span id="257">257</span>
 <span id="258">258</span>
 <span id="259">259</span>
-<span id="260">260</span>
-<span id="261">261</span>
-<span id="262">262</span>
-<span id="263">263</span>
-<span id="264">264</span>
-<span id="265">265</span>
-<span id="266">266</span>
-<span id="267">267</span>
-<span id="268">268</span>
-<span id="269">269</span>
-<span id="270">270</span>
-<span id="271">271</span>
-<span id="272">272</span>
-<span id="273">273</span>
-<span id="274">274</span>
-</pre><pre class="rust"><code><span class="doccomment">//! The backend that fetches and provides data for a [`Database`].</span>
+</pre><pre class="rust"><code><span class="doccomment">//! The backend that fetches and provides data for the [`Starchart`].</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! [`Database`]: crate::database::Database</span>
+<span class="doccomment">//! [`Starchart`]: crate::Starchart</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error::Error</span> <span class="kw">as</span> <span class="ident">StdError</span>, <span class="ident">iter::FromIterator</span>};
 
@@ -306,13 +291,8 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::fs::FsError</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::json::JsonBackend</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>, <span class="ident">doc</span>(<span class="ident">hidden</span>))]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::json::JsonError</span>;
 
-<span class="doccomment">/// The backend to be used with a [`Database`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Database`]: crate::Database</span>
+<span class="doccomment">/// The backend to be used to manage data.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Backend</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {
 	<span class="doccomment">/// The [`Error`] type that the backend will report up.</span>
 	<span class="doccomment">///</span>
@@ -332,36 +312,26 @@
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// # Safety</span>
 	<span class="doccomment">///</span>
-	<span class="doccomment">/// This should not fail, as it&#39;s ran upon dropping the [`Gateway`],</span>
+	<span class="doccomment">/// This should not fail, as it&#39;s ran upon dropping the [`Starchart`],</span>
 	<span class="doccomment">/// and panicking during a drop means resources haven&#39;t adequately been cleaned up,</span>
 	<span class="doccomment">/// which isn&#39;t inherintly UB however it should still be documented.</span>
 	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Gateway`]: crate::Gateway</span>
+	<span class="doccomment">/// [`Starchart`]: crate::Starchart</span>
 	<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">shutdown</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ShutdownFuture</span> {
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> {})
 	}
 
-	<span class="doccomment">/// Check if a table exists in the [`Database`].</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Database`]: crate::Database</span>
+	<span class="doccomment">/// Check if a table exists.</span>
 	<span class="kw">fn</span> <span class="ident">has_table</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">HasTableFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>;
 
-	<span class="doccomment">/// Inserts or creates a table in the [`Database`].</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Database`]: crate::Database</span>
+	<span class="doccomment">/// Inserts or creates a table.</span>
 	<span class="kw">fn</span> <span class="ident">create_table</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">CreateTableFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>;
 
-	<span class="doccomment">/// Deletes or drops a table from the [`Database`].</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Database`]: crate::Database</span>
+	<span class="doccomment">/// Deletes or drops a table.</span>
 	<span class="kw">fn</span> <span class="ident">delete_table</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">DeleteTableFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>;
 
-	<span class="doccomment">/// Ensures a table exists in the [`Database`].</span>
-	<span class="doccomment">/// Uses [`has_table`] first, then [`create_table`] if it returns false.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Database`]: crate::Database</span>
-	<span class="doccomment">/// [`has_table`]: Self::has_table</span>
-	<span class="doccomment">/// [`create_table`]: Self::create_table</span>
+	<span class="doccomment">/// Ensures a table exists.</span>
+	<span class="doccomment">/// Uses [`Self::has_table`] first, then [`Self::create_table`] if it returns false.</span>
 	<span class="kw">fn</span> <span class="ident">ensure_table</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">EnsureTableFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
 		<span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
 			<span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">has_table</span>(<span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span> {

@@ -276,6 +276,19 @@
 <span id="275">275</span>
 <span id="276">276</span>
 <span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Helpers for creating file-system based backends.</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{
@@ -340,19 +353,28 @@
 	<span class="kw">const</span> <span class="ident">EXTENSION</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>;
 
 	<span class="doccomment">/// Turn a [`Read`]er into an [`Entry`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Implementors should return a [`FsError::Serde`] error upon failure.</span>
 	<span class="kw">fn</span> <span class="ident">from_reader</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">rdr</span>: <span class="ident">R</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">FsError</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
 		<span class="ident">R</span>: <span class="ident">Read</span>,
 		<span class="ident">T</span>: <span class="ident">Entry</span>;
 
 	<span class="doccomment">/// Turn a [`Entry`] into a writable [`Vec`].</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Implementors should return a [`FsError::Serde`] error upon failure.</span>
 	<span class="kw">fn</span> <span class="ident">to_bytes</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">FsError</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
 		<span class="ident">T</span>: <span class="ident">Entry</span>;
 
 	<span class="doccomment">/// Turns a key into a valid filename, with the extension.</span>
+	<span class="attribute">#[<span class="ident">must_use</span>]</span>
 	<span class="kw">fn</span> <span class="ident">filename</span>(<span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">String</span> {
-		<span class="ident">id</span>.<span class="ident">to_string</span>() <span class="op">+</span> <span class="string">&quot;.&quot;</span> <span class="op">+</span> <span class="ident"><span class="self">Self</span>::EXTENSION</span>
+		<span class="ident">id</span>.<span class="ident">to_owned</span>() <span class="op">+</span> <span class="string">&quot;.&quot;</span> <span class="op">+</span> <span class="ident"><span class="self">Self</span>::EXTENSION</span>
 	}
 
 	<span class="doccomment">/// Resolves the path of a file.</span>
@@ -367,6 +389,10 @@
 	}
 
 	<span class="doccomment">/// Turns a filename into a valid key.</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// # Errors</span>
+	<span class="doccomment">///</span>
+	<span class="doccomment">/// Returns a [`FsError::InvalidFile`] when the file path does not have the correct extension.</span>
 	<span class="kw">fn</span> <span class="ident">resolve_key</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">p</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">FsError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">p</span>.<span class="ident">as_ref</span>().<span class="ident">to_path_buf</span>();
 

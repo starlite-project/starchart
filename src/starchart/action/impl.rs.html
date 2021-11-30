@@ -241,19 +241,19 @@
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ActionKind</span>, <span class="ident">OperationTarget</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">backend::Backend</span>, <span class="ident">Gateway</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">backend::Backend</span>, <span class="ident">Starchart</span>};
 
 <span class="doccomment">/// The marker trait for all action runs, this trait should not be used and is only used</span>
-<span class="doccomment">/// to make the return type of [`Gateway::run`] easily known.</span>
+<span class="doccomment">/// to make the return type of [`Starchart::run`] easily known.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// See [`Actions trait-implementations`] for more information.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This trait is sealed and cannot be implemented outside of this crate.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// [`Gateway::run`]: crate::Gateway::run</span>
+<span class="doccomment">/// [`Starchart::run`]: crate::Starchart::run</span>
 <span class="doccomment">/// [`Actions trait-implementations`]: crate::action::Action#trait-implementations</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActionRunner</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span>, <span class="ident">Success</span>, <span class="ident">Failure</span><span class="op">&gt;</span>: <span class="ident">private::Sealed</span> <span class="op">+</span> <span class="ident">Send</span> {
-	<span class="doccomment">/// Runs the action through the [`Gateway`].</span>
+	<span class="doccomment">/// Runs the action through the [`Starchart`].</span>
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// # Safety</span>
 	<span class="doccomment">///</span>
@@ -265,7 +265,7 @@
 	<span class="doccomment">/// [`Action`]: crate::action::Action</span>
 	<span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
-		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Gateway</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
+		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
 	) -&gt; <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Success</span>, <span class="ident">Failure</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 	<span class="doccomment">/// Validates that the [`Action`] has been created correctly.</span>
 	<span class="doccomment">///</span>
