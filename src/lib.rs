@@ -18,6 +18,8 @@ pub mod backend;
 mod entry;
 pub mod error;
 mod starchart;
+#[cfg(test)]
+pub(crate) mod test_utils;
 #[cfg(not(tarpaulin_include))]
 mod util;
 
