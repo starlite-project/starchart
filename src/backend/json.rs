@@ -64,7 +64,7 @@ mod tests {
 
 	use crate::{
 		backend::{Backend, FsError, JsonBackend},
-		test_utils::FsCleanup as Cleanup,
+		util::testing::FsCleanup as Cleanup,
 	};
 
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
