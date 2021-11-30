@@ -20,6 +20,8 @@ mod cache;
 pub mod fs;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "ron")]
+mod ron;
 #[cfg(feature = "yaml")]
 mod yaml;
 
@@ -33,6 +35,8 @@ pub use self::cache::CacheError;
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(feature = "ron")]
+pub use self::ron::RonBackend;
 #[cfg(feature = "yaml")]
 pub use self::yaml::YamlBackend;
 
