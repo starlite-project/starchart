@@ -124,6 +124,7 @@ pub trait FsBackend: Send + Sync {
 	fn base_directory(&self) -> PathBuf;
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 impl<RW: FsBackend> Backend for RW {
 	type Error = FsError;
 
