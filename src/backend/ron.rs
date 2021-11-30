@@ -42,6 +42,7 @@ impl FsBackend for RonBackend {
 		ron_sys::from_str(&output).map_err(|_| FsError::Serde)
 	}
 
+	#[cfg(not(tarpaulin_include))]
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
