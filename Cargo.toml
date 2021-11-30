@@ -64,8 +64,11 @@ version = "1"
 
 [[example]]
 name = "basic"
-edition = "2018"
 required-features = ["cache", "derive"]
+
+[[example]]
+name = "get_all"
+required-features = ["json", "derive"]
 
 [features]
 cache = ["serde-value"]

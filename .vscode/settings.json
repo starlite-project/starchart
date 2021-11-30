@@ -20,5 +20,6 @@
     "errorLens.enabledDiagnosticLevels": [
         "error",
         "warning",
-    ]
+    ],
+    "editor.detectIndentation": false
 }
