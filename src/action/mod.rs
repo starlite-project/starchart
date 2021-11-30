@@ -639,7 +639,7 @@ mod tests {
 		UpdateEntryAction, UpdateOperation,
 	};
 	use crate::{
-		action::ActionRunError, backend::CacheBackend, error::CacheError, Starchart, IndexEntry,
+		action::ActionRunError, backend::CacheBackend, error::CacheError, IndexEntry, Starchart,
 	};
 
 	#[derive(
