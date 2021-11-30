@@ -8,6 +8,7 @@
     "rust-analyzer.assist.importEnforceGranularity": true,
     "rust-analyzer.assist.importGranularity": "crate",
     "rust-analyzer.cargo.runBuildScripts": true,
+    "rust-analyzer.checkOnSave.command": "clippy",
     "rust-analyzer.checkOnSave.extraArgs": [
         "--tests"
     ],
@@ -19,5 +20,6 @@
     "errorLens.enabledDiagnosticLevels": [
         "error",
         "warning",
-    ]
+    ],
+    "editor.detectIndentation": false
 }

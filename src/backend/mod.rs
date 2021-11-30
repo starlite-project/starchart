@@ -1,6 +1,6 @@
-//! The backend that fetches and provides data for a [`Database`].
+//! The backend that fetches and provides data for the [`Starchart`].
 //!
-//! [`Database`]: crate::database::Database
+//! [`Starchart`]: crate::Starchart
 
 use std::{error::Error as StdError, iter::FromIterator};
 
@@ -31,13 +31,8 @@ pub use self::cache::CacheError;
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
-#[cfg(feature = "json")]
-#[cfg_attr(feature = "json", doc(hidden))]
-pub use self::json::JsonError;
 
-/// The backend to be used with a [`Database`].
-///
-/// [`Database`]: crate::Database
+/// The backend to be used to manage data.
 pub trait Backend: Send + Sync {
 	/// The [`Error`] type that the backend will report up.
 	///
@@ -57,36 +52,26 @@ pub trait Backend: Send + Sync {
 	///
 	/// # Safety
 	///
-	/// This should not fail, as it's ran upon dropping the [`Gateway`],
+	/// This should not fail, as it's ran upon dropping the [`Starchart`],
 	/// and panicking during a drop means resources haven't adequately been cleaned up,
 	/// which isn't inherintly UB however it should still be documented.
 	///
-	/// [`Gateway`]: crate::Gateway
+	/// [`Starchart`]: crate::Starchart
 	unsafe fn shutdown(&self) -> ShutdownFuture {
 		Box::pin(async {})
 	}
 
-	/// Check if a table exists in the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Check if a table exists.
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error>;
 
-	/// Inserts or creates a table in the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Inserts or creates a table.
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error>;
 
-	/// Deletes or drops a table from the [`Database`].
-	///
-	/// [`Database`]: crate::Database
+	/// Deletes or drops a table.
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error>;
 
-	/// Ensures a table exists in the [`Database`].
-	/// Uses [`has_table`] first, then [`create_table`] if it returns false.
-	///
-	/// [`Database`]: crate::Database
-	/// [`has_table`]: Self::has_table
-	/// [`create_table`]: Self::create_table
+	/// Ensures a table exists.
+	/// Uses [`Self::has_table`] first, then [`Self::create_table`] if it returns false.
 	fn ensure_table<'a>(&'a self, table: &'a str) -> EnsureTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if !self.has_table(table).await? {

@@ -62,9 +62,13 @@ static_assertions = "1.0.0"
 features = ["test-util", "macros"]
 version = "1"
 
-[profile.release]
-codegen-units = 1
-lto = "fat"
+[[example]]
+name = "basic"
+required-features = ["cache", "derive"]
+
+[[example]]
+name = "get_all"
+required-features = ["json", "derive"]
 
 [features]
 cache = ["serde-value"]

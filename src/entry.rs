@@ -14,11 +14,11 @@ impl<T: ToString> Key for T {
 	}
 }
 
-/// A marker trait for use within the [`Gateway`].
+/// A marker trait for use within the [`Starchart`].
 ///
-/// This signifies that the type can be stored within a [`Gateway`].
+/// This signifies that the type can be stored within a [`Starchart`].
 ///
-/// [`Gateway`]: crate::Gateway
+/// [`Starchart`]: crate::Starchart
 pub trait Entry: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync {}
 
 impl<T: Clone + Serialize + DeserializeOwned + Debug + Default + Send + Sync> Entry for T {}
@@ -70,9 +70,9 @@ mod tests {
 	#[test]
 	fn to_key() {
 		let keyable = Keyable {
-			inner: "12345".to_string(),
+			inner: "12345".to_owned(),
 		};
 
-		assert_eq!(keyable.to_key(), "12345".to_string());
+		assert_eq!(keyable.to_key(), "12345".to_owned());
 	}
 }

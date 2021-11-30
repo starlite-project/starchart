@@ -2,6 +2,8 @@
 
 use thiserror::Error;
 
+#[doc(inline)]
+pub use crate::action::{ActionError, ActionRunError, ActionValidationError};
 use crate::backend::Backend;
 #[cfg(feature = "cache")]
 #[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
@@ -9,14 +11,6 @@ pub use crate::backend::CacheError;
 #[cfg(feature = "fs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub use crate::backend::FsError;
-#[cfg(feature = "json")]
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-pub use crate::backend::JsonError;
-#[doc(inline)]
-pub use crate::{
-	action::{ActionError, ActionRunError, ActionValidationError},
-	database::DatabaseError,
-};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -35,9 +29,6 @@ pub enum ChartError<B: Backend> {
 	#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 	#[error(transparent)]
 	Fs(#[from] FsError),
-	/// A [`DatabaseError`] has occurred.
-	#[error(transparent)]
-	Database(#[from] DatabaseError<B::Error>),
 	/// An [`ActionValidationError`] has occurred.
 	#[error(transparent)]
 	ActionValidation(#[from] ActionValidationError),

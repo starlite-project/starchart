@@ -120,8 +120,6 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     needs: MSRV
-    # FIXME: remove once https://github.com/rust-lang/rust-clippy/issues/8020 is fixed
-    if: ${{ !always() }}
 
     steps:
       - name: Checkout sources
@@ -144,6 +142,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features --tests --workspace
+
   rustfmt:
     name: Format
     needs: MSRV
@@ -228,7 +227,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: tarpaulin
-          args: -- --test-threads 1
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2

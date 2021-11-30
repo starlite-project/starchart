@@ -7,14 +7,6 @@ use std::{
 use super::fs::{FsBackend, FsError};
 use crate::Entry;
 
-/// A type alias for an [`FsError`].
-#[deprecated(
-	since = "0.7.0",
-	note = "the JsonError alias will be removed, consider using the `FsError` instead."
-)]
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-pub type JsonError = FsError;
-
 /// A JSON based backend.
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
@@ -24,7 +16,11 @@ pub struct JsonBackend {
 
 impl JsonBackend {
 	/// Create a new [`JsonBackend`].
-	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, JsonError> {
+	///
+	/// # Errors
+	///
+	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
@@ -72,7 +68,7 @@ mod tests {
 
 	use static_assertions::assert_impl_all;
 
-	use crate::backend::{Backend, JsonBackend, JsonError};
+	use crate::backend::{Backend, FsError, JsonBackend};
 
 	#[derive(Debug, Clone)]
 	pub struct Cleanup(PathBuf);
@@ -114,7 +110,7 @@ mod tests {
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[test]
-	fn new() -> Result<(), JsonError> {
+	fn new() -> Result<(), FsError> {
 		let path = Cleanup::new("new", true)?;
 		let _blank = Cleanup::new("", true)?;
 		let backend = JsonBackend::new(&path)?;
@@ -134,7 +130,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn init() -> Result<(), JsonError> {
+	async fn init() -> Result<(), FsError> {
 		let path = Cleanup::new("init", false)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -149,7 +145,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn has_and_create_table() -> Result<(), JsonError> {
+	async fn has_and_create_table() -> Result<(), FsError> {
 		let path = Cleanup::new("has_and_create_table", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -166,7 +162,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_keys() -> Result<(), JsonError> {
+	async fn get_keys() -> Result<(), FsError> {
 		let path = Cleanup::new("get_keys", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -190,7 +186,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn create_and_delete_table() -> Result<(), JsonError> {
+	async fn create_and_delete_table() -> Result<(), FsError> {
 		let path = Cleanup::new("create_and_delete_table", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -209,7 +205,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_and_create() -> Result<(), JsonError> {
+	async fn get_and_create() -> Result<(), FsError> {
 		let path = Cleanup::new("get_and_create", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -230,7 +226,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn update_and_replace() -> Result<(), JsonError> {
+	async fn update_and_replace() -> Result<(), FsError> {
 		let path = Cleanup::new("update_and_replace", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -253,7 +249,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn delete() -> Result<(), JsonError> {
+	async fn delete() -> Result<(), FsError> {
 		let path = Cleanup::new("delete", true)?;
 		let backend = JsonBackend::new(&path)?;
 

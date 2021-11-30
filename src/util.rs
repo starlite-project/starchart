@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use std::hint::unreachable_unchecked;
 
 pub unsafe trait InnerUnwrap<T> {
@@ -9,11 +11,7 @@ unsafe impl<T> InnerUnwrap<T> for Option<T> {
 	#[track_caller]
 	unsafe fn inner_unwrap(self) -> T {
 		debug_assert!(self.is_some());
-		if let Some(v) = self {
-			v
-		} else {
-			unreachable_unchecked()
-		}
+		self.map_or_else(|| unreachable_unchecked(), |v| v)
 	}
 }
 
