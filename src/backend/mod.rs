@@ -192,15 +192,15 @@ pub trait Backend: Send + Sync {
 }
 
 // need to cfg for cache because otherwise we would get errors if someone just ran `cargo test`
-#[cfg(all(test, feature = "cache"))]
+#[cfg(all(test, feature = "memory"))]
 mod tests {
 
-	use super::{Backend, CacheBackend, CacheError};
+	use super::{Backend, MemoryBackend, MemoryError};
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() {
-		let backend = CacheBackend::new();
+		let backend = MemoryBackend::new();
 
 		assert!(Backend::init(&backend).await.is_ok());
 	}
@@ -209,7 +209,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn shutdown() {
-		let backend = CacheBackend::new();
+		let backend = MemoryBackend::new();
 
 		unsafe {
 			Backend::shutdown(&backend).await;
@@ -218,8 +218,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn ensure_table() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn ensure_table() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		let table_name = "test";
 		assert!(!backend.has_table(table_name).await?);
@@ -233,8 +233,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn ensure() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn ensure() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		let table_name = "test";
 		let id = "id";
@@ -253,8 +253,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_all() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn get_all() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		backend.create_table("test").await?;
 

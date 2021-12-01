@@ -34,7 +34,7 @@ pub enum MemoryError {
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
 /// to represent data.
-#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 #[derive(Debug, Default, Clone)]
 pub struct MemoryBackend {
 	tables: DashMap<String, DashMap<String, Value>>,

@@ -201,7 +201,7 @@ mod tests {
 					value: 42,
 				},
 			)
-			.await?;
+			.await?; // coverage:ignore-line
 
 		assert_eq!(
 			backend.get::<Settings>("table", "id").await?,
