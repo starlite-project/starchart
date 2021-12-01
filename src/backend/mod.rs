@@ -15,13 +15,13 @@ pub mod future;
 
 #[cfg(feature = "bincode")]
 mod bincode;
-#[cfg(feature = "cache")]
-mod cache;
 #[cfg(feature = "fs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub mod fs;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "memory")]
+mod memory;
 #[cfg(feature = "ron")]
 mod ron;
 #[cfg(feature = "toml")]
@@ -31,16 +31,16 @@ mod yaml;
 
 #[cfg(feature = "bincode")]
 pub use self::bincode::BincodeBackend;
-#[cfg(feature = "cache")]
-pub use self::cache::CacheBackend;
-#[cfg(feature = "cache")]
-#[cfg_attr(feature = "cache", doc(hidden))]
-pub use self::cache::CacheError;
 #[cfg(feature = "fs")]
 #[cfg_attr(feature = "fs", doc(hidden))]
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(feature = "memory")]
+pub use self::memory::MemoryBackend;
+#[cfg(feature = "memory")]
+#[cfg_attr(feature = "memory", doc(hidden))]
+pub use self::memory::MemoryError;
 #[cfg(feature = "ron")]
 pub use self::ron::RonBackend;
 #[cfg(feature = "toml")]

@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde::{Deserialize, Serialize};
 use starchart::{
 	action::{CreateEntryAction, CreateTableAction, ReadEntryAction},
-	backend::CacheBackend,
+	backend::MemoryBackend,
 	Action, ChartResult, IndexEntry, Starchart,
 };
 
@@ -27,9 +27,9 @@ impl Settings {
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> ChartResult<(), CacheBackend> {
+async fn main() -> ChartResult<(), MemoryBackend> {
 	// Create an initialize the database.
-	let chart = Starchart::new(CacheBackend::default()).await?;
+	let chart = Starchart::new(MemoryBackend::default()).await?;
 
 	// Create and run an action to create the "foo" table with the Settings struct.
 	let mut create_table_action: CreateTableAction<Settings> = Action::new();

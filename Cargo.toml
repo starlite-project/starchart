@@ -82,14 +82,14 @@ version = "1"
 
 [[example]]
 name = "basic"
-required-features = ["cache", "derive"]
+required-features = ["memory", "derive"]
 
 [[example]]
 name = "get_all"
 required-features = ["json", "derive"]
 
 [features]
-cache = ["serde-value"]
+memory = ["serde-value"]
 default = []
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]

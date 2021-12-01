@@ -5,12 +5,12 @@ use thiserror::Error;
 #[doc(inline)]
 pub use crate::action::{ActionError, ActionRunError, ActionValidationError};
 use crate::backend::Backend;
-#[cfg(feature = "cache")]
-#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
-pub use crate::backend::CacheError;
 #[cfg(feature = "fs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub use crate::backend::FsError;
+#[cfg(feature = "memory")]
+#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
+pub use crate::backend::MemoryError;
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -19,11 +19,11 @@ pub use crate::backend::FsError;
 /// An error enum to wrap around all possible errors within the crate.
 #[derive(Debug, Error)]
 pub enum ChartError<B: Backend> {
-	/// A [`CacheError`] has occurred.
-	#[cfg(feature = "cache")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+	/// A [`MemoryError`] has occurred.
+	#[cfg(feature = "memory")]
+	#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 	#[error(transparent)]
-	Cache(#[from] CacheError),
+	Memory(#[from] MemoryError),
 	/// A [`FsError`] has occurred.
 	#[cfg(feature = "fs")]
 	#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
