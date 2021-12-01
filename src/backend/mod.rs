@@ -13,6 +13,8 @@ use crate::{util::InnerUnwrap, Entry};
 
 pub mod future;
 
+#[cfg(feature = "bincode")]
+mod bincode;
 #[cfg(feature = "cache")]
 mod cache;
 #[cfg(feature = "fs")]
@@ -22,11 +24,13 @@ pub mod fs;
 mod json;
 #[cfg(feature = "ron")]
 mod ron;
-#[cfg(feature = "yaml")]
-mod yaml;
 #[cfg(feature = "toml")]
 mod toml;
+#[cfg(feature = "yaml")]
+mod yaml;
 
+#[cfg(feature = "bincode")]
+pub use self::bincode::BincodeBackend;
 #[cfg(feature = "cache")]
 pub use self::cache::CacheBackend;
 #[cfg(feature = "cache")]
@@ -39,10 +43,10 @@ pub use self::fs::FsError;
 pub use self::json::JsonBackend;
 #[cfg(feature = "ron")]
 pub use self::ron::RonBackend;
-#[cfg(feature = "yaml")]
-pub use self::yaml::YamlBackend;
 #[cfg(feature = "toml")]
 pub use self::toml::TomlBackend;
+#[cfg(feature = "yaml")]
+pub use self::yaml::YamlBackend;
 
 /// The backend to be used to manage data.
 pub trait Backend: Send + Sync {
