@@ -7,8 +7,9 @@ mod r#impl;
 mod kind;
 mod target;
 
+#[cfg(feature = "metadata")]
+use std::any::type_name;
 use std::{
-	any::type_name,
 	fmt::{Debug, Formatter, Result as FmtResult},
 	future::Future,
 	iter::FromIterator,
@@ -547,9 +548,10 @@ where
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			self.check_metadata(backend, &table).await?;
 
-			let keys = backend
-				.get_keys::<Vec<_>>(&table)
-				.await?
+			let keys = backend.get_keys::<Vec<_>>(&table).await?;
+
+			#[cfg(feature = "metadata")]
+			let keys = keys
 				.into_iter()
 				.filter(|value| value != METADATA_KEY)
 				.collect::<Vec<_>>();
@@ -628,7 +630,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-#[cfg(all(test, feature = "cache", feature = "metadata"))]
+#[cfg(all(test, feature = "memory", feature = "metadata"))]
 mod tests {
 	use serde::{Deserialize, Serialize};
 
@@ -639,7 +641,7 @@ mod tests {
 		UpdateEntryAction, UpdateOperation,
 	};
 	use crate::{
-		action::ActionRunError, backend::CacheBackend, error::CacheError, IndexEntry, Starchart,
+		action::ActionRunError, backend::MemoryBackend, error::MemoryError, IndexEntry, Starchart,
 	};
 
 	#[derive(
@@ -659,12 +661,12 @@ mod tests {
 		}
 	}
 
-	async fn setup_gateway() -> Starchart<CacheBackend> {
-		let backend = CacheBackend::new();
+	async fn setup_gateway() -> Starchart<MemoryBackend> {
+		let backend = MemoryBackend::new();
 		Starchart::new(backend).await.unwrap()
 	}
 
-	async fn setup_table(gateway: &Starchart<CacheBackend>) {
+	async fn setup_table(gateway: &Starchart<MemoryBackend>) {
 		let action: CreateTableAction<Settings> = Action::new().set_table("table").clone();
 
 		gateway.run(action).await.unwrap().unwrap();
@@ -850,7 +852,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn basic_run() -> Result<(), ActionError<CacheError>> {
+	async fn basic_run() -> Result<(), ActionError<MemoryError>> {
 		let gateway = setup_gateway().await;
 		let mut action: Action<Settings, CreateOperation, TableTarget> = Action::new();
 
@@ -904,7 +906,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn duplicate_creates() -> Result<(), ActionError<CacheError>> {
+	async fn duplicate_creates() -> Result<(), ActionError<MemoryError>> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 
@@ -925,7 +927,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn read_and_update() -> Result<(), ActionError<CacheError>> {
+	async fn read_and_update() -> Result<(), ActionError<MemoryError>> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 		{
@@ -967,7 +969,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn deletes() -> Result<(), ActionError<CacheError>> {
+	async fn deletes() -> Result<(), ActionError<MemoryError>> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 
@@ -994,7 +996,7 @@ mod tests {
 		let mut read_table: ReadTableAction<Settings> = Action::new();
 		read_table.set_table("table");
 
-		let res: Result<Vec<_>, ActionRunError<CacheError>> = gateway.run(read_table).await?;
+		let res: Result<Vec<_>, ActionRunError<MemoryError>> = gateway.run(read_table).await?;
 
 		assert!(res.is_err());
 

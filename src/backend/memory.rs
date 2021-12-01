@@ -13,11 +13,11 @@ use super::{
 };
 use crate::Entry;
 
-/// An error returned from the [`CacheBackend`].
-#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+/// An error returned from the [`MemoryBackend`].
+#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
-pub enum CacheError {
+pub enum MemoryError {
 	/// A serialization error occurred.
 	#[error("a serialization error occurred")]
 	Serialization(#[from] SerializerError),
@@ -34,14 +34,14 @@ pub enum CacheError {
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
 /// to represent data.
-#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 #[derive(Debug, Default, Clone)]
-pub struct CacheBackend {
+pub struct MemoryBackend {
 	tables: DashMap<String, DashMap<String, Value>>,
 }
 
-impl CacheBackend {
-	/// Creates a new [`CacheBackend`].
+impl MemoryBackend {
+	/// Creates a new [`MemoryBackend`].
 	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
@@ -50,16 +50,16 @@ impl CacheBackend {
 	fn get_table<'a>(
 		&'a self,
 		table: &'a str,
-	) -> Result<Ref<'a, String, DashMap<String, Value>>, CacheError> {
+	) -> Result<Ref<'a, String, DashMap<String, Value>>, MemoryError> {
 		match self.tables.get(table) {
 			Some(table) => Ok(table),
-			None => Err(CacheError::TableDoesntExist(table.to_owned())),
+			None => Err(MemoryError::TableDoesntExist(table.to_owned())),
 		}
 	}
 }
 
-impl Backend for CacheBackend {
-	type Error = CacheError;
+impl Backend for MemoryBackend {
+	type Error = MemoryError;
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
 		Box::pin(async move { Ok(self.tables.contains_key(table)) })
@@ -131,7 +131,7 @@ impl Backend for CacheBackend {
 			let table_value = self.get_table(table)?;
 
 			if table_value.contains_key(id) {
-				return Err(CacheError::ValueAlreadyExists);
+				return Err(MemoryError::ValueAlreadyExists);
 			}
 
 			let serialized = to_value(value)?;
@@ -196,9 +196,9 @@ mod tests {
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
 
-	use crate::backend::{Backend, CacheBackend, CacheError};
+	use crate::backend::{Backend, MemoryBackend, MemoryError};
 
-	assert_impl_all!(CacheBackend: Backend, Clone, Debug, Default, Send, Sync);
+	assert_impl_all!(MemoryBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
@@ -210,14 +210,14 @@ mod tests {
 
 	#[test]
 	fn new() {
-		let cache_backend = CacheBackend::new();
+		let cache_backend = MemoryBackend::new();
 
 		assert_eq!(cache_backend.tables.len(), 0);
 	}
 
 	#[test]
-	fn get_table() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	fn get_table() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend
 			.tables
@@ -234,8 +234,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn has_table() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn has_table() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		assert!(!cache_backend.has_table("test").await?);
 
@@ -244,8 +244,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn create_table() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn create_table() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 
@@ -256,8 +256,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn delete_table() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn delete_table() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 
@@ -272,8 +272,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_keys() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn get_keys() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 
@@ -292,8 +292,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_and_create() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn get_and_create() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		let settings = Settings {
 			option: true,
@@ -328,8 +328,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn has() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn has() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 
@@ -353,8 +353,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn update_and_replace() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn update_and_replace() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 
@@ -412,8 +412,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn delete() -> Result<(), CacheError> {
-		let cache_backend = CacheBackend::new();
+	async fn delete() -> Result<(), MemoryError> {
+		let cache_backend = MemoryBackend::new();
 
 		cache_backend.create_table("test").await?;
 

@@ -13,24 +13,40 @@ use crate::{util::InnerUnwrap, Entry};
 
 pub mod future;
 
-#[cfg(feature = "cache")]
-mod cache;
+#[cfg(feature = "bincode")]
+mod bincode;
 #[cfg(feature = "fs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub mod fs;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "memory")]
+mod memory;
+#[cfg(feature = "ron")]
+mod ron;
+#[cfg(feature = "toml")]
+mod toml;
+#[cfg(feature = "yaml")]
+mod yaml;
 
-#[cfg(feature = "cache")]
-pub use self::cache::CacheBackend;
-#[cfg(feature = "cache")]
-#[cfg_attr(feature = "cache", doc(hidden))]
-pub use self::cache::CacheError;
+#[cfg(feature = "bincode")]
+pub use self::bincode::BincodeBackend;
 #[cfg(feature = "fs")]
 #[cfg_attr(feature = "fs", doc(hidden))]
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(feature = "memory")]
+pub use self::memory::MemoryBackend;
+#[cfg(feature = "memory")]
+#[cfg_attr(feature = "memory", doc(hidden))]
+pub use self::memory::MemoryError;
+#[cfg(feature = "ron")]
+pub use self::ron::RonBackend;
+#[cfg(feature = "toml")]
+pub use self::toml::TomlBackend;
+#[cfg(feature = "yaml")]
+pub use self::yaml::YamlBackend;
 
 /// The backend to be used to manage data.
 pub trait Backend: Send + Sync {
@@ -176,15 +192,15 @@ pub trait Backend: Send + Sync {
 }
 
 // need to cfg for cache because otherwise we would get errors if someone just ran `cargo test`
-#[cfg(all(test, feature = "cache"))]
+#[cfg(all(test, feature = "memory"))]
 mod tests {
 
-	use super::{Backend, CacheBackend, CacheError};
+	use super::{Backend, MemoryBackend, MemoryError};
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() {
-		let backend = CacheBackend::new();
+		let backend = MemoryBackend::new();
 
 		assert!(Backend::init(&backend).await.is_ok());
 	}
@@ -193,7 +209,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn shutdown() {
-		let backend = CacheBackend::new();
+		let backend = MemoryBackend::new();
 
 		unsafe {
 			Backend::shutdown(&backend).await;
@@ -202,8 +218,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn ensure_table() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn ensure_table() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		let table_name = "test";
 		assert!(!backend.has_table(table_name).await?);
@@ -217,8 +233,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn ensure() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn ensure() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		let table_name = "test";
 		let id = "id";
@@ -237,8 +253,8 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn get_all() -> Result<(), CacheError> {
-		let backend = CacheBackend::new();
+	async fn get_all() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::new();
 
 		backend.create_table("test").await?;
 

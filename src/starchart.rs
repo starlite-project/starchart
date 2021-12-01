@@ -82,7 +82,7 @@ impl<B: Backend> Drop for Starchart<B> {
 	}
 }
 
-#[cfg(all(test, feature = "cache"))]
+#[cfg(all(test, feature = "memory"))]
 mod tests {
 	use std::{
 		fmt::Debug,
@@ -102,26 +102,26 @@ mod tests {
 				CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
 				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
 			},
-			Backend, CacheBackend,
+			Backend, MemoryBackend,
 		},
-		error::CacheError,
+		error::MemoryError,
 		Entry, Starchart,
 	};
 
 	#[derive(Debug, Error)]
 	#[error(transparent)]
-	pub struct MockBackendError(#[from] CacheError);
+	pub struct MockBackendError(#[from] MemoryError);
 
 	#[derive(Debug, Default)]
 	pub struct MockBackend {
-		inner: CacheBackend,
+		inner: MemoryBackend,
 		initialized: AtomicBool,
 	}
 
 	impl MockBackend {
 		pub fn new() -> Self {
 			Self {
-				inner: CacheBackend::new(),
+				inner: MemoryBackend::new(),
 				initialized: AtomicBool::new(false),
 			}
 		}

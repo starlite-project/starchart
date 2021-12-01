@@ -7,13 +7,13 @@ use std::{
 use super::fs::{FsBackend, FsError};
 use crate::Entry;
 
-/// A JSON based backend.
+/// A TOML based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-pub struct JsonBackend(PathBuf);
+#[cfg_attr(docsrs, doc(cfg(feature = "toml")))]
+pub struct TomlBackend(PathBuf);
 
-impl JsonBackend {
-	/// Create a new [`JsonBackend`].
+impl TomlBackend {
+	/// Create a new [`TomlBackend`].
 	///
 	/// # Errors
 	///
@@ -29,22 +29,24 @@ impl JsonBackend {
 	}
 }
 
-impl FsBackend for JsonBackend {
-	const EXTENSION: &'static str = "json";
+impl FsBackend for TomlBackend {
+	const EXTENSION: &'static str = "toml";
 
-	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
 	{
-		serde_json::from_reader(rdr).map_err(|_| FsError::Serde)
+		let mut output = String::new();
+		rdr.read_to_string(&mut output)?;
+		serde_toml::from_str(&output).map_err(|_| FsError::Serde)
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_json::to_vec(value).map_err(|_| FsError::Serde)
+		serde_toml::to_vec(value).map_err(|_| FsError::Serde)
 	}
 
 	fn base_directory(&self) -> PathBuf {
@@ -52,32 +54,52 @@ impl FsBackend for JsonBackend {
 	}
 }
 
-#[cfg(all(test, feature = "json"))]
+#[cfg(all(test, feature = "toml"))]
 mod tests {
 	use std::{fmt::Debug, fs, path::PathBuf};
 
+	use serde::{Deserialize, Serialize};
 	use static_assertions::assert_impl_all;
 
 	use crate::{
-		backend::{Backend, FsError, JsonBackend},
+		backend::{Backend, FsError, TomlBackend},
 		util::testing::FsCleanup as Cleanup,
+		IndexEntry,
 	};
 
-	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
+	assert_impl_all!(TomlBackend: Backend, Clone, Debug, Default, Send, Sync);
+
+	#[derive(
+		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	)]
+	struct Settings {
+		id: u64,
+		option: bool,
+		value: u8,
+	}
+
+	#[cfg(not(tarpaulin_include))]
+	impl IndexEntry for Settings {
+		type Key = u64;
+
+		fn key(&self) -> Self::Key {
+			self.id
+		}
+	}
 
 	#[test]
 	fn new() -> Result<(), FsError> {
-		let path = Cleanup::new("new", "json", true)?;
-		let _blank = Cleanup::new("", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("new", "toml", true)?;
+		let _blank = Cleanup::new("", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		assert_eq!(backend.0, PathBuf::from(&path));
 
-		let file_path = Cleanup::new("file.txt", "json", false)?;
+		let file_path = Cleanup::new("file.txt", "toml", false)?;
 
 		fs::write(&file_path, "Hello, world!")?;
 
-		assert!(JsonBackend::new(&file_path).is_err());
+		assert!(TomlBackend::new(&file_path).is_err());
 
 		fs::remove_file(file_path)?;
 
@@ -87,8 +109,8 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
-		let path = Cleanup::new("init", "json", false)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("init", "toml", false)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
@@ -102,8 +124,8 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn has_and_create_table() -> Result<(), FsError> {
-		let path = Cleanup::new("has_and_create_table", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("has_and_create_table", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
@@ -119,8 +141,8 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
-		let path = Cleanup::new("get_keys", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("get_keys", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
@@ -143,8 +165,8 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn create_and_delete_table() -> Result<(), FsError> {
-		let path = Cleanup::new("create_and_delete_table", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("create_and_delete_table", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
@@ -162,16 +184,33 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
-		let path = Cleanup::new("get_and_create", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("get_and_create", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
 		backend.create_table("table").await?;
 
-		backend.create("table", "id", &1_u8).await?;
+		backend
+			.create(
+				"table",
+				"id",
+				&Settings {
+					id: 0,
+					option: true,
+					value: 42,
+				},
+			)
+			.await?; // coverage:ignore-line
 
-		assert_eq!(backend.get::<u8>("table", "id").await?, Some(1));
+		assert_eq!(
+			backend.get::<Settings>("table", "id").await?,
+			Some(Settings {
+				id: 0,
+				option: true,
+				value: 42
+			})
+		);
 
 		assert_eq!(backend.get::<u8>("table", "id2").await?, None);
 
@@ -183,22 +222,66 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_replace() -> Result<(), FsError> {
-		let path = Cleanup::new("update_and_replace", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("update_and_replace", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
 		backend.create_table("table").await?;
 
-		backend.create("table", "id", &1_u8).await?;
+		backend
+			.create(
+				"table",
+				"id",
+				&Settings {
+					id: 0,
+					option: true,
+					value: 42,
+				},
+			)
+			.await?;
 
-		backend.update("table", "id", &2_u8).await?;
+		backend
+			.update(
+				"table",
+				"id",
+				&Settings {
+					id: 0,
+					option: false,
+					value: 24,
+				},
+			)
+			.await?;
 
-		assert_eq!(backend.get::<u8>("table", "id").await?, Some(2));
+		assert_eq!(
+			backend.get::<Settings>("table", "id").await?,
+			Some(Settings {
+				id: 0,
+				option: false,
+				value: 24,
+			})
+		);
 
-		backend.replace("table", "id", &3_u8).await?;
+		backend
+			.replace(
+				"table",
+				"id",
+				&Settings {
+					id: 0,
+					option: true,
+					value: 72,
+				},
+			)
+			.await?;
 
-		assert_eq!(backend.get::<u8>("table", "id").await?, Some(3));
+		assert_eq!(
+			backend.get::<Settings>("table", "id").await?,
+			Some(Settings {
+				id: 0,
+				option: true,
+				value: 72
+			})
+		);
 
 		Ok(())
 	}
@@ -206,8 +289,8 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn delete() -> Result<(), FsError> {
-		let path = Cleanup::new("delete", "json", true)?;
-		let backend = JsonBackend::new(&path)?;
+		let path = Cleanup::new("delete", "toml", true)?;
+		let backend = TomlBackend::new(&path)?;
 
 		backend.init().await?;
 
