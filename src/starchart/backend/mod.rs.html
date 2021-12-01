@@ -258,6 +258,22 @@
 <span id="257">257</span>
 <span id="258">258</span>
 <span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The backend that fetches and provides data for the [`Starchart`].</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Starchart`]: crate::Starchart</span>
@@ -273,24 +289,40 @@
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">future</span>;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">cache</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;bincode&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">bincode</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fs&quot;</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fs&quot;</span>)))]</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">fs</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">json</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">memory</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ron&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">ron</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;toml&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">toml</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;yaml&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">yaml</span>;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::cache::CacheBackend</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>, <span class="ident">doc</span>(<span class="ident">hidden</span>))]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::cache::CacheError</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;bincode&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::bincode::BincodeBackend</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fs&quot;</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;fs&quot;</span>, <span class="ident">doc</span>(<span class="ident">hidden</span>))]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::fs::FsError</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;json&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::json::JsonBackend</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::memory::MemoryBackend</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>, <span class="ident">doc</span>(<span class="ident">hidden</span>))]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::memory::MemoryError</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ron&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::ron::RonBackend</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;toml&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::toml::TomlBackend</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;yaml&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::yaml::YamlBackend</span>;
 
 <span class="doccomment">/// The backend to be used to manage data.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Backend</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> {
@@ -436,15 +468,15 @@
 }
 
 <span class="comment">// need to cfg for cache because otherwise we would get errors if someone just ran `cargo test`</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">tests</span> {
 
-	<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Backend</span>, <span class="ident">CacheBackend</span>, <span class="ident">CacheError</span>};
+	<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Backend</span>, <span class="ident">MemoryBackend</span>, <span class="ident">MemoryError</span>};
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
 	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">init</span>() {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 
 		<span class="macro">assert!</span>(<span class="ident">Backend::init</span>(<span class="kw-2">&amp;</span><span class="ident">backend</span>).<span class="kw">await</span>.<span class="ident">is_ok</span>());
 	}
@@ -453,7 +485,7 @@
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
 	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">shutdown</span>() {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 
 		<span class="kw">unsafe</span> {
 			<span class="ident">Backend::shutdown</span>(<span class="kw-2">&amp;</span><span class="ident">backend</span>).<span class="kw">await</span>;
@@ -462,8 +494,8 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">ensure_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">ensure_table</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MemoryError</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 
 		<span class="kw">let</span> <span class="ident">table_name</span> <span class="op">=</span> <span class="string">&quot;test&quot;</span>;
 		<span class="macro">assert!</span>(<span class="op">!</span><span class="ident">backend</span>.<span class="ident">has_table</span>(<span class="ident">table_name</span>).<span class="kw">await</span><span class="question-mark">?</span>);
@@ -477,8 +509,8 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">ensure</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">ensure</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MemoryError</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 
 		<span class="kw">let</span> <span class="ident">table_name</span> <span class="op">=</span> <span class="string">&quot;test&quot;</span>;
 		<span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="string">&quot;id&quot;</span>;
@@ -497,8 +529,8 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_all</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CacheError</span><span class="op">&gt;</span> {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_all</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MemoryError</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 
 		<span class="ident">backend</span>.<span class="ident">create_table</span>(<span class="string">&quot;test&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -518,5 +550,5 @@
 	}
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (6db0a0e9a 2021-11-29)" ></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (207c80f10 2021-11-30)" ></div>
 </body></html>

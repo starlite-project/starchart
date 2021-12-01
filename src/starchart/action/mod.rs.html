@@ -1002,6 +1002,8 @@
 <span id="1001">1001</span>
 <span id="1002">1002</span>
 <span id="1003">1003</span>
+<span id="1004">1004</span>
+<span id="1005">1005</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The action structs for CRUD operations.</span>
 
 <span class="comment">// TODO: Add overwrite option.</span>
@@ -1011,8 +1013,9 @@
 <span class="kw">mod</span> <span class="ident">kind</span>;
 <span class="kw">mod</span> <span class="ident">target</span>;
 
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
+<span class="kw">use</span> <span class="ident">std::any::type_name</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
-	<span class="ident">any::type_name</span>,
 	<span class="ident">fmt</span>::{<span class="ident">Debug</span>, <span class="ident">Formatter</span>, <span class="prelude-ty">Result</span> <span class="kw">as</span> <span class="ident">FmtResult</span>},
 	<span class="ident">future::Future</span>,
 	<span class="ident">iter::FromIterator</span>,
@@ -1551,9 +1554,10 @@
 			<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>, <span class="ident">not</span>(<span class="ident">tarpaulin_include</span>)))]</span> <span class="comment">// coverage:ignore-line</span>
 			<span class="self">self</span>.<span class="ident">check_metadata</span>(<span class="ident">backend</span>, <span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-			<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">backend</span>
-				.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
-				.<span class="kw">await</span><span class="question-mark">?</span>
+			<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+
+			<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
+			<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">keys</span>
 				.<span class="ident">into_iter</span>()
 				.<span class="ident">filter</span>(<span class="op">|</span><span class="ident">value</span><span class="op">|</span> <span class="ident">value</span> <span class="op">!</span><span class="op">=</span> <span class="ident">METADATA_KEY</span>)
 				.<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
@@ -1632,7 +1636,7 @@
 	}
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cache&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;memory&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>))]</span>
 <span class="kw">mod</span> <span class="ident">tests</span> {
 	<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
@@ -1643,7 +1647,7 @@
 		<span class="ident">UpdateEntryAction</span>, <span class="ident">UpdateOperation</span>,
 	};
 	<span class="kw">use</span> <span class="kw">crate</span>::{
-		<span class="ident">action::ActionRunError</span>, <span class="ident">backend::CacheBackend</span>, <span class="ident">error::CacheError</span>, <span class="ident">IndexEntry</span>, <span class="ident">Starchart</span>,
+		<span class="ident">action::ActionRunError</span>, <span class="ident">backend::MemoryBackend</span>, <span class="ident">error::MemoryError</span>, <span class="ident">IndexEntry</span>, <span class="ident">Starchart</span>,
 	};
 
 	<span class="attribute">#[<span class="ident">derive</span>(
@@ -1663,12 +1667,12 @@
 		}
 	}
 
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">setup_gateway</span>() -&gt; <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">CacheBackend</span><span class="op">&gt;</span> {
-		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">CacheBackend::new</span>();
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">setup_gateway</span>() -&gt; <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">MemoryBackend</span><span class="op">&gt;</span> {
+		<span class="kw">let</span> <span class="ident">backend</span> <span class="op">=</span> <span class="ident">MemoryBackend::new</span>();
 		<span class="ident">Starchart::new</span>(<span class="ident">backend</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>()
 	}
 
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">setup_table</span>(<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">CacheBackend</span><span class="op">&gt;</span>) {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">setup_table</span>(<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">MemoryBackend</span><span class="op">&gt;</span>) {
 		<span class="kw">let</span> <span class="ident">action</span>: <span class="ident">CreateTableAction</span><span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>().<span class="ident">set_table</span>(<span class="string">&quot;table&quot;</span>).<span class="ident">clone</span>();
 
 		<span class="ident">gateway</span>.<span class="ident">run</span>(<span class="ident">action</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>().<span class="ident">unwrap</span>();
@@ -1854,7 +1858,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">basic_run</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">CacheError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">basic_run</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">action</span>: <span class="ident">Action</span><span class="op">&lt;</span><span class="ident">Settings</span>, <span class="ident">CreateOperation</span>, <span class="ident">TableTarget</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
 
@@ -1908,7 +1912,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">duplicate_creates</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">CacheError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">duplicate_creates</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 
@@ -1929,7 +1933,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_and_update</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">CacheError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_and_update</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 		{
@@ -1971,7 +1975,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">deletes</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">CacheError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">deletes</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 
@@ -1998,7 +2002,7 @@
 		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">read_table</span>: <span class="ident">ReadTableAction</span><span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
 		<span class="ident">read_table</span>.<span class="ident">set_table</span>(<span class="string">&quot;table&quot;</span>);
 
-		<span class="kw">let</span> <span class="ident">res</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">CacheError</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">run</span>(<span class="ident">read_table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">res</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">run</span>(<span class="ident">read_table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
 		<span class="macro">assert!</span>(<span class="ident">res</span>.<span class="ident">is_err</span>());
 
@@ -2006,5 +2010,5 @@
 	}
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (6db0a0e9a 2021-11-29)" ></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (207c80f10 2021-11-30)" ></div>
 </body></html>
