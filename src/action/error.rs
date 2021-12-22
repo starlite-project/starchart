@@ -38,7 +38,7 @@ pub enum ActionValidationError {
 	/// A provided key or table name was one of the restricted names.
 	#[cfg(feature = "metadata")]
 	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
-	#[error("the `{}` keys are restricted", RESTRICTED_KEYS.as_slice().join(", "))]
+	#[error("the `{}` keys are restricted", RESTRICTED_KEYS.as_ref().join(", "))]
 	RestrictedKey,
 }
 
