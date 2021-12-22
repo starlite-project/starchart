@@ -1,7 +1,8 @@
 use std::{error::Error, fmt::Debug};
-use super::RESTRICTED_KEYS;
 
 use thiserror::Error;
+
+use super::RESTRICTED_KEYS;
 
 /// A general [`Action`] error.
 ///
