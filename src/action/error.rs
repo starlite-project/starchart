@@ -1,4 +1,5 @@
 use std::{error::Error, fmt::Debug};
+use super::RESTRICTED_KEYS;
 
 use thiserror::Error;
 
@@ -34,11 +35,11 @@ pub enum ActionValidationError {
 	/// No table was provided.
 	#[error("no table was provided")]
 	Table,
-	/// A provided key or table name was "metadata", which is restricted
+	/// A provided key or table name was one of the restricted names.
 	#[cfg(feature = "metadata")]
 	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
-	#[error("the `__metadata__` key is restricted")]
-	Metadata,
+	#[error("the `{}` keys are restricted", RESTRICTED_KEYS.as_slice().join(", "))]
+	RestrictedKey,
 }
 
 /// An error that occurred from running an [`Action`].

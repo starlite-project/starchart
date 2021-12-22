@@ -36,6 +36,11 @@ use crate::{backend::Backend, util::InnerUnwrap, Entry, IndexEntry, Key, Starcha
 #[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 const METADATA_KEY: &str = "__metadata__";
 
+#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
+const TABLES_KEY: &str = "__tables__";
+
+const RESTRICTED_KEYS: [&str; 2] = [METADATA_KEY, TABLES_KEY];
+
 type ActionRunFuture<'a, S, B> =
 	Pin<Box<dyn Future<Output = Result<S, ActionRunError<<B as Backend>::Error>>> + Send + 'a>>;
 
@@ -208,8 +213,8 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		allow(clippy::unused_self)
 	)]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		if key == Some(METADATA_KEY) {
-			return Err(ActionValidationError::Metadata);
+		if RESTRICTED_KEYS.map(Some).contains(&key) {
+			return Err(ActionValidationError::RestrictedKey);
 		}
 
 		Ok(())
@@ -586,6 +591,20 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 
 			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
 			{
+				backend.ensure_table(METADATA_KEY).await?;
+
+				let mut tables = backend
+					.get::<Vec<String>>(METADATA_KEY, TABLES_KEY)
+					.await?
+					.unwrap_or_default();
+
+				// this could potentially be removed, as we are currently creating the table.
+				if !tables.contains(&table) {
+					tables.push(table.clone());
+
+					backend.update(METADATA_KEY, TABLES_KEY, &tables).await?;
+				}
+
 				let metadata = S::default();
 				backend.ensure(&table, METADATA_KEY, &metadata).await?;
 			}
@@ -613,6 +632,19 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 			let backend = gateway.backend();
 
 			let exists = backend.has_table(&table).await?;
+
+			#[cfg(all(feature = "metadata", not(tarpaulin_include)))] // coverage:ignore-line
+			{
+				let mut tables = backend
+					.get::<Vec<String>>(METADATA_KEY, TABLES_KEY)
+					.await?
+					.unwrap_or_default();
+
+				let table_name = table.clone();
+				tables.retain(move |v| *v != table_name);
+
+				backend.update(METADATA_KEY, TABLES_KEY, &tables).await?;
+			}
 
 			backend.delete_table(&table).await?;
 
