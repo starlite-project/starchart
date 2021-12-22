@@ -218,7 +218,7 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		// }
 
 		// Ok(())
-		for restricted in RESTRICTED_KEYS {
+		for restricted in RESTRICTED_KEYS.iter().copied() {
 			if Some(restricted) == key {
 				return Err(ActionValidationError::RestrictedKey);
 			}
