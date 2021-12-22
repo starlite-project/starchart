@@ -213,8 +213,15 @@ impl<S: Entry, C: CrudOperation, T: OpTarget> Action<S, C, T> {
 		allow(clippy::unused_self)
 	)]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		if RESTRICTED_KEYS.map(Some).contains(&key) {
-			return Err(ActionValidationError::RestrictedKey);
+		// if RESTRICTED_KEYS.iter().map(Some).contains(&key) {
+		// 	return Err(ActionValidationError::RestrictedKey);
+		// }
+
+		// Ok(())
+		for restricted in RESTRICTED_KEYS {
+			if Some(restricted) == key {
+				return Err(ActionValidationError::RestrictedKey);
+			}
 		}
 
 		Ok(())
