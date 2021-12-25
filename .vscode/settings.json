@@ -15,7 +15,9 @@
     "rust-analyzer.diagnostics.warningsAsInfo": [
         "unused_variables",
         "dead_code",
-        "unused_imports"
+        "unused_imports",
+        "missing_docs",
+        "clippy::missing_errors_doc"
     ],
     "errorLens.enabledDiagnosticLevels": [
         "error",

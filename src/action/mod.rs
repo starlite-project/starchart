@@ -403,7 +403,7 @@ unsafe impl<S: Entry + Send, C: CrudOperation, T: OpTarget> Send for Action<S, C
 
 unsafe impl<S: Entry + Sync, C: CrudOperation, T: OpTarget> Sync for Action<S, C, T> {}
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<(), ActionRunError<B::Error>>>
 	for Action<S, CreateOperation, EntryTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
@@ -441,7 +441,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<Option<S>, ActionRunError<B::Error>>>
 	for Action<S, ReadOperation, EntryTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, Option<S>, B> {
@@ -469,7 +469,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, Option<S>, ActionRunError<B
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<(), ActionRunError<B::Error>>>
 	for Action<S, UpdateOperation, EntryTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
@@ -501,7 +501,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<bool, ActionRunError<B::Error>>>
 	for Action<S, DeleteOperation, EntryTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, bool, B> {
@@ -532,7 +532,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Err
 	}
 }
 
-impl<I, B: Backend, S: Entry + 'static> ActionRunner<B, I, ActionRunError<B::Error>>
+impl<I, B: Backend, S: Entry + 'static> ActionRunner<B, Result<I, ActionRunError<B::Error>>>
 	for Action<S, ReadOperation, TableTarget>
 where
 	I: FromIterator<S>,
@@ -572,7 +572,7 @@ where
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<(), ActionRunError<B::Error>>>
 	for Action<S, CreateOperation, TableTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, (), B> {
@@ -602,7 +602,7 @@ impl<B: Backend, S: Entry + 'static> ActionRunner<B, (), ActionRunError<B::Error
 	}
 }
 
-impl<B: Backend, S: Entry + 'static> ActionRunner<B, bool, ActionRunError<B::Error>>
+impl<B: Backend, S: Entry + 'static> ActionRunner<B, Result<bool, ActionRunError<B::Error>>>
 	for Action<S, DeleteOperation, TableTarget>
 {
 	unsafe fn run(self, gateway: &Starchart<B>) -> ActionRunFuture<'_, bool, B> {
@@ -877,7 +877,7 @@ mod tests {
 
 		read_table.set_table("table");
 
-		let mut values: Vec<Settings> = gateway.run(read_table).await??;
+		let mut values: Vec<_> = gateway.run(read_table).await??;
 		let mut expected = vec![
 			Settings {
 				id: 0,

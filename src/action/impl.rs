@@ -14,7 +14,7 @@ use crate::{backend::Backend, Starchart};
 ///
 /// [`Starchart::run`]: crate::Starchart::run
 /// [`Actions trait-implementations`]: crate::action::Action#trait-implementations
-pub trait ActionRunner<B: Backend, Success, Failure>: private::Sealed + Send {
+pub trait ActionRunner<B: Backend, O>: crate::private::Sealed + Send {
 	/// Runs the action through the [`Starchart`].
 	///
 	/// # Safety
@@ -28,7 +28,7 @@ pub trait ActionRunner<B: Backend, Success, Failure>: private::Sealed + Send {
 	unsafe fn run<'a>(
 		self,
 		gateway: &'a Starchart<B>,
-	) -> Pin<Box<dyn Future<Output = Result<Success, Failure>> + Send + 'a>>;
+	) -> Pin<Box<dyn Future<Output = O> + Send + 'a>>;
 	/// Validates that the [`Action`] has been created correctly.
 	///
 	/// Each individual implementation of this is specialized, for example,
@@ -74,7 +74,7 @@ pub struct DeleteOperation;
 /// A sealed marker trait for helping an [`Action`] represent what type of operation will occur.
 ///
 /// [`Action`]: crate::action::Action
-pub trait CrudOperation: private::Sealed {
+pub trait CrudOperation: crate::private::Sealed {
 	#[doc(hidden)]
 	fn kind() -> ActionKind;
 }
@@ -119,7 +119,7 @@ pub struct EntryTarget;
 /// operation will cover.
 ///
 /// [`Action`]: crate::action::Action
-pub trait OpTarget: private::Sealed {
+pub trait OpTarget: crate::private::Sealed {
 	#[doc(hidden)]
 	fn target() -> OperationTarget;
 }
@@ -136,23 +136,23 @@ impl OpTarget for EntryTarget {
 	}
 }
 
-mod private {
-	use super::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
-		TableTarget, UpdateOperation,
-	};
-	use crate::{Action, Entry};
+// mod private {
+// 	use super::{
+// 		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
+// 		TableTarget, UpdateOperation,
+// 	};
+// 	use crate::{Action, Entry};
 
-	pub trait Sealed {}
+// 	pub trait Sealed {}
 
-	impl Sealed for CreateOperation {}
-	impl Sealed for ReadOperation {}
-	impl Sealed for UpdateOperation {}
-	impl Sealed for DeleteOperation {}
-	impl Sealed for TableTarget {}
-	impl Sealed for EntryTarget {}
-	impl<S: Entry, C: CrudOperation, T: OpTarget> Sealed for Action<S, C, T> {}
-}
+// 	impl Sealed for CreateOperation {}
+// 	impl Sealed for ReadOperation {}
+// 	impl Sealed for UpdateOperation {}
+// 	impl Sealed for DeleteOperation {}
+// 	impl Sealed for TableTarget {}
+// 	impl Sealed for EntryTarget {}
+// 	impl<S: Entry, C: CrudOperation, T: OpTarget> Sealed for Action<S, C, T> {}
+// }
 
 #[cfg(test)]
 mod tests {

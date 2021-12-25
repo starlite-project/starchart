@@ -6,8 +6,9 @@ use futures::executor::block_on;
 use parking_lot::RwLock;
 
 use crate::{
-	action::{ActionRunner, ActionValidationError},
+	action::{ActionRunner, ActionValidationError, CrudOperation, OpTarget},
 	backend::Backend,
+	Action, Entry,
 };
 
 /// The base structure for managing data.
@@ -53,12 +54,10 @@ impl<B: Backend> Starchart<B> {
 	/// Anything that the [`Action`] could return while running.
 	///
 	/// [`Action`]: crate::action::Action
-	pub async fn run<Success, Failure>(
+	pub async fn run<O>(
 		&self,
-		action: impl ActionRunner<B, Success, Failure>,
-	) -> Result<Result<Success, Failure>, ActionValidationError>
-	where
-		Failure: From<<B as Backend>::Error>,
+		action: impl ActionRunner<B, O>,
+	) -> Result<O, ActionValidationError>
 	{
 		unsafe {
 			action.validate()?;
