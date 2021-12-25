@@ -13,6 +13,7 @@ version = "0.10.0"
 [dependencies]
 dashmap = "4.0"
 parking_lot = "0.11.2"
+serde-value = "0.7"
 thiserror = "1.0.30"
 
 [dependencies.futures]
@@ -47,10 +48,6 @@ version = "0.7"
 package = "toml"
 version = "0.5"
 optional = true
-
-[dependencies.serde-value]
-optional = true
-version = "0.7"
 
 [dependencies.serde_yaml]
 optional = true
@@ -89,7 +86,7 @@ name = "get_all"
 required-features = ["json", "derive"]
 
 [features]
-memory = ["serde-value"]
+memory = []
 default = []
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]

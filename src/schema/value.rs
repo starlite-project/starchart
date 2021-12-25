@@ -1,4 +1,8 @@
-#[derive(Debug, Clone)]
+use serde::{Serialize, Deserialize};
+
+use super::SchemaMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use = "a SchemaValue must be inserted into the SchemaMap"]
 pub enum SchemaValue {
 	Bool {
@@ -58,6 +62,10 @@ pub enum SchemaValue {
 		default: char,
 	},
 	String,
+	Vec(Box<SchemaValue>),
+	Option(Box<SchemaValue>),
+	Map(Box<(SchemaValue, SchemaValue)>),
+	Subfolder(Box<SchemaMap>),
 }
 
 impl SchemaValue {
@@ -98,10 +106,74 @@ impl SchemaValue {
 			default: default.unwrap_or_default(),
 		}
 	}
-}
 
-impl Drop for SchemaValue {
-	fn drop(&mut self) {
-		println!("dropping");
+	pub fn i8(minimum: Option<i8>, maximum: Option<i8>, default: Option<i8>) -> Self {
+		Self::I8 {
+			minimum: minimum.unwrap_or(i8::MIN),
+			maximum: maximum.unwrap_or(i8::MAX),
+			default: default.unwrap_or_default()
+		}
+	}
+
+	pub fn i16(minimum: Option<i16>, maximum: Option<i16>, default :Option<i16>) -> Self {
+		Self::I16 {
+			minimum: minimum.unwrap_or(i16::MIN),
+			maximum: maximum.unwrap_or(i16::MAX),
+			default: default.unwrap_or_default(),
+		}
+	}
+
+	pub fn i32(minimum: Option<i32>, maximum: Option<i32>, default: Option<i32>) -> Self {
+		Self::I32 {
+			minimum: minimum.unwrap_or(i32::MIN),
+			maximum: maximum.unwrap_or(i32::MAX),
+			default: default.unwrap_or_default()
+		}
+	}
+
+	pub fn i64(minimum: Option<i64>, maximum: Option<i64>, default: Option<i64>) -> Self {
+		Self::I64 {
+			minimum: minimum.unwrap_or(i64::MIN),
+			maximum: maximum.unwrap_or(i64::MAX),
+			default: default.unwrap_or_default(),
+		}
+	}
+
+	pub fn f32(minimum: Option<f32> ,maximum: Option<f32>, default: Option<f32>) -> Self {
+		Self::F32 {
+			minimum: minimum.unwrap_or(f32::MIN),
+			maximum: maximum.unwrap_or(f32::MAX),
+			default: default.unwrap_or_default()
+		}
+	}
+
+	pub fn f64(minimum: Option<f64>, maximum: Option<f64>, default: Option<f64>) -> Self {
+		Self::F64 {
+			minimum: minimum.unwrap_or(f64::MIN),
+			maximum: maximum.unwrap_or(f64::MAX),
+			default: default.unwrap_or_default(),
+		}
+	}
+
+	pub fn char(default: Option<char>) -> Self {
+		Self::Char {
+			default: default.unwrap_or_default(),
+		}
+	}
+
+	pub const fn string() -> Self {
+		Self::String
+	}
+
+	pub fn vector(inner: Self) -> Self {
+		Self::Vec(Box::new(inner))
+	}
+
+	pub fn option(inner: Self) -> Self {
+		Self::Option(Box::new(inner))
+	}
+
+	pub fn subfolder<F: FnOnce(SchemaMap) -> SchemaMap>(closure: F) -> Self {
+		Self::Subfolder(Box::new(closure(SchemaMap::new())))
 	}
 }

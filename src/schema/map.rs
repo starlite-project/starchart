@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-
+use serde::{Serialize, Deserialize};
 use super::{SchemaError, SchemaValue};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[must_use = "a SchemaMap must be used to make a StarChart"]
 pub struct SchemaMap {
 	inner: HashMap<String, SchemaValue>,
 }
@@ -14,5 +15,11 @@ impl SchemaMap {
 		}
 		self.inner.insert(name, kind);
 		Ok(self)
+	}
+
+	pub fn new() -> Self {
+		Self {
+			inner: HashMap::new(),
+		}
 	}
 }
