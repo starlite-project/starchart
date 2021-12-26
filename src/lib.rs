@@ -17,9 +17,9 @@ pub mod action;
 pub mod backend;
 mod entry;
 pub mod error;
+mod private;
 pub mod schema;
 mod starchart;
-mod private;
 #[cfg(not(tarpaulin_include))]
 mod util;
 

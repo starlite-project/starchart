@@ -1,6 +1,9 @@
-use serde::{Serialize, Deserialize};
+use std::convert::TryFrom;
 
-use super::SchemaMap;
+use serde::{Deserialize, Serialize};
+use serde_value::Value;
+
+use super::{SchemaError, SchemaMap};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use = "a SchemaValue must be inserted into the SchemaMap"]
@@ -64,8 +67,8 @@ pub enum SchemaValue {
 	String,
 	Vec(Box<SchemaValue>),
 	Option(Box<SchemaValue>),
-	Map(Box<(SchemaValue, SchemaValue)>),
 	Subfolder(Box<SchemaMap>),
+	Any,
 }
 
 impl SchemaValue {
@@ -111,11 +114,11 @@ impl SchemaValue {
 		Self::I8 {
 			minimum: minimum.unwrap_or(i8::MIN),
 			maximum: maximum.unwrap_or(i8::MAX),
-			default: default.unwrap_or_default()
+			default: default.unwrap_or_default(),
 		}
 	}
 
-	pub fn i16(minimum: Option<i16>, maximum: Option<i16>, default :Option<i16>) -> Self {
+	pub fn i16(minimum: Option<i16>, maximum: Option<i16>, default: Option<i16>) -> Self {
 		Self::I16 {
 			minimum: minimum.unwrap_or(i16::MIN),
 			maximum: maximum.unwrap_or(i16::MAX),
@@ -127,7 +130,7 @@ impl SchemaValue {
 		Self::I32 {
 			minimum: minimum.unwrap_or(i32::MIN),
 			maximum: maximum.unwrap_or(i32::MAX),
-			default: default.unwrap_or_default()
+			default: default.unwrap_or_default(),
 		}
 	}
 
@@ -139,11 +142,11 @@ impl SchemaValue {
 		}
 	}
 
-	pub fn f32(minimum: Option<f32> ,maximum: Option<f32>, default: Option<f32>) -> Self {
+	pub fn f32(minimum: Option<f32>, maximum: Option<f32>, default: Option<f32>) -> Self {
 		Self::F32 {
 			minimum: minimum.unwrap_or(f32::MIN),
 			maximum: maximum.unwrap_or(f32::MAX),
-			default: default.unwrap_or_default()
+			default: default.unwrap_or_default(),
 		}
 	}
 
@@ -165,6 +168,10 @@ impl SchemaValue {
 		Self::String
 	}
 
+	pub const fn any() -> Self {
+		Self::Any
+	}
+
 	pub fn vector(inner: Self) -> Self {
 		Self::Vec(Box::new(inner))
 	}
@@ -173,7 +180,62 @@ impl SchemaValue {
 		Self::Option(Box::new(inner))
 	}
 
-	pub fn subfolder<F: FnOnce(SchemaMap) -> SchemaMap>(closure: F) -> Self {
-		Self::Subfolder(Box::new(closure(SchemaMap::new())))
+	pub fn subfolder<F: FnOnce(SchemaMap) -> Result<SchemaMap, SchemaError>>(
+		closure: F,
+	) -> Result<Self, SchemaError> {
+		let map = closure(SchemaMap::new())?;
+
+		Ok(Self::Subfolder(Box::new(map)))
+	}
+}
+
+impl TryFrom<Value> for SchemaValue {
+	type Error = SchemaError;
+
+	fn try_from(raw: Value) -> Result<Self, Self::Error> {
+		Ok(match raw {
+			Value::Bool(_) => Self::bool(None),
+			Value::U8(_) => Self::u8(None, None, None),
+			Value::U16(_) => Self::u16(None, None, None),
+			Value::U32(_) => Self::u32(None, None, None),
+			Value::U64(_) => Self::u64(None, None, None),
+			Value::I8(_) => Self::i8(None, None, None),
+			Value::I16(_) => Self::i16(None, None, None),
+			Value::I32(_) => Self::i32(None, None, None),
+			Value::I64(_) => Self::i64(None, None, None),
+			Value::F32(_) => Self::f32(None, None, None),
+			Value::F64(_) => Self::f64(None, None, None),
+			Value::Char(_) => Self::char(None),
+			Value::String(_) => Self::string(),
+			Value::Unit | Value::Bytes(_) => return Err(SchemaError::UnsupportedValue),
+			Value::Option(opt) => Self::option({
+				if let Some(kind) = opt {
+					Self::try_from(*kind)?
+				} else {
+					Self::any()
+				}
+			}),
+			Value::Newtype(v) => Self::try_from(*v)?,
+			Value::Seq(v) => Self::vector({
+				if v.is_empty() || v.len() > 1 {
+					Self::any()
+				} else {
+					let first = v.first().cloned();
+					match first {
+						Some(val) => Self::try_from(val)?,
+						None => Self::any(),
+					}
+				}
+			}),
+			Value::Map(map) => Self::subfolder(move |mut schema_map| {
+				for (raw_key, raw_value) in map {
+					let key = raw_key.deserialize_into()?;
+
+					schema_map = schema_map.include(key, Self::try_from(raw_value)?)?;
+				}
+
+				Ok(schema_map)
+			})?,
+		})
 	}
 }

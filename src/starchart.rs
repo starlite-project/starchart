@@ -57,8 +57,7 @@ impl<B: Backend> Starchart<B> {
 	pub async fn run<O>(
 		&self,
 		action: impl ActionRunner<B, O>,
-	) -> Result<O, ActionValidationError>
-	{
+	) -> Result<O, ActionValidationError> {
 		unsafe {
 			action.validate()?;
 			Ok(action.run(self).await)
