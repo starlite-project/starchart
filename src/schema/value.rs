@@ -229,7 +229,7 @@ impl TryFrom<Value> for SchemaValue {
 			}),
 			Value::Map(map) => Self::subfolder(move |mut schema_map| {
 				for (raw_key, raw_value) in map {
-					let key = raw_key.deserialize_into()?;
+					let key = raw_key.deserialize_into().map_err(|_| SchemaError::UnsupportedKeyType)?;
 
 					schema_map = schema_map.include(key, Self::try_from(raw_value)?)?;
 				}

@@ -11,4 +11,6 @@ pub enum SchemaError {
 	Serialize(#[from] SerializerError),
 	#[error(transparent)]
 	Deserialize(#[from] DeserializerError),
+	#[error("a key type was found that wasn't valid")]
+	UnsupportedKeyType
 }
