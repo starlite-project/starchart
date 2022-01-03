@@ -16,7 +16,6 @@ pub mod future;
 #[cfg(feature = "bincode")]
 mod bincode;
 #[cfg(feature = "fs")]
-#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub mod fs;
 #[cfg(feature = "json")]
 mod json;

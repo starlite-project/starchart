@@ -6,10 +6,8 @@ use thiserror::Error;
 pub use crate::action::{ActionError, ActionRunError, ActionValidationError};
 use crate::backend::Backend;
 #[cfg(feature = "fs")]
-#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub use crate::backend::FsError;
 #[cfg(feature = "memory")]
-#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 pub use crate::backend::MemoryError;
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
@@ -21,12 +19,10 @@ pub use crate::backend::MemoryError;
 pub enum ChartError<B: Backend> {
 	/// A [`MemoryError`] has occurred.
 	#[cfg(feature = "memory")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 	#[error(transparent)]
 	Memory(#[from] MemoryError),
 	/// A [`FsError`] has occurred.
 	#[cfg(feature = "fs")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 	#[error(transparent)]
 	Fs(#[from] FsError),
 	/// An [`ActionValidationError`] has occurred.

@@ -9,7 +9,7 @@ use crate::Entry;
 
 /// A JSON based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+#[cfg(feature = "json")]
 pub struct JsonBackend(PathBuf);
 
 impl JsonBackend {
