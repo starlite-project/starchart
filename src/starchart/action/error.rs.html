@@ -59,8 +59,6 @@
 <span id="57">57</span>
 <span id="58">58</span>
 <span id="59">59</span>
-<span id="60">60</span>
-<span id="61">61</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>};
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
@@ -99,7 +97,6 @@
 	<span class="ident">Table</span>,
 	<span class="doccomment">/// A provided key or table name was &quot;metadata&quot;, which is restricted</span>
 	<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
-	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)))]</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;the `__metadata__` key is restricted&quot;</span>)]</span>
 	<span class="ident">Metadata</span>,
 }
@@ -118,10 +115,9 @@
 	<span class="doccomment">///</span>
 	<span class="doccomment">/// [`Entry`]: crate::Entry</span>
 	<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
-	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)))]</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;invalid entry was provided, {0} does not match the metadata for table `{1}`&quot;</span>)]</span>
 	<span class="ident">Metadata</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">String</span>),
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (e95e084a1 2021-12-19)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (8f3238f89 2022-01-02)" ></div>
 </body></html>
