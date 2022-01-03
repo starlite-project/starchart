@@ -36,7 +36,6 @@ pub enum ActionValidationError {
 	Table,
 	/// A provided key or table name was "metadata", which is restricted
 	#[cfg(feature = "metadata")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
 	#[error("the `__metadata__` key is restricted")]
 	Metadata,
 }
@@ -55,7 +54,6 @@ pub enum ActionRunError<E: Error> {
 	///
 	/// [`Entry`]: crate::Entry
 	#[cfg(feature = "metadata")]
-	#[cfg_attr(docsrs, doc(cfg(feature = "metadata")))]
 	#[error("invalid entry was provided, {0} does not match the metadata for table `{1}`")]
 	Metadata(&'static str, String),
 }

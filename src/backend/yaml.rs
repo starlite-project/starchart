@@ -9,7 +9,7 @@ use crate::Entry;
 
 /// A YAML based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "yaml")))]
+#[cfg(feature = "yaml")]
 pub struct YamlBackend(PathBuf);
 
 impl YamlBackend {

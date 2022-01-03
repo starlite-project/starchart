@@ -12,17 +12,12 @@ use thiserror::Error;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
-use super::{
-	future::{
-		CreateFuture, CreateTableFuture, DeleteFuture, GetFuture, GetKeysFuture, HasFuture,
-		HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
-	},
-	Backend,
-};
+use super::{Backend, future::{CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture}};
 use crate::{util::InnerUnwrap, Entry};
 
 /// An error occurred from an [`FsBackend`].
 #[derive(Debug, Error)]
+#[cfg(feature = "fs")]
 pub enum FsError {
 	/// An IO error occurred.
 	#[error(transparent)]
@@ -57,6 +52,7 @@ macro_rules! handle_io_result {
 /// The trait for all File System based backends to implement
 ///
 /// This makes it easier to implement different file-system based databases.
+#[cfg(feature = "fs")]
 pub trait FsBackend: Send + Sync {
 	/// The base extension of the files.
 	const EXTENSION: &'static str;
@@ -124,7 +120,7 @@ pub trait FsBackend: Send + Sync {
 	fn base_directory(&self) -> PathBuf;
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
+#[cfg(feature = "fs")]
 impl<RW: FsBackend> Backend for RW {
 	type Error = FsError;
 
@@ -156,7 +152,7 @@ impl<RW: FsBackend> Backend for RW {
 	fn delete_table<'a>(
 		&'a self,
 		table: &'a str,
-	) -> super::future::DeleteTableFuture<'a, Self::Error> {
+	) -> DeleteTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if self.has_table(table).await? {
 				fs::remove_dir(self.resolve_path(&[table])).await?;

@@ -9,7 +9,7 @@ use crate::Entry;
 
 /// A RON based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "ron")))]
+#[cfg(feature = "ron")]
 pub struct RonBackend(PathBuf);
 
 impl RonBackend {

@@ -9,7 +9,7 @@ use crate::Entry;
 
 /// A TOML based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "toml")))]
+#[cfg(feature = "toml")]
 pub struct TomlBackend(PathBuf);
 
 impl TomlBackend {

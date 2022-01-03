@@ -14,7 +14,6 @@ use super::{
 use crate::Entry;
 
 /// An error returned from the [`MemoryBackend`].
-#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum MemoryError {
@@ -34,8 +33,8 @@ pub enum MemoryError {
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
 /// to represent data.
-#[cfg_attr(docsrs, doc(cfg(feature = "memory")))]
 #[derive(Debug, Default, Clone)]
+#[cfg(feature = "memory")]
 pub struct MemoryBackend {
 	tables: DashMap<String, DashMap<String, Value>>,
 }

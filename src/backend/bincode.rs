@@ -9,7 +9,7 @@ use crate::Entry;
 
 /// A Binary format based backend.
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
+#[cfg(feature = "bincode")]
 pub struct BincodeBackend(PathBuf);
 
 impl BincodeBackend {
