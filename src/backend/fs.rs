@@ -12,7 +12,13 @@ use thiserror::Error;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
-use super::{Backend, future::{CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture}};
+use super::{
+	future::{
+		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
+		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+	},
+	Backend,
+};
 use crate::{util::InnerUnwrap, Entry};
 
 /// An error occurred from an [`FsBackend`].
@@ -149,10 +155,7 @@ impl<RW: FsBackend> Backend for RW {
 		})
 	}
 
-	fn delete_table<'a>(
-		&'a self,
-		table: &'a str,
-	) -> DeleteTableFuture<'a, Self::Error> {
+	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if self.has_table(table).await? {
 				fs::remove_dir(self.resolve_path(&[table])).await?;
