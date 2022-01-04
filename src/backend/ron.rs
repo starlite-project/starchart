@@ -9,6 +9,17 @@ use serde_ron::{extensions::Extensions, ser::PrettyConfig};
 use super::fs::{FsBackend, FsError};
 use crate::Entry;
 
+fn serialize_ron<W: io::Write, V: Entry>(
+	writer: &mut W,
+	pretty_config: Option<PrettyConfig>,
+	value: &V,
+) -> Result<(), FsError> {
+	let mut s =
+		serde_ron::Serializer::new(writer, pretty_config, true).map_err(|_| FsError::Serde)?;
+	value.serialize(&mut s).map_err(|_| FsError::Serde)?;
+	Ok(())
+}
+
 /// A RON based backend.
 #[derive(Debug, Default, Clone)]
 #[cfg(feature = "ron")]
@@ -50,7 +61,7 @@ impl FsBackend for RonBackend {
 		T: Entry,
 	{
 		let mut writer = Cursor::new(Vec::new());
-		serde_ron::ser::to_writer(&mut writer, value).map_err(|_| FsError::Serde)?;
+		serialize_ron(&mut writer, None, value)?;
 		Ok(writer.into_inner())
 	}
 
@@ -102,8 +113,7 @@ impl FsBackend for RonPrettyBackend {
 			.indentor("\t".to_owned())
 			.extensions(Extensions::all());
 		let mut writer = Cursor::new(Vec::new());
-		serde_ron::ser::to_writer_pretty(&mut writer, value, pretty_config)
-			.map_err(|_| FsError::Serde)?;
+		serialize_ron(&mut writer, Some(pretty_config), value)?;
 		Ok(writer.into_inner())
 	}
 
