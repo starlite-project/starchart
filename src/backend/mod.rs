@@ -35,6 +35,8 @@ pub use self::bincode::BincodeBackend;
 pub use self::fs::FsError;
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
+#[cfg(all(feature = "json", feature = "pretty"))]
+pub use self::json::JsonPrettyBackend;
 #[cfg(feature = "memory")]
 pub use self::memory::MemoryBackend;
 #[cfg(feature = "memory")]
@@ -42,8 +44,12 @@ pub use self::memory::MemoryBackend;
 pub use self::memory::MemoryError;
 #[cfg(feature = "ron")]
 pub use self::ron::RonBackend;
+#[cfg(all(feature = "ron", feature = "pretty"))]
+pub use self::ron::RonPrettyBackend;
 #[cfg(feature = "toml")]
 pub use self::toml::TomlBackend;
+#[cfg(all(feature = "toml", feature = "pretty"))]
+pub use self::toml::TomlPrettyBackend;
 #[cfg(feature = "yaml")]
 pub use self::yaml::YamlBackend;
 

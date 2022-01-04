@@ -1,8 +1,10 @@
 use std::{
 	fmt::Debug,
-	io,
+	io::{self, Cursor},
 	path::{Path, PathBuf},
 };
+
+use serde_ron::{extensions::Extensions, ser::PrettyConfig};
 
 use super::fs::{FsBackend, FsError};
 use crate::Entry;
@@ -12,6 +14,7 @@ use crate::Entry;
 #[cfg(feature = "ron")]
 pub struct RonBackend(PathBuf);
 
+#[cfg(feature = "ron")]
 impl RonBackend {
 	/// Create a new [`RonBackend`].
 	///
@@ -29,17 +32,16 @@ impl RonBackend {
 	}
 }
 
+#[cfg(feature = "ron")]
 impl FsBackend for RonBackend {
 	const EXTENSION: &'static str = "ron";
 
-	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
 	{
-		let mut output = String::new();
-		rdr.read_to_string(&mut output)?;
-		serde_ron::from_str(&output).map_err(|_| FsError::Serde)
+		serde_ron::de::from_reader(rdr).map_err(|_| FsError::Serde)
 	}
 
 	#[cfg(not(tarpaulin_include))]
@@ -47,9 +49,62 @@ impl FsBackend for RonBackend {
 	where
 		T: Entry,
 	{
-		serde_ron::to_string(value)
-			.map(String::into_bytes)
-			.map_err(|_| FsError::Serde)
+		let mut writer = Cursor::new(Vec::new());
+		serde_ron::ser::to_writer(&mut writer, value).map_err(|_| FsError::Serde)?;
+		Ok(writer.into_inner())
+	}
+
+	fn base_directory(&self) -> PathBuf {
+		self.0.clone()
+	}
+}
+
+/// A RON based backend, that uses pretty printing.
+#[derive(Debug, Default, Clone)]
+#[cfg(all(feature = "ron", feature = "pretty"))]
+pub struct RonPrettyBackend(PathBuf);
+
+#[cfg(all(feature = "ron", feature = "pretty"))]
+impl RonPrettyBackend {
+	/// Create a new [`RonPrettyBackend`].
+	///
+	/// # Errors
+	///
+	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
+		let path = path.as_ref().to_path_buf();
+
+		if path.is_file() {
+			Err(FsError::PathNotDirectory(path))
+		} else {
+			Ok(Self(path))
+		}
+	}
+}
+
+#[cfg(all(feature = "ron", feature = "pretty"))]
+impl FsBackend for RonPrettyBackend {
+	const EXTENSION: &'static str = "ron";
+
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	where
+		R: io::Read,
+		T: Entry,
+	{
+		serde_ron::de::from_reader(rdr).map_err(|_| FsError::Serde)
+	}
+
+	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	where
+		T: Entry,
+	{
+		let pretty_config = PrettyConfig::new()
+			.indentor("\t".to_owned())
+			.extensions(Extensions::all());
+		let mut writer = Cursor::new(Vec::new());
+		serde_ron::ser::to_writer_pretty(&mut writer, value, pretty_config)
+			.map_err(|_| FsError::Serde)?;
+		Ok(writer.into_inner())
 	}
 
 	fn base_directory(&self) -> PathBuf {

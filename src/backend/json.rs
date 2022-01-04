@@ -12,6 +12,7 @@ use crate::Entry;
 #[cfg(feature = "json")]
 pub struct JsonBackend(PathBuf);
 
+#[cfg(feature = "json")]
 impl JsonBackend {
 	/// Create a new [`JsonBackend`].
 	///
@@ -29,6 +30,7 @@ impl JsonBackend {
 	}
 }
 
+#[cfg(feature = "json")]
 impl FsBackend for JsonBackend {
 	const EXTENSION: &'static str = "json";
 
@@ -45,6 +47,53 @@ impl FsBackend for JsonBackend {
 		T: Entry,
 	{
 		serde_json::to_vec(value).map_err(|_| FsError::Serde)
+	}
+
+	fn base_directory(&self) -> PathBuf {
+		self.0.clone()
+	}
+}
+
+/// A JSON based pretty printing backend.
+#[derive(Debug, Default, Clone)]
+#[cfg(all(feature = "json", feature = "pretty"))]
+pub struct JsonPrettyBackend(PathBuf);
+
+#[cfg(all(feature = "json", feature = "pretty"))]
+impl JsonPrettyBackend {
+	/// Create a new [`JsonPrettyBackend`].
+	///
+	/// # Errors
+	///
+	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
+		let path = path.as_ref().to_path_buf();
+
+		if path.is_file() {
+			Err(FsError::PathNotDirectory(path))
+		} else {
+			Ok(Self(path))
+		}
+	}
+}
+
+#[cfg(all(feature = "json", feature = "pretty"))]
+impl FsBackend for JsonPrettyBackend {
+	const EXTENSION: &'static str = "json";
+
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	where
+		R: io::Read,
+		T: Entry,
+	{
+		serde_json::from_reader(rdr).map_err(|_| FsError::Serde)
+	}
+
+	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	where
+		T: Entry,
+	{
+		serde_json::to_vec_pretty(value).map_err(|_| FsError::Serde)
 	}
 
 	fn base_directory(&self) -> PathBuf {

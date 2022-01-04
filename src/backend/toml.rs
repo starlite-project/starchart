@@ -12,6 +12,7 @@ use crate::Entry;
 #[cfg(feature = "toml")]
 pub struct TomlBackend(PathBuf);
 
+#[cfg(feature = "toml")]
 impl TomlBackend {
 	/// Create a new [`TomlBackend`].
 	///
@@ -29,6 +30,7 @@ impl TomlBackend {
 	}
 }
 
+#[cfg(feature = "toml")]
 impl FsBackend for TomlBackend {
 	const EXTENSION: &'static str = "toml";
 
@@ -47,6 +49,57 @@ impl FsBackend for TomlBackend {
 		T: Entry,
 	{
 		serde_toml::to_vec(value).map_err(|_| FsError::Serde)
+	}
+
+	fn base_directory(&self) -> PathBuf {
+		self.0.clone()
+	}
+}
+
+/// A TOML based backend, that uses pretty printing.
+#[derive(Debug, Default, Clone)]
+#[cfg(all(feature = "toml", feature = "pretty"))]
+pub struct TomlPrettyBackend(PathBuf);
+
+#[cfg(all(feature = "toml", feature = "pretty"))]
+impl TomlPrettyBackend {
+	/// Create a new [`TomlPrettyBackend`].
+	///
+	/// # Errors
+	///
+	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
+		let path = path.as_ref().to_path_buf();
+
+		if path.is_file() {
+			Err(FsError::PathNotDirectory(path))
+		} else {
+			Ok(Self(path))
+		}
+	}
+}
+
+#[cfg(all(feature = "toml", feature = "pretty"))]
+impl FsBackend for TomlPrettyBackend {
+	const EXTENSION: &'static str = "toml";
+
+	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
+	where
+		R: io::Read,
+		T: Entry,
+	{
+		let mut output = String::new();
+		rdr.read_to_string(&mut output)?;
+		serde_toml::from_str(&output).map_err(|_| FsError::Serde)
+	}
+
+	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	where
+		T: Entry,
+	{
+		serde_toml::to_string_pretty(value)
+			.map(String::into_bytes)
+			.map_err(|_| FsError::Serde)
 	}
 
 	fn base_directory(&self) -> PathBuf {
