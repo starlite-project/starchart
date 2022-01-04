@@ -32,14 +32,12 @@ impl BincodeBackend {
 impl FsBackend for BincodeBackend {
 	const EXTENSION: &'static str = "bin";
 
-	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
 	{
-		let mut output = Vec::new();
-		rdr.read_to_end(&mut output)?;
-		serde_bincode::deserialize(&output[..]).map_err(|_| FsError::Serde)
+		serde_bincode::deserialize_from(rdr).map_err(|_| FsError::Serde)
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
