@@ -98,6 +98,7 @@ bincode = ["serde_bincode", "fs"]
 yaml = ["serde_yaml", "fs"]
 ron = ["serde_ron", "fs"]
 toml = ["serde_toml", "fs"]
+pretty = []
 metadata = []
 
 [workspace]
