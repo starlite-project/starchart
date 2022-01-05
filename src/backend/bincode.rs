@@ -12,6 +12,7 @@ use crate::Entry;
 #[cfg(feature = "bincode")]
 pub struct BincodeBackend(PathBuf);
 
+#[cfg(feature = "bincode")]
 impl BincodeBackend {
 	/// Create a new [`BincodeBackend`].
 	///
@@ -29,6 +30,7 @@ impl BincodeBackend {
 	}
 }
 
+#[cfg(feature = "bincode")]
 impl FsBackend for BincodeBackend {
 	const EXTENSION: &'static str = "bin";
 

@@ -21,6 +21,8 @@ pub mod fs;
 mod json;
 #[cfg(feature = "memory")]
 mod memory;
+#[cfg(feature = "querystring")]
+mod querystring;
 #[cfg(feature = "toml")]
 mod toml;
 #[cfg(feature = "yaml")]

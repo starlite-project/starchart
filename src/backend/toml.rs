@@ -39,9 +39,9 @@ impl FsBackend for TomlBackend {
 		R: io::Read,
 		T: Entry,
 	{
-		let mut output = String::new();
-		rdr.read_to_string(&mut output)?;
-		serde_toml::from_str(&output).map_err(|_| FsError::Serde)
+		let mut output = Vec::new();
+		rdr.read_to_end(&mut output).map_err(|_| FsError::Serde)?;
+		serde_toml::from_slice(&output).map_err(|_| FsError::Serde)
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>

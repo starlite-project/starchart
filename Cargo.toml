@@ -38,6 +38,10 @@ optional = true
 optional = true
 version = "1"
 
+[dependencies.serde_qs]
+optional = true
+version = "0.8"
+
 [dependencies.serde_toml]
 package = "toml"
 version = "0.5"
@@ -92,6 +96,7 @@ json = ["serde_json", "fs"]
 bincode = ["serde_bincode", "fs"]
 yaml = ["serde_yaml", "fs"]
 toml = ["serde_toml", "fs"]
+querystring = ["serde_qs", "fs"]
 pretty = []
 metadata = []
 
