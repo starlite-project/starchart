@@ -21,8 +21,6 @@ pub mod fs;
 mod json;
 #[cfg(feature = "memory")]
 mod memory;
-#[cfg(feature = "ron")]
-mod ron;
 #[cfg(feature = "toml")]
 mod toml;
 #[cfg(feature = "yaml")]
@@ -42,10 +40,6 @@ pub use self::memory::MemoryBackend;
 #[cfg(feature = "memory")]
 #[cfg_attr(feature = "memory", doc(hidden))]
 pub use self::memory::MemoryError;
-#[cfg(feature = "ron")]
-pub use self::ron::RonBackend;
-#[cfg(all(feature = "ron", feature = "pretty"))]
-pub use self::ron::RonPrettyBackend;
 #[cfg(feature = "toml")]
 pub use self::toml::TomlBackend;
 #[cfg(all(feature = "toml", feature = "pretty"))]

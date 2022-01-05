@@ -38,11 +38,6 @@ optional = true
 optional = true
 version = "1"
 
-[dependencies.serde_ron]
-optional = true
-package = "ron"
-version = "0.7"
-
 [dependencies.serde_toml]
 package = "toml"
 version = "0.5"
@@ -96,7 +91,6 @@ fs = ["tokio", "tokio-stream"]
 json = ["serde_json", "fs"]
 bincode = ["serde_bincode", "fs"]
 yaml = ["serde_yaml", "fs"]
-ron = ["serde_ron", "fs"]
 toml = ["serde_toml", "fs"]
 pretty = []
 metadata = []
