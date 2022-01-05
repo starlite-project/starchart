@@ -46,7 +46,8 @@ impl FsBackend for QueryStringBackend {
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
-			T: Entry {
+		T: Entry,
+	{
 		let mut writer = Vec::new();
 		serde_qs::to_writer(value, &mut writer).map_err(|_| FsError::Serde)?;
 		Ok(writer)
