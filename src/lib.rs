@@ -15,6 +15,7 @@
 //! A simple database system that allows the use of multiple different backends.
 
 pub mod action;
+mod atomics;
 pub mod backend;
 mod entry;
 pub mod error;

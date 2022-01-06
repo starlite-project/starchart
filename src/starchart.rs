@@ -5,10 +5,7 @@ use std::sync::Arc;
 use futures::executor::block_on;
 use parking_lot::RwLock;
 
-use crate::{
-	action::{ActionRunner, ActionValidationError},
-	backend::Backend,
-};
+use crate::{action::{ActionRunner, ActionValidationError}, atomics::Guard, backend::Backend};
 
 /// The base structure for managing data.
 ///
@@ -17,7 +14,7 @@ use crate::{
 #[derive(Debug, Default)]
 pub struct Starchart<B: Backend> {
 	backend: Arc<B>,
-	pub(crate) guard: Arc<RwLock<()>>,
+	pub(crate) guard: Arc<Guard>,
 }
 
 impl<B: Backend> Starchart<B> {
@@ -44,26 +41,6 @@ impl<B: Backend> Starchart<B> {
 			backend: Arc::new(backend),
 			guard: Arc::default(),
 		})
-	}
-
-	/// Runs an [`Action`], returning whatever the possible [`ActionRunner`] implementation is declared as.
-	///
-	/// # Errors
-	///
-	/// Anything that the [`Action`] could return while running.
-	///
-	/// [`Action`]: crate::action::Action
-	pub async fn run<Success, Failure>(
-		&self,
-		action: impl ActionRunner<B, Success, Failure>,
-	) -> Result<Result<Success, Failure>, ActionValidationError>
-	where
-		Failure: From<<B as Backend>::Error>,
-	{
-		unsafe {
-			action.validate()?;
-			Ok(action.run(self).await)
-		}
 	}
 }
 
