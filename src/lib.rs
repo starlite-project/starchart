@@ -8,7 +8,7 @@
 	missing_docs
 )]
 #![deny(clippy::all)]
-#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding)]
+#![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding, clippy::missing_errors_doc, clippy::missing_safety_doc)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
