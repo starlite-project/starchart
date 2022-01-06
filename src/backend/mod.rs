@@ -42,6 +42,8 @@ pub use self::memory::MemoryBackend;
 #[cfg(feature = "memory")]
 #[cfg_attr(feature = "memory", doc(hidden))]
 pub use self::memory::MemoryError;
+#[cfg(feature = "querystring")]
+pub use self::querystring::QueryStringBackend;
 #[cfg(feature = "toml")]
 pub use self::toml::TomlBackend;
 #[cfg(all(feature = "toml", feature = "pretty"))]
