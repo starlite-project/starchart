@@ -57,8 +57,6 @@
 <span id="55">55</span>
 <span id="56">56</span>
 <span id="57">57</span>
-<span id="58">58</span>
-<span id="59">59</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error::Error</span>, <span class="ident">fmt::Debug</span>};
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
@@ -70,12 +68,10 @@
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Error</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
 	<span class="doccomment">/// An error occurred during [`Action::run`].</span>
 	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Action::run`]: crate::action::ActionRunner::run</span>
+	<span class="doccomment">/// [`Action::run`]: crate::Action::run</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
 	<span class="ident">Run</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>),
-	<span class="doccomment">/// An error occurred during [`Action::validate`].</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Action::validate`]: crate::action::ActionRunner::validate</span>
+	<span class="doccomment">/// An error occurred during any of the action validation methods.</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
 	<span class="ident">Validation</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ActionValidationError</span>),
 }
@@ -119,5 +115,5 @@
 	<span class="ident">Metadata</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>, <span class="ident">String</span>),
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (7d6f94817 2022-01-04)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (cfa4ac66c 2022-01-06)" ></div>
 </body></html>

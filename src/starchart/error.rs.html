@@ -37,6 +37,15 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The different errors within the crate.</span>
 
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
@@ -69,11 +78,20 @@
 	<span class="ident">ActionValidation</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ActionValidationError</span>),
 	<span class="doccomment">/// An [`ActionRunError`] has occurred.</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-	<span class="ident">ActionRunError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span>),
+	<span class="ident">ActionRun</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span>),
 	<span class="doccomment">/// A custom error has occurred, this is useful for [`Result`] return types.</span>
 	<span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
 	<span class="ident">Custom</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">std::error::Error</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>),
 }
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ChartError</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> {
+	<span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">e</span>: <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+		<span class="kw">match</span> <span class="ident">e</span> {
+			<span class="ident">ActionError::Run</span>(<span class="ident">e</span>) =&gt; <span class="ident"><span class="self">Self</span>::ActionRun</span>(<span class="ident">e</span>),
+			<span class="ident">ActionError::Validation</span>(<span class="ident">e</span>) =&gt; <span class="ident"><span class="self">Self</span>::ActionValidation</span>(<span class="ident">e</span>),
+		}
+	}
+}
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (7d6f94817 2022-01-04)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (cfa4ac66c 2022-01-06)" ></div>
 </body></html>

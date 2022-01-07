@@ -232,41 +232,13 @@
 <span id="230">230</span>
 <span id="231">231</span>
 <span id="232">232</span>
-<span id="233">233</span>
-<span id="234">234</span>
-<span id="235">235</span>
-<span id="236">236</span>
-<span id="237">237</span>
-<span id="238">238</span>
-<span id="239">239</span>
-<span id="240">240</span>
-<span id="241">241</span>
-<span id="242">242</span>
-<span id="243">243</span>
-<span id="244">244</span>
-<span id="245">245</span>
-<span id="246">246</span>
-<span id="247">247</span>
-<span id="248">248</span>
-<span id="249">249</span>
-<span id="250">250</span>
-<span id="251">251</span>
-<span id="252">252</span>
-<span id="253">253</span>
-<span id="254">254</span>
-<span id="255">255</span>
-<span id="256">256</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The base structure to use for starchart.</span>
 
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 
 <span class="kw">use</span> <span class="ident">futures::executor::block_on</span>;
-<span class="kw">use</span> <span class="ident">parking_lot::RwLock</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-	<span class="ident">action</span>::{<span class="ident">ActionRunner</span>, <span class="ident">ActionValidationError</span>},
-	<span class="ident">backend::Backend</span>,
-};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">atomics::Guard</span>, <span class="ident">backend::Backend</span>};
 
 <span class="doccomment">/// The base structure for managing data.</span>
 <span class="doccomment">///</span>
@@ -275,7 +247,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> {
 	<span class="ident">backend</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">guard</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">RwLock</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>,
+	<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">guard</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Guard</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span> <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> {
@@ -302,26 +274,6 @@
 			<span class="ident">backend</span>: <span class="ident">Arc::new</span>(<span class="ident">backend</span>),
 			<span class="ident">guard</span>: <span class="ident">Arc::default</span>(),
 		})
-	}
-
-	<span class="doccomment">/// Runs an [`Action`], returning whatever the possible [`ActionRunner`] implementation is declared as.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// # Errors</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// Anything that the [`Action`] could return while running.</span>
-	<span class="doccomment">///</span>
-	<span class="doccomment">/// [`Action`]: crate::action::Action</span>
-	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">Success</span>, <span class="ident">Failure</span><span class="op">&gt;</span>(
-		<span class="kw-2">&amp;</span><span class="self">self</span>,
-		<span class="ident">action</span>: <span class="kw">impl</span> <span class="ident">ActionRunner</span><span class="op">&lt;</span><span class="ident">B</span>, <span class="ident">Success</span>, <span class="ident">Failure</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Success</span>, <span class="ident">Failure</span><span class="op">&gt;</span>, <span class="ident">ActionValidationError</span><span class="op">&gt;</span>
-	<span class="kw">where</span>
-		<span class="ident">Failure</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span>,
-	{
-		<span class="kw">unsafe</span> {
-			<span class="ident">action</span>.<span class="ident">validate</span>()<span class="question-mark">?</span>;
-			<span class="prelude-val">Ok</span>(<span class="ident">action</span>.<span class="ident">run</span>(<span class="self">self</span>).<span class="kw">await</span>)
-		}
 	}
 }
 
@@ -513,5 +465,5 @@
 	}
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (7d6f94817 2022-01-04)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0-nightly (cfa4ac66c 2022-01-06)" ></div>
 </body></html>
