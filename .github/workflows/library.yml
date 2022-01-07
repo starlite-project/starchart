@@ -185,7 +185,7 @@ jobs:
 
   min-vers:
     name: Minimal crate versions
-    needs: [MSRV]
+    needs: MSRV
     runs-on: ubuntu-latest
 
     steps:
