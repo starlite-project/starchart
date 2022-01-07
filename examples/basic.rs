@@ -37,7 +37,7 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 	create_table_action.set_table("foo");
 
 	// chart.run(create_table_action).await??;
-	create_table_action.run(&chart).await?.create();
+	create_table_action.run(&chart).await?.unwrap_create();
 
 	// Insert some entries into the table.
 	for (age, name) in vec![
@@ -48,7 +48,7 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 		let mut action: CreateEntryAction<Settings> = Action::new();
 		action.set_table("foo").set_entry(&Settings::new(name, age));
 		// chart.run(action).await??;
-		action.run(&chart).await?.create();
+		action.run(&chart).await?.unwrap_create();
 	}
 
 	// Get a single entry.
@@ -61,7 +61,7 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 		action
 			.run(&chart)
 			.await?
-			.read_single()
+			.unwrap_single_read()
 			.expect("the queen has fallen!")
 	};
 

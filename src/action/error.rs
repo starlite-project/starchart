@@ -9,12 +9,10 @@ use thiserror::Error;
 pub enum ActionError<E: Error + 'static> {
 	/// An error occurred during [`Action::run`].
 	///
-	/// [`Action::run`]: crate::action::ActionRunner::run
+	/// [`Action::run`]: crate::Action::run
 	#[error(transparent)]
 	Run(#[from] ActionRunError<E>),
-	/// An error occurred during [`Action::validate`].
-	///
-	/// [`Action::validate`]: crate::action::ActionRunner::validate
+	/// An error occurred during any of the action validation methods.
 	#[error(transparent)]
 	Validation(#[from] ActionValidationError),
 }

@@ -48,7 +48,7 @@ async fn main() -> ChartResult<(), JsonBackend> {
 		action.set_table("foo");
 
 		// chart.run(action).await??;
-		action.run(&chart).await?.create();
+		action.run(&chart).await?.unwrap_create();
 	}
 
 	// Insert some entries into the table.
@@ -60,14 +60,14 @@ async fn main() -> ChartResult<(), JsonBackend> {
 		let mut action: CreateEntryAction<Settings> = Action::new();
 		action.set_table("foo").set_entry(&Settings::new(name, age));
 		// chart.run(action).await??;
-		action.run(&chart).await?.create();
+		action.run(&chart).await?.unwrap_create();
 	}
 
 	let mut read_all_action: ReadTableAction<Settings> = Action::new();
 	read_all_action.set_table("foo");
 
 	// let mut values: Vec<Settings> = chart.run(read_all_action).await??;
-	let mut values = read_all_action.run(&chart).await?.read_multiple::<Vec<_>>();
+	let mut values = read_all_action.run(&chart).await?.unwrap_multi_read::<Vec<_>>();
 
 	values.sort();
 
