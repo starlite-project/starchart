@@ -217,7 +217,10 @@ impl<R: Entry> ActionResult<R> {
 	/// [`Update`]: Self::Update
 	pub unsafe fn unwrap_update_unchecked(self) {
 		debug_assert!(self.is_update());
-		if let Self::Update = self {} else {unreachable_unchecked()}
+		if let Self::Update = self {
+		} else {
+			unreachable_unchecked()
+		}
 	}
 
 	/// Unwraps the [`ActionResult`] and asserts it's a delete.

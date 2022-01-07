@@ -808,9 +808,7 @@ mod tests {
 		OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
 		UpdateEntryAction, UpdateOperation,
 	};
-	use crate::{
-		action::ActionRunError, backend::MemoryBackend, error::MemoryError, IndexEntry, Starchart,
-	};
+	use crate::{backend::MemoryBackend, error::MemoryError, IndexEntry, Starchart};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -1045,7 +1043,10 @@ mod tests {
 
 		read_table.set_table("table");
 
-		let mut values = read_table.run(&gateway).await?.unwrap_multi_read::<Vec<_>>();
+		let mut values = read_table
+			.run(&gateway)
+			.await?
+			.unwrap_multi_read::<Vec<_>>();
 		let mut expected = vec![
 			Settings {
 				id: 0,

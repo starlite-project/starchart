@@ -67,7 +67,10 @@ async fn main() -> ChartResult<(), JsonBackend> {
 	read_all_action.set_table("foo");
 
 	// let mut values: Vec<Settings> = chart.run(read_all_action).await??;
-	let mut values = read_all_action.run(&chart).await?.unwrap_multi_read::<Vec<_>>();
+	let mut values = read_all_action
+		.run(&chart)
+		.await?
+		.unwrap_multi_read::<Vec<_>>();
 
 	values.sort();
 
