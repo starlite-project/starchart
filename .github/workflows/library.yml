@@ -183,6 +183,43 @@ jobs:
       - name: Run Codespell
         uses: codespell-project/actions-codespell@master
 
+  min-vers:
+    name: Minimal crate versions
+    needs: MSRV
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+
+      - name: Install cargo-hack
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-hack
+
+      - name: Install cargo-minimal-versions
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-minimal-versions
+
+      - name: Ignore examples
+        run: sed -i '/examples/d' Cargo.toml
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/problemMatchers/rust.json"
+
+      - name: Check minimal versions
+        run: cargo minimal-versions check --workspace
+
   test:
     strategy:
       matrix:
