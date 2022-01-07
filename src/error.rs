@@ -30,8 +30,17 @@ pub enum ChartError<B: Backend> {
 	ActionValidation(#[from] ActionValidationError),
 	/// An [`ActionRunError`] has occurred.
 	#[error(transparent)]
-	ActionRunError(#[from] ActionRunError<B::Error>),
+	ActionRun(#[from] ActionRunError<B::Error>),
 	/// A custom error has occurred, this is useful for [`Result`] return types.
 	#[error(transparent)]
 	Custom(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+impl<B: Backend> From<ActionError<<B as Backend>::Error>> for ChartError<B> {
+	fn from(e: ActionError<<B as Backend>::Error>) -> Self {
+		match e {
+			ActionError::Run(e) => Self::ActionRun(e),
+			ActionError::Validation(e) => Self::ActionValidation(e),
+		}
+	}
 }

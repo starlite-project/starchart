@@ -1,76 +1,83 @@
-use std::{convert::Infallible, error::Error, fmt::Debug, iter::FromIterator};
+#![allow(clippy::missing_panics_doc, missing_docs)]
 
-#[derive(Debug, Clone,  PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[must_use = "this `ActionResult` may be an `Error` variant, which should be handled"]
-pub enum ActionResult<R, E> {
+use std::{
+	convert::Infallible,
+	error::Error,
+	fmt::{Debug, Display, Formatter, Result as FmtResult},
+	iter::FromIterator,
+};
+
+use crate::Entry;
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[must_use = "an ActionResult should be asserted"]
+pub enum ActionResult<R> {
 	Create,
 	ReadSingle(Option<R>),
 	ReadMultiple(Vec<R>),
 	Update,
 	Delete(bool),
-	Error(E),
 }
 
-impl<R, E: Error> ActionResult<R, E> {
-	pub fn create(self) -> Result<(), E> {
-		match self {
-			Self::Create => Ok(()),
-			Self::Error(e) => Err(e),
-			_ => panic!(
-				"called `ActionResult::create` on a `{}` value",
-				self.variant()
-			),
+impl<R: Entry> ActionResult<R> {
+	#[track_caller]
+	#[inline]
+	pub fn create(self) {
+		assert!(
+			matches!(self, Self::Create),
+			"called `ActionResult::create` on a `{}` value",
+			self
+		);
+	}
+
+	#[track_caller]
+	#[inline]
+	pub fn read_single(self) -> Option<R> {
+		if let Self::ReadSingle(v) = self {
+			v
+		} else {
+			panic!("called `ActionResult::read_single` on a `{}` value", self);
 		}
 	}
 
-	pub fn read_single(self) -> Result<Option<R>, E> {
-		match self {
-			Self::ReadSingle(v) => Ok(v),
-			Self::Error(e) => Err(e),
-			_ => panic!(
-				"called `ActionResult::single_read` on a `{}` value",
-				self.variant()
-			),
+	#[track_caller]
+	#[inline]
+	pub fn read_multiple<I: FromIterator<R>>(self) -> I {
+		if let Self::ReadMultiple(v) = self {
+			v.into_iter().collect()
+		} else {
+			panic!("called `ActionResult::read_multiple` on a `{}` value", self)
 		}
 	}
 
-	pub fn read_multiple<I: FromIterator<R>>(self) -> Result<I, E> {
-		match self {
-			Self::ReadMultiple(v) => Ok(v.into_iter().collect()),
-			Self::Error(e) => Err(e),
-			_ => panic!("called `ActionResult::multiple_read` on a `{}` value", self.variant())
-		}
+	#[track_caller]
+	#[inline]
+	pub fn update(self) {
+		assert!(
+			matches!(self, Self::Update),
+			"called `ActionResult::update` on a `{}` value",
+			self
+		);
 	}
 
-	pub fn update(self) -> Result<(), E> {
-		match self {
-			Self::Update => Ok(()),
-			Self::Error(e) => Err(e),
-			_ => panic!(
-				"called `ActionResult::update` on a `{}` value",
-				self.variant()
-			),
+	#[track_caller]
+	#[inline]
+	pub fn delete(self) -> bool {
+		if let Self::Delete(b) = self {
+			b
+		} else {
+			panic!("called `ActionResult::delete` on a `{}` value", self)
 		}
 	}
+}
 
-	pub fn delete(self) -> Result<bool, E> {
+impl<R> Display for ActionResult<R> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
-			Self::Delete(b) => Ok(b),
-			Self::Error(e) => Err(e),
-			_ => panic!(
-				"called `ActionResult::delete` on a `{}` value",
-				self.variant()
-			),
-		}
-	}
-
-	fn variant(&self) -> &str {
-		match self {
-			Self::Create => "Create",
-			Self::ReadSingle(_) | Self::ReadMultiple(_) => "Read",
-			Self::Update => "Update",
-			Self::Delete(_) => "Delete",
-			Self::Error(_) => "Error",
+			Self::Create => f.write_str("Create"),
+			Self::ReadSingle(_) | Self::ReadMultiple(_) => f.write_str("Read"),
+			Self::Update => f.write_str("Update"),
+			Self::Delete(_) => f.write_str("Delete"),
 		}
 	}
 }

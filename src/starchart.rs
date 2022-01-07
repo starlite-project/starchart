@@ -5,7 +5,7 @@ use std::sync::Arc;
 use futures::executor::block_on;
 use parking_lot::RwLock;
 
-use crate::{action::{ActionRunner, ActionValidationError}, atomics::Guard, backend::Backend};
+use crate::{action::ActionValidationError, atomics::Guard, backend::Backend};
 
 /// The base structure for managing data.
 ///
