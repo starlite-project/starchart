@@ -21,8 +21,8 @@ pub use self::error::{ActionError, ActionRunError, ActionValidationError};
 pub use self::{
 	kind::ActionKind,
 	r#impl::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget, ReadOperation,
-		TableTarget, UpdateOperation,
+		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget,
+		ReadOperation, TableTarget, UpdateOperation,
 	},
 	result::ActionResult,
 	target::TargetKind,
@@ -151,7 +151,11 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	/// Changes both the [`CrudOperation`] and [`OperationTarget`] of this [`Action`].
 	#[inline]
 	pub fn into_action<C2: CrudOperation, O2: OperationTarget>(self) -> Action<S, C2, O2> {
-		Action { inner: self.inner, kind: PhantomData, target: PhantomData }
+		Action {
+			inner: self.inner,
+			kind: PhantomData,
+			target: PhantomData,
+		}
 	}
 
 	/// Changes the [`CrudOperation`] of this [`Action`].
@@ -396,7 +400,9 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<S, C, T> {
 		// 	.finish()
 		let mut state = f.debug_struct("Action");
 
-		state.field("kind", &self.kind()).field("target", &self.target());
+		state
+			.field("kind", &self.kind())
+			.field("target", &self.target());
 
 		if let Some(key) = self.key() {
 			state.field("key", &key);
@@ -827,10 +833,12 @@ mod tests {
 	use super::{
 		error::ActionError, Action, ActionKind, CreateEntryAction, CreateOperation,
 		CreateTableAction, DeleteEntryAction, DeleteOperation, DeleteTableAction, EntryTarget,
-		ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
-		UpdateEntryAction, UpdateOperation,
+		ReadEntryAction, ReadOperation, ReadTableAction, TableTarget, UpdateEntryAction,
+		UpdateOperation,
 	};
-	use crate::{IndexEntry, Starchart, action::TargetKind, backend::MemoryBackend, error::MemoryError};
+	use crate::{
+		action::TargetKind, backend::MemoryBackend, error::MemoryError, IndexEntry, Starchart,
+	};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
@@ -885,7 +893,9 @@ mod tests {
 
 	#[test]
 	fn conversion_methods() {
-		#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+		#[derive(
+			Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+		)]
 		struct NewSettings;
 
 		let action: Action<Settings, ReadOperation, EntryTarget> = Action::new();

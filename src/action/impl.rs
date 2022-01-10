@@ -5,30 +5,22 @@ use serde::{Deserialize, Serialize};
 use super::{ActionKind, TargetKind};
 
 /// Marker type for a Create operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CreateOperation;
 
 /// Marker type for a Read operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ReadOperation;
 
 /// Marker type for an Update operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct UpdateOperation;
 
 /// Marker type for a Delete operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct DeleteOperation;
 
@@ -65,16 +57,12 @@ impl CrudOperation for DeleteOperation {
 }
 
 /// Marker type for a table operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct TableTarget;
 
 /// Marker type for an entry operation.
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct EntryTarget;
 
@@ -101,8 +89,8 @@ impl OperationTarget for EntryTarget {
 
 mod private {
 	use super::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget, ReadOperation,
-		TableTarget, UpdateOperation,
+		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget,
+		ReadOperation, TableTarget, UpdateOperation,
 	};
 	use crate::{Action, Entry};
 
