@@ -274,7 +274,7 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
 	/// entry will automatically call this.
 	///
-	/// This is unused on [`OperationTarget::Table`] actions.
+	/// This is unused on [`TargetKind::Table`] actions.
 	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
 		*self.inner.key_mut() = Some(key.to_key());
 
@@ -283,7 +283,7 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 
 	/// Sets the data for the action.
 	///
-	/// This is unused on [`OperationTarget::Table`] actions.
+	/// This is unused on [`TargetKind::Table`] actions.
 	pub fn set_data(&mut self, entity: &S) -> &mut Self {
 		*self.inner.data_mut() = Some(Box::new(entity.clone()));
 
