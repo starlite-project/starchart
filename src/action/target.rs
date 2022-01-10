@@ -6,20 +6,20 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum OperationTarget {
+pub enum TargetKind {
 	/// The operation will be performed on a table.
 	Table,
 	/// The operation will be performed on a single entry.
 	Entry,
 }
 
-impl Default for OperationTarget {
+impl Default for TargetKind {
 	fn default() -> Self {
 		Self::Entry
 	}
 }
 
-impl Display for OperationTarget {
+impl Display for TargetKind {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match self {
 			Self::Table => f.write_str("Table"),
@@ -35,10 +35,10 @@ mod tests {
 	use serde::{Deserialize, Serialize};
 	use static_assertions::assert_impl_all;
 
-	use super::OperationTarget;
+	use super::TargetKind;
 
 	assert_impl_all!(
-		OperationTarget: Clone,
+		TargetKind: Clone,
 		Copy,
 		Debug,
 		Default,
@@ -52,12 +52,12 @@ mod tests {
 
 	#[test]
 	fn default() {
-		assert_eq!(OperationTarget::default(), OperationTarget::Entry);
+		assert_eq!(TargetKind::default(), TargetKind::Entry);
 	}
 
 	#[test]
 	fn display() {
-		assert_eq!(OperationTarget::Entry.to_string(), "Entry");
-		assert_eq!(OperationTarget::Table.to_string(), "Table");
+		assert_eq!(TargetKind::Entry.to_string(), "Entry");
+		assert_eq!(TargetKind::Table.to_string(), "Table");
 	}
 }

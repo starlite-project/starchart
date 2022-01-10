@@ -45,7 +45,7 @@ async fn main() -> ChartResult<(), JsonBackend> {
 
 	{
 		let mut action: CreateTableAction<Settings> = Action::new();
-		action.set_table("foo");
+		action.set_table("foo".to_owned());
 
 		// chart.run(action).await??;
 		action.run(&chart).await?.unwrap_create();
@@ -58,13 +58,15 @@ async fn main() -> ChartResult<(), JsonBackend> {
 		(73, "The Queen".to_owned()),
 	] {
 		let mut action: CreateEntryAction<Settings> = Action::new();
-		action.set_table("foo").set_entry(&Settings::new(name, age));
+		action
+			.set_table("foo".to_owned())
+			.set_entry(&Settings::new(name, age));
 		// chart.run(action).await??;
 		action.run(&chart).await?.unwrap_create();
 	}
 
 	let mut read_all_action: ReadTableAction<Settings> = Action::new();
-	read_all_action.set_table("foo");
+	read_all_action.set_table("foo".to_owned());
 
 	// let mut values: Vec<Settings> = chart.run(read_all_action).await??;
 	let mut values = read_all_action

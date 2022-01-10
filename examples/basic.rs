@@ -34,7 +34,7 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 	// Create and run an action to create the "foo" table with the Settings struct.
 	let mut create_table_action: CreateTableAction<Settings> = Action::new();
 
-	create_table_action.set_table("foo");
+	create_table_action.set_table("foo".to_owned());
 
 	// chart.run(create_table_action).await??;
 	create_table_action.run(&chart).await?.unwrap_create();
@@ -46,7 +46,9 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 		(73, "The Queen".to_owned()),
 	] {
 		let mut action: CreateEntryAction<Settings> = Action::new();
-		action.set_table("foo").set_entry(&Settings::new(name, age));
+		action
+			.set_table("foo".to_owned())
+			.set_entry(&Settings::new(name, age));
 		// chart.run(action).await??;
 		action.run(&chart).await?.unwrap_create();
 	}
@@ -56,7 +58,7 @@ async fn main() -> ChartResult<(), MemoryBackend> {
 	let the_queen = {
 		// Action type helpers are named after their CRUD counterparts; Create, Read, Update, and Delete.
 		let mut action: ReadEntryAction<Settings> = Action::new();
-		action.set_key(&3_u64).set_table("foo");
+		action.set_key(&3_u64).set_table("foo".to_owned());
 
 		action
 			.run(&chart)
