@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use super::{ActionKind, OperationTarget};
+use super::{ActionKind, TargetKind};
 
 /// Marker type for a Create operation.
 #[derive(
@@ -82,26 +82,26 @@ pub struct EntryTarget;
 /// operation will cover.
 ///
 /// [`Action`]: crate::action::Action
-pub trait OpTarget: private::Sealed {
+pub trait OperationTarget: private::Sealed {
 	#[doc(hidden)]
-	fn target() -> OperationTarget;
+	fn target() -> TargetKind;
 }
 
-impl OpTarget for TableTarget {
-	fn target() -> OperationTarget {
-		OperationTarget::Table
+impl OperationTarget for TableTarget {
+	fn target() -> TargetKind {
+		TargetKind::Table
 	}
 }
 
-impl OpTarget for EntryTarget {
-	fn target() -> OperationTarget {
-		OperationTarget::Entry
+impl OperationTarget for EntryTarget {
+	fn target() -> TargetKind {
+		TargetKind::Entry
 	}
 }
 
 mod private {
 	use super::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OpTarget, ReadOperation,
+		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget, ReadOperation,
 		TableTarget, UpdateOperation,
 	};
 	use crate::{Action, Entry};
@@ -114,7 +114,7 @@ mod private {
 	impl Sealed for DeleteOperation {}
 	impl Sealed for TableTarget {}
 	impl Sealed for EntryTarget {}
-	impl<S: Entry, C: CrudOperation, T: OpTarget> Sealed for Action<S, C, T> {}
+	impl<S: Entry, C: CrudOperation, T: OperationTarget> Sealed for Action<S, C, T> {}
 }
 
 #[cfg(test)]
@@ -127,7 +127,7 @@ mod tests {
 	use super::{
 		CreateOperation, DeleteOperation, EntryTarget, ReadOperation, TableTarget, UpdateOperation,
 	};
-	use crate::action::{ActionKind, CrudOperation, OpTarget, OperationTarget};
+	use crate::action::{ActionKind, CrudOperation, OperationTarget, TargetKind};
 
 	assert_impl_all!(
 		CreateOperation: Clone,
@@ -194,7 +194,7 @@ mod tests {
 
 	#[test]
 	fn target() {
-		assert_eq!(TableTarget::target(), OperationTarget::Table);
-		assert_eq!(EntryTarget::target(), OperationTarget::Entry);
+		assert_eq!(TableTarget::target(), TargetKind::Table);
+		assert_eq!(EntryTarget::target(), TargetKind::Entry);
 	}
 }
