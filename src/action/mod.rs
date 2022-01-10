@@ -827,7 +827,7 @@ mod tests {
 	use super::{
 		error::ActionError, Action, ActionKind, CreateEntryAction, CreateOperation,
 		CreateTableAction, DeleteEntryAction, DeleteOperation, DeleteTableAction, EntryTarget,
-		OperationTarget, ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
+		ReadEntryAction, ReadOperation, ReadTableAction, TableTarget,
 		UpdateEntryAction, UpdateOperation,
 	};
 	use crate::{IndexEntry, Starchart, action::TargetKind, backend::MemoryBackend, error::MemoryError};
