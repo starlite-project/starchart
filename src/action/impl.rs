@@ -6,28 +6,28 @@ use super::{ActionKind, TargetKind};
 
 /// Marker type for a Create operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct CreateOperation;
 
 /// Marker type for a Read operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct ReadOperation;
 
 /// Marker type for an Update operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct UpdateOperation;
 
 /// Marker type for a Delete operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct DeleteOperation;
@@ -66,14 +66,14 @@ impl CrudOperation for DeleteOperation {
 
 /// Marker type for a table operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct TableTarget;
 
 /// Marker type for an entry operation.
 #[derive(
-	Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 #[non_exhaustive]
 pub struct EntryTarget;
