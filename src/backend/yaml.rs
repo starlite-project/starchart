@@ -35,7 +35,7 @@ impl YamlBackend {
 impl FsBackend for YamlBackend {
 	const EXTENSION: &'static str = "yaml";
 
-	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
@@ -46,7 +46,7 @@ impl FsBackend for YamlBackend {
 		})
 	}
 
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
