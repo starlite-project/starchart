@@ -1,5 +1,6 @@
-use rustc_version::{version_meta, Channel, Error};
 use std::env;
+
+use rustc_version::{version_meta, Channel, Error};
 
 fn main() -> Result<(), Error> {
 	let version_data = version_meta()?;
