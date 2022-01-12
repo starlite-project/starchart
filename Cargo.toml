@@ -54,7 +54,7 @@ version = "0.8"
 [dependencies.starchart-derive]
 optional = true
 path = "./starchart-derive"
-version = "^0.13"
+version = "^0.14"
 
 [dependencies.tokio]
 default-features = false
