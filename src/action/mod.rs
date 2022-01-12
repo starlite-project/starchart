@@ -17,7 +17,10 @@ use std::{
 };
 
 #[doc(hidden)]
-pub use self::error::{ActionError, ActionRunError, ActionValidationError};
+pub use self::error::{
+	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
+	ActionValidationErrorType,
+};
 pub use self::{
 	kind::ActionKind,
 	r#impl::{
@@ -228,12 +231,18 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 		&self,
 		backend: &B,
 		table_name: &str,
-	) -> Result<(), ActionRunError<B::Error>> {
+	) -> Result<(), ActionRunError> {
 		backend
 			.get::<S>(table_name, METADATA_KEY)
 			.await // coverage:ignore-line
 			.map(|_| {})
-			.map_err(|_| ActionRunError::Metadata(type_name::<S>(), table_name.to_owned()))
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Metadata {
+					type_name: type_name::<S>(),
+					table_name: table_name.to_owned(),
+				},
+			})
 	}
 
 	/// Validates that the table key is set.
@@ -243,7 +252,10 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	/// Errors if [`Self::set_table`] has not yet been called.
 	pub fn validate_table(&self) -> Result<(), ActionValidationError> {
 		if self.table().is_none() {
-			return Err(ActionValidationError::Table);
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Table,
+			});
 		}
 
 		#[cfg(feature = "metadata")]
@@ -260,7 +272,10 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	#[allow(clippy::unused_self)]
 	pub fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
 		if key == Some(METADATA_KEY) {
-			return Err(ActionValidationError::Metadata);
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Metadata,
+			});
 		}
 
 		Ok(())
@@ -297,7 +312,10 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// Errors if [`Self::set_key`] has not yet been called.
 	pub fn validate_key(&self) -> Result<(), ActionValidationError> {
 		if self.key().is_none() {
-			return Err(ActionValidationError::Key);
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Key,
+			});
 		}
 
 		#[cfg(feature = "metadata")]
@@ -313,7 +331,10 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// Errors if [`Self::set_data`] has not yet been called.
 	pub fn validate_data(&self) -> Result<(), ActionValidationError> {
 		if self.data().is_none() {
-			return Err(ActionValidationError::Data);
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Data,
+			});
 		}
 
 		Ok(())
@@ -391,13 +412,6 @@ impl<S: IndexEntry, C: CrudOperation> Action<S, C, EntryTarget> {
 
 impl<S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<S, C, T> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		// f.debug_struct("Action")
-		// 	.field("kind", &self.kind())
-		// 	.field("table", &self.table())
-		// 	.field("data", &self.data())
-		// 	.field("key", &self.key())
-		// 	.field("target", &self.target())
-		// 	.finish()
 		let mut state = f.debug_struct("Action");
 
 		state
@@ -448,7 +462,7 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	pub async fn run<B: Backend>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<ActionResult<S>, ActionError<<B as Backend>::Error>> {
+	) -> Result<ActionResult<S>, ActionError> {
 		match self.target() {
 			TargetKind::Entry => match self.kind() {
 				ActionKind::Create => {
@@ -510,11 +524,15 @@ impl<S: Entry> CreateEntryAction<S> {
 	pub async fn run_create_entry<B: Backend>(
 		self,
 		chart: &Starchart<B>,
-	) -> Result<(), ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
-		self.validate_entry()?;
+	) -> Result<(), ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_entry().map_err(ActionError::validation)?;
 		let lock = chart.guard.exclusive();
-		unsafe { self.run_create_entry_unchecked(chart.backend()).await? };
+		unsafe {
+			self.run_create_entry_unchecked(chart.backend())
+				.await
+				.map_err(ActionError::run)?;
+		};
 		drop(lock);
 		Ok(())
 	}
@@ -533,18 +551,30 @@ impl<S: Entry> CreateEntryAction<S> {
 	pub async unsafe fn run_create_entry_unchecked<B: Backend>(
 		mut self,
 		backend: &B,
-	) -> Result<(), ActionRunError<<B as Backend>::Error>> {
+	) -> Result<(), ActionRunError> {
 		let table_name = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
 		let entry = self.inner.data.take().inner_unwrap();
-		if backend.has(&table_name, &key).await? {
+		if backend
+			.has(&table_name, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})? {
 			return Ok(());
 		}
 
 		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table_name).await?;
 
-		backend.create(&table_name, &key, &*entry).await?;
+		backend
+			.create(&table_name, &key, &*entry)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		Ok(())
 	}
@@ -559,11 +589,15 @@ impl<S: Entry> ReadEntryAction<S> {
 	pub async fn run_read_entry<B: Backend>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<Option<S>, ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
-		self.validate_key()?;
+	) -> Result<Option<S>, ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_key().map_err(ActionError::validation)?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe { self.run_read_entry_unchecked(gateway.backend()).await? };
+		let res = unsafe {
+			self.run_read_entry_unchecked(gateway.backend())
+				.await
+				.map_err(ActionError::run)?
+		};
 		drop(lock);
 		Ok(res)
 	}
@@ -581,14 +615,20 @@ impl<S: Entry> ReadEntryAction<S> {
 	pub async unsafe fn run_read_entry_unchecked<B: Backend>(
 		mut self,
 		backend: &B,
-	) -> Result<Option<S>, ActionRunError<<B as Backend>::Error>> {
+	) -> Result<Option<S>, ActionRunError> {
 		let table_name = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
 
 		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table_name).await?;
 
-		Ok(backend.get(&table_name, &key).await?)
+		backend
+			.get(&table_name, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})
 	}
 }
 
@@ -601,11 +641,15 @@ impl<S: Entry> UpdateEntryAction<S> {
 	pub async fn run_update_entry<B: Backend>(
 		self,
 		chart: &Starchart<B>,
-	) -> Result<(), ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
-		self.validate_entry()?;
+	) -> Result<(), ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_entry().map_err(ActionError::validation)?;
 		let lock = chart.guard.exclusive();
-		unsafe { self.run_update_entry_unchecked(chart.backend()).await? };
+		unsafe {
+			self.run_update_entry_unchecked(chart.backend())
+				.await
+				.map_err(ActionError::run)?;
+		};
 		drop(lock);
 		Ok(())
 	}
@@ -624,7 +668,7 @@ impl<S: Entry> UpdateEntryAction<S> {
 	pub async unsafe fn run_update_entry_unchecked<B: Backend>(
 		mut self,
 		backend: &B,
-	) -> Result<(), ActionRunError<<B as Backend>::Error>> {
+	) -> Result<(), ActionRunError> {
 		let table = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
 		let new_data = self.inner.data.take().inner_unwrap();
@@ -632,9 +676,13 @@ impl<S: Entry> UpdateEntryAction<S> {
 		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table).await?;
 
-		backend.update(&table, &key, &new_data).await?;
-
-		Ok(())
+		backend
+			.update(&table, &key, &new_data)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})
 	}
 }
 
@@ -647,11 +695,15 @@ impl<S: Entry> DeleteEntryAction<S> {
 	pub async fn run_delete_entry<B: Backend>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<bool, ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
-		self.validate_key()?;
+	) -> Result<bool, ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_key().map_err(ActionError::validation)?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe { self.run_delete_entry_unchecked(gateway.backend()).await? };
+		let res = unsafe {
+			self.run_delete_entry_unchecked(gateway.backend())
+				.await
+				.map_err(ActionError::run)?
+		};
 		drop(lock);
 		Ok(res)
 	}
@@ -669,14 +721,32 @@ impl<S: Entry> DeleteEntryAction<S> {
 	pub async unsafe fn run_delete_entry_unchecked<B: Backend>(
 		mut self,
 		backend: &B,
-	) -> Result<bool, ActionRunError<<B as Backend>::Error>> {
+	) -> Result<bool, ActionRunError> {
 		let table = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
-		let exists = backend.has(&table, &key).await?;
+		let exists = backend
+			.has(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
-		backend.delete(&table, &key).await?;
+		backend
+			.delete(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
-		let after_exists = backend.has(&table, &key).await?;
+		let after_exists = backend
+			.has(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		Ok(exists != after_exists)
 	}
@@ -691,10 +761,14 @@ impl<S: Entry> CreateTableAction<S> {
 	pub async fn run_create_table<B: Backend>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<(), ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
+	) -> Result<(), ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
 		let lock = gateway.guard.exclusive();
-		unsafe { self.run_create_table_unchecked(gateway.backend()).await? };
+		unsafe {
+			self.run_create_table_unchecked(gateway.backend())
+				.await
+				.map_err(ActionError::run)?;
+		};
 		drop(lock);
 		Ok(())
 	}
@@ -712,15 +786,27 @@ impl<S: Entry> CreateTableAction<S> {
 	pub async unsafe fn run_create_table_unchecked<B: Backend>(
 		self,
 		backend: &B,
-	) -> Result<(), ActionRunError<<B as Backend>::Error>> {
+	) -> Result<(), ActionRunError> {
 		let table = self.inner.table.inner_unwrap();
 
-		backend.ensure_table(&table).await?;
+		backend
+			.ensure_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		#[cfg(feature = "metadata")]
 		{
 			let metadata = S::default();
-			backend.ensure(&table, METADATA_KEY, &metadata).await?;
+			backend
+				.ensure(&table, METADATA_KEY, &metadata)
+				.await
+				.map_err(|e| ActionRunError {
+					source: Some(Box::new(e)),
+					kind: ActionRunErrorType::Backend,
+				})?;
 		}
 
 		Ok(())
@@ -736,13 +822,17 @@ impl<S: Entry> ReadTableAction<S> {
 	pub async fn run_read_table<B: Backend, I>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<I, ActionError<<B as Backend>::Error>>
+	) -> Result<I, ActionError>
 	where
 		I: FromIterator<S>,
 	{
-		self.validate_table()?;
+		self.validate_table().map_err(ActionError::validation)?;
 		let lock = gateway.guard.shared();
-		let res = unsafe { self.run_read_table_unchecked(gateway.backend()).await? };
+		let res = unsafe {
+			self.run_read_table_unchecked(gateway.backend())
+				.await
+				.map_err(ActionError::run)?
+		};
 		drop(lock);
 		Ok(res)
 	}
@@ -760,7 +850,7 @@ impl<S: Entry> ReadTableAction<S> {
 	pub async unsafe fn run_read_table_unchecked<B: Backend, I>(
 		mut self,
 		backend: &B,
-	) -> Result<I, ActionRunError<<B as Backend>::Error>>
+	) -> Result<I, ActionRunError>
 	where
 		I: FromIterator<S>,
 	{
@@ -769,7 +859,13 @@ impl<S: Entry> ReadTableAction<S> {
 		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table).await?;
 
-		let keys = backend.get_keys::<Vec<_>>(&table).await?;
+		let keys = backend
+			.get_keys::<Vec<_>>(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		#[cfg(feature = "metadata")]
 		let keys = keys
@@ -779,7 +875,13 @@ impl<S: Entry> ReadTableAction<S> {
 
 		let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
 
-		let data = backend.get_all::<S, I>(&table, &keys_borrowed).await?;
+		let data = backend
+			.get_all::<S, I>(&table, &keys_borrowed)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		Ok(data)
 	}
@@ -794,10 +896,14 @@ impl<S: Entry> DeleteTableAction<S> {
 	pub async fn run_delete_table<B: Backend>(
 		self,
 		gateway: &Starchart<B>,
-	) -> Result<bool, ActionError<<B as Backend>::Error>> {
-		self.validate_table()?;
+	) -> Result<bool, ActionError> {
+		self.validate_table().map_err(ActionError::validation)?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe { self.run_delete_table_unchecked(gateway.backend()).await? };
+		let res = unsafe {
+			self.run_delete_table_unchecked(gateway.backend())
+				.await
+				.map_err(ActionError::run)?
+		};
 		drop(lock);
 		Ok(res)
 	}
@@ -815,12 +921,30 @@ impl<S: Entry> DeleteTableAction<S> {
 	pub async unsafe fn run_delete_table_unchecked<B: Backend>(
 		self,
 		backend: &B,
-	) -> Result<bool, ActionRunError<<B as Backend>::Error>> {
+	) -> Result<bool, ActionRunError> {
 		let table = self.inner.table.inner_unwrap();
 
-		let exists = backend.has_table(&table).await?;
-		backend.delete_table(&table).await?;
-		let new_exists = backend.has_table(&table).await?;
+		let exists = backend
+			.has_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+		backend
+			.delete_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+		let new_exists = backend
+			.has_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		Ok(exists != new_exists)
 	}
@@ -837,7 +961,7 @@ mod tests {
 		UpdateOperation,
 	};
 	use crate::{
-		action::TargetKind, backend::MemoryBackend, error::MemoryError, IndexEntry, Starchart,
+		action::TargetKind, backend::MemoryBackend, IndexEntry, Starchart,
 	};
 
 	#[derive(
@@ -1027,7 +1151,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn basic_run() -> Result<(), ActionError<MemoryError>> {
+	async fn basic_run() -> Result<(), ActionError> {
 		let gateway = setup_gateway().await;
 		let mut action: Action<Settings, CreateOperation, TableTarget> = Action::new();
 
@@ -1084,7 +1208,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn duplicate_creates() -> Result<(), ActionError<MemoryError>> {
+	async fn duplicate_creates() -> Result<(), ActionError> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 
@@ -1105,7 +1229,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn read_and_update() -> Result<(), ActionError<MemoryError>> {
+	async fn read_and_update() -> Result<(), ActionError> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 		{
@@ -1151,7 +1275,7 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn deletes() -> Result<(), ActionError<MemoryError>> {
+	async fn deletes() -> Result<(), ActionError> {
 		let gateway = setup_gateway().await;
 		setup_table(&gateway).await;
 

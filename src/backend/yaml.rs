@@ -4,7 +4,10 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use super::fs::{FsBackend, FsError};
+use super::{
+	fs::{FsBackend, FsError},
+	FsErrorType,
+};
 use crate::Entry;
 
 /// A YAML based backend.
@@ -17,12 +20,12 @@ impl YamlBackend {
 	///
 	/// # Errors
 	///
-	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	/// Returns an [`FsError`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::PathNotDirectory(path))
+			Err(FsError::path_not_directory(path))
 		} else {
 			Ok(Self(path))
 		}
@@ -37,14 +40,20 @@ impl FsBackend for YamlBackend {
 		R: io::Read,
 		T: Entry,
 	{
-		serde_yaml::from_reader(rdr).map_err(|_| FsError::Serde)
+		serde_yaml::from_reader(rdr).map_err(|e| FsError {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Deserialization,
+		})
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_yaml::to_vec(value).map_err(|_| FsError::Serde)
+		serde_yaml::to_vec(value).map_err(|e| FsError {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Serialization,
+		})
 	}
 
 	fn base_directory(&self) -> PathBuf {

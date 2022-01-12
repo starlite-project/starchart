@@ -4,7 +4,12 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use super::fs::{FsBackend, FsError};
+use serde_bincode::{DefaultOptions, Options};
+
+use super::{
+	fs::{FsBackend, FsError},
+	FsErrorType,
+};
 use crate::Entry;
 
 /// A Binary format based backend.
@@ -17,12 +22,12 @@ impl BincodeBackend {
 	///
 	/// # Errors
 	///
-	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	/// Returns an [`FsError`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::PathNotDirectory(path))
+			Err(FsError::path_not_directory(path))
 		} else {
 			Ok(Self(path))
 		}
@@ -37,14 +42,26 @@ impl FsBackend for BincodeBackend {
 		R: io::Read,
 		T: Entry,
 	{
-		serde_bincode::deserialize_from(rdr).map_err(|_| FsError::Serde)
+		DefaultOptions::new()
+			.with_native_endian()
+			.deserialize_from(rdr)
+			.map_err(|e| FsError {
+				kind: FsErrorType::Deserialization,
+				source: Some(e),
+			})
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_bincode::serialize(value).map_err(|_| FsError::Serde)
+		DefaultOptions::new()
+			.with_native_endian()
+			.serialize(value)
+			.map_err(|e| FsError {
+				kind: FsErrorType::Serialization,
+				source: Some(e),
+			})
 	}
 
 	fn base_directory(&self) -> PathBuf {

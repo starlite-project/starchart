@@ -1,14 +1,14 @@
 //! Helpers for creating file-system based backends.
 
 use std::{
-	fmt::Debug,
+	error::Error,
+	fmt::{Debug, Display, Formatter, Result as FmtResult},
 	fs::File as StdFile,
 	io::{self, Read},
 	iter::FromIterator,
 	path::{Path, PathBuf},
 };
 
-use thiserror::Error;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
@@ -22,24 +22,138 @@ use super::{
 use crate::{util::InnerUnwrap, Entry};
 
 /// An error occurred from an [`FsBackend`].
-#[derive(Debug, Error)]
 #[cfg(feature = "fs")]
-pub enum FsError {
+#[derive(Debug)]
+pub struct FsError {
+	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
+	pub(super) kind: FsErrorType,
+}
+
+#[cfg(feature = "fs")]
+impl FsError {
+	/// Immutable reference to the type of error that occurred.
+	#[must_use = "retrieving the type has no effect if left unused"]
+	pub const fn kind(&self) -> &FsErrorType {
+		&self.kind
+	}
+
+	/// Consume the error, returning the source error if there is any.
+	#[must_use = "consuming the error and retrieving the source has no effect if left unused"]
+	pub fn into_source(self) -> Option<Box<dyn Error + Send + Sync>> {
+		self.source
+	}
+
+	/// Consume the error, returning the owned error type and the source error.
+	#[must_use = "consuming the error into it's parts has no effect if left unused"]
+	pub fn into_parts(self) -> (FsErrorType, Option<Box<dyn Error + Send + Sync>>) {
+		(self.kind, self.source)
+	}
+
+	#[inline]
+	pub(super) fn io(err: io::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Io,
+		}
+	}
+
+	#[inline]
+	pub(super) fn path_not_directory(path: PathBuf) -> Self {
+		Self {
+			source: None,
+			kind: FsErrorType::PathNotDirectory { path },
+		}
+	}
+
+	/// A shortcut for easily creating a serialization error.
+	#[must_use]
+	#[inline]
+	pub fn serialization(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
+		Self {
+			source: err,
+			kind: FsErrorType::Serialization,
+		}
+	}
+
+	/// A shortcut for easily creating a deserialization error.
+	#[must_use]
+	#[inline]
+	pub fn deserialization(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
+		Self {
+			source: err,
+			kind: FsErrorType::Deserialization
+		}
+	}
+}
+
+#[cfg(feature = "fs")]
+impl Display for FsError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match &self.kind {
+			FsErrorType::Io => f.write_str("an IO error occurred"),
+			FsErrorType::PathNotDirectory { path } => {
+				f.write_str("path ")?;
+				Display::fmt(&path.display(), f)?;
+				f.write_str(" is not a directory")
+			}
+			FsErrorType::Serialization => f.write_str("a serialization error occurred"),
+			FsErrorType::Deserialization => f.write_str("a deserialization error occurred"),
+			FsErrorType::InvalidFile { path } => {
+				f.write_str("file ")?;
+				Display::fmt(&path.display(), f)?;
+				f.write_str(" is invalid")
+			}
+			FsErrorType::FileAlreadyExists { path } => {
+				f.write_str("file ")?;
+				Display::fmt(&path.display(), f)?;
+				f.write_str(" already exists")
+			}
+		}
+	}
+}
+
+#[cfg(feature = "fs")]
+impl Error for FsError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		self.source
+			.as_ref()
+			.map(|source| &**source as &(dyn Error + 'static))
+	}
+}
+
+#[cfg(test)]
+impl From<io::Error> for FsError {
+	fn from(e: io::Error) -> Self {
+		Self::io(e)
+	}
+}
+
+/// The type of [`FsError`] that occurred.
+#[derive(Debug)]
+#[non_exhaustive]
+#[cfg(feature = "fs")]
+pub enum FsErrorType {
 	/// An IO error occurred.
-	#[error(transparent)]
-	Io(#[from] io::Error),
+	Io,
 	/// The path provided was not a directory.
-	#[error("path {0} is not a directory")]
-	PathNotDirectory(PathBuf),
-	/// A serde error occurred.
-	#[error("a serialization error occurred")]
-	Serde,
-	/// A file was found to be invalid.
-	#[error("file {} is invalid", .0.display())]
-	InvalidFile(PathBuf),
-	/// A file already exists.
-	#[error("file {} already exists", .0.display())]
-	FileAlreadyExists(PathBuf),
+	PathNotDirectory {
+		/// The provided path.
+		path: PathBuf,
+	},
+	/// An error occurred during serialization.
+	Serialization,
+	/// An error occurred during deserialization.
+	Deserialization,
+	/// The given file was invalid in some way.
+	InvalidFile {
+		/// The provided path to the file.
+		path: PathBuf,
+	},
+	/// The file already exists.
+	FileAlreadyExists {
+		/// The provided path to the file.
+		path: PathBuf,
+	},
 }
 
 macro_rules! handle_io_result {
@@ -50,7 +164,7 @@ macro_rules! handle_io_result {
 		match $res {
 			Ok($name) => $okay,
 			Err(err) if err.kind() == ::std::io::ErrorKind::NotFound => $not_found,
-			Err(e) => Err($crate::error::FsError::from(e)),
+			Err(e) => Err($crate::error::FsError::io(e)),
 		}
 	};
 }
@@ -67,7 +181,7 @@ pub trait FsBackend: Send + Sync {
 	///
 	/// # Errors
 	///
-	/// Implementors should return a [`FsError::Serde`] error upon failure.
+	/// Implementors should return an error with [`FsError::serialization`] error upon failure.
 	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
 	where
 		R: Read,
@@ -77,7 +191,7 @@ pub trait FsBackend: Send + Sync {
 	///
 	/// # Errors
 	///
-	/// Implementors should return a [`FsError::Serde`] error upon failure.
+	/// Implementors should return an error with [`FsError::deserialization`] error upon failure.
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry;
@@ -103,7 +217,7 @@ pub trait FsBackend: Send + Sync {
 	///
 	/// # Errors
 	///
-	/// Returns a [`FsError::InvalidFile`] when the file path does not have the correct extension.
+	/// Returns an [`FsError`] when the file path does not have the correct extension.
 	fn resolve_key<P: AsRef<Path>>(&self, p: P) -> Result<String, FsError> {
 		let path = p.as_ref().to_path_buf();
 
@@ -118,7 +232,10 @@ pub trait FsBackend: Send + Sync {
 
 			Ok(stringified)
 		} else {
-			Err(FsError::InvalidFile(path)) // coverage:ignore-line
+			Err(FsError {
+				kind: FsErrorType::InvalidFile { path },
+				source: None,
+			})
 		}
 	}
 
@@ -133,7 +250,9 @@ impl<RW: FsBackend> Backend for RW {
 	fn init(&self) -> InitFuture<'_, FsError> {
 		Box::pin(async move {
 			if fs::read_dir(&self.base_directory()).await.is_err() {
-				fs::create_dir_all(&self.base_directory()).await?;
+				fs::create_dir_all(&self.base_directory())
+					.await
+					.map_err(FsError::io)?;
 			}
 			Ok(())
 		})
@@ -149,7 +268,9 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
 		Box::pin(async move {
-			fs::create_dir(self.resolve_path(&[table])).await?;
+			fs::create_dir(self.resolve_path(&[table]))
+				.await
+				.map_err(FsError::io)?;
 
 			Ok(())
 		})
@@ -158,7 +279,9 @@ impl<RW: FsBackend> Backend for RW {
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if self.has_table(table).await? {
-				fs::remove_dir(self.resolve_path(&[table])).await?;
+				fs::remove_dir(self.resolve_path(&[table]))
+					.await
+					.map_err(FsError::io)?;
 			}
 
 			Ok(())
@@ -170,13 +293,17 @@ impl<RW: FsBackend> Backend for RW {
 		I: FromIterator<String>,
 	{
 		Box::pin(async move {
-			let mut stream = ReadDirStream::new(fs::read_dir(self.resolve_path(&[table])).await?);
+			let mut stream = ReadDirStream::new(
+				fs::read_dir(self.resolve_path(&[table]))
+					.await
+					.map_err(FsError::io)?,
+			);
 			let mut output = Vec::new();
 
 			while let Some(raw) = stream.next().await {
-				let entry = raw?;
+				let entry = raw.map_err(FsError::io)?;
 
-				if entry.file_type().await?.is_dir() {
+				if entry.file_type().await.map_err(FsError::io)?.is_dir() {
 					continue; // coverage:ignore-line
 				}
 
@@ -230,12 +357,15 @@ impl<RW: FsBackend> Backend for RW {
 			let path = self.resolve_path(&[table, filepath.as_str()]);
 
 			if self.has(table, id).await? {
-				return Err(FsError::FileAlreadyExists(path));
+				return Err(FsError {
+					kind: FsErrorType::FileAlreadyExists { path },
+					source: None,
+				});
 			}
 
 			let serialized = RW::to_bytes(value)?;
 
-			fs::write(path, serialized).await?;
+			fs::write(path, serialized).await.map_err(FsError::io)?;
 
 			Ok(())
 		})
@@ -256,7 +386,7 @@ impl<RW: FsBackend> Backend for RW {
 
 			let path = self.resolve_path(&[table, filepath.as_str()]);
 
-			fs::write(path, serialized).await?;
+			fs::write(path, serialized).await.map_err(FsError::io)?;
 
 			Ok(())
 		})
@@ -282,7 +412,9 @@ impl<RW: FsBackend> Backend for RW {
 		Box::pin(async move {
 			let filename = RW::filename(id);
 
-			fs::remove_file(self.resolve_path(&[table, filename.as_str()])).await?;
+			fs::remove_file(self.resolve_path(&[table, filename.as_str()]))
+				.await
+				.map_err(FsError::io)?;
 
 			Ok(())
 		})
@@ -293,7 +425,7 @@ impl<RW: FsBackend> Backend for RW {
 mod tests {
 	use std::{io, path::PathBuf};
 
-	use super::{FsBackend, FsError};
+	use super::{FsBackend, FsError, FsErrorType};
 	use crate::Entry;
 
 	#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -308,14 +440,20 @@ mod tests {
 			R: io::Read,
 			T: Entry,
 		{
-			Err(FsError::Serde)
+			Err(FsError {
+				kind: FsErrorType::Deserialization,
+				source: None,
+			})
 		}
 
 		fn to_bytes<T>(_: &T) -> Result<Vec<u8>, FsError>
 		where
 			T: Entry,
 		{
-			Err(FsError::Serde)
+			Err(FsError {
+				kind: FsErrorType::Serialization,
+				source: None,
+			})
 		}
 
 		fn base_directory(&self) -> PathBuf {

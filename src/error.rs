@@ -1,46 +1,140 @@
 //! The different errors within the crate.
 
-use thiserror::Error;
+use std::{
+	error::Error as StdError,
+	fmt::{Display, Formatter, Result as FmtResult},
+};
 
 #[doc(inline)]
-pub use crate::action::{ActionError, ActionRunError, ActionValidationError};
-use crate::backend::Backend;
+pub use crate::action::{
+	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
+	ActionValidationErrorType,
+};
 #[cfg(feature = "fs")]
-pub use crate::backend::FsError;
+#[doc(inline)]
+pub use crate::backend::{FsError, FsErrorType};
 #[cfg(feature = "memory")]
-pub use crate::backend::MemoryError;
+pub use crate::backend::{MemoryError, MemoryErrorType};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
-// It would also cause Generic Hell.
 
-/// An error enum to wrap around all possible errors within the crate.
-#[derive(Debug, Error)]
-pub enum ChartError<B: Backend> {
-	/// A [`MemoryError`] has occurred.
-	#[cfg(feature = "memory")]
-	#[error(transparent)]
-	Memory(#[from] MemoryError),
-	/// A [`FsError`] has occurred.
-	#[cfg(feature = "fs")]
-	#[error(transparent)]
-	Fs(#[from] FsError),
-	/// An [`ActionValidationError`] has occurred.
-	#[error(transparent)]
-	ActionValidation(#[from] ActionValidationError),
-	/// An [`ActionRunError`] has occurred.
-	#[error(transparent)]
-	ActionRun(#[from] ActionRunError<B::Error>),
-	/// A custom error has occurred, this is useful for [`Result`] return types.
-	#[error(transparent)]
-	Custom(#[from] Box<dyn std::error::Error + Send + Sync>),
+/// An error that occurred within the crate.
+#[derive(Debug)]
+pub struct Error {
+	source: Option<Box<dyn StdError + Send + Sync>>,
+	kind: ErrorType,
 }
 
-impl<B: Backend> From<ActionError<<B as Backend>::Error>> for ChartError<B> {
-	fn from(e: ActionError<<B as Backend>::Error>) -> Self {
-		match e {
-			ActionError::Run(e) => Self::ActionRun(e),
-			ActionError::Validation(e) => Self::ActionValidation(e),
+impl Error {
+	/// Immutable reference to the type of error that occurred.
+	#[must_use = "retrieving the type has no effect if left unused"]
+	pub const fn kind(&self) -> &ErrorType {
+		&self.kind
+	}
+
+	/// Consume the error, returning the source error if there is any.
+	#[must_use = "consuming the error and retrieving the source has no effect if left unused"]
+	pub fn into_source(self) -> Option<Box<dyn StdError + Send + Sync>> {
+		self.source
+	}
+
+	/// Consume the error, returning the owned error type and the source error.
+	#[must_use = "consuming the error into it's parts has no effect if left unused"]
+	pub fn into_parts(self) -> (ErrorType, Option<Box<dyn StdError + Send + Sync>>) {
+		(self.kind, self.source)
+	}
+}
+
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match &self.kind {
+			#[cfg(feature = "memory")]
+			ErrorType::Memory => f.write_str("an error occurred with the memory backend"),
+			#[cfg(feature = "fs")]
+			ErrorType::Fs => f.write_str("an error occurred with a file-system backend"),
+			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
+			ErrorType::ActionValidation => f.write_str("an action is invalid"),
 		}
 	}
+}
+
+impl StdError for Error {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
+		self.source
+			.as_ref()
+			.map(|source| &**source as &(dyn StdError + 'static))
+	}
+}
+
+#[cfg(feature = "memory")]
+impl From<MemoryError> for Error {
+	fn from(e: MemoryError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ErrorType::Memory,
+		}
+	}
+}
+
+#[cfg(feature = "fs")]
+impl From<FsError> for Error {
+	fn from(e: FsError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ErrorType::Fs,
+		}
+	}
+}
+
+impl From<ActionError> for Error {
+	fn from(e: ActionError) -> Self {
+		let kind = match e.kind() {
+			ActionErrorType::Run => ErrorType::ActionRun,
+			ActionErrorType::Validation => ErrorType::ActionValidation,
+		};
+		Self {
+			source: e.into_source(),
+			kind,
+		}
+	}
+}
+
+impl From<ActionValidationError> for Error {
+	fn from(e: ActionValidationError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ErrorType::ActionValidation,
+		}
+	}
+}
+
+impl From<ActionRunError> for Error {
+	fn from(e: ActionRunError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ErrorType::ActionRun,
+		}
+	}
+}
+
+/// The type of [`Error`] that occurred.
+#[derive(Debug)]
+#[allow(missing_copy_implementations)]
+#[non_exhaustive]
+pub enum ErrorType {
+	/// An error occurred in the [`MemoryBackend`].
+	///
+	/// [`MemoryBackend`]: crate::backend::MemoryBackend
+	#[cfg(feature = "memory")]
+	Memory,
+	/// An error occurred with a [`FsBackend`].
+	///
+	/// [`FsBackend`]: crate::backend::fs::FsBackend
+	#[cfg(feature = "fs")]
+	Fs,
+	/// An [`ActionValidationError`] occurred.
+	ActionValidation,
+	/// An [`ActionRunError`] occurred.
+	ActionRun,
 }
