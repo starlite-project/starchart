@@ -1189,6 +1189,128 @@
 <span id="1186">1186</span>
 <span id="1187">1187</span>
 <span id="1188">1188</span>
+<span id="1189">1189</span>
+<span id="1190">1190</span>
+<span id="1191">1191</span>
+<span id="1192">1192</span>
+<span id="1193">1193</span>
+<span id="1194">1194</span>
+<span id="1195">1195</span>
+<span id="1196">1196</span>
+<span id="1197">1197</span>
+<span id="1198">1198</span>
+<span id="1199">1199</span>
+<span id="1200">1200</span>
+<span id="1201">1201</span>
+<span id="1202">1202</span>
+<span id="1203">1203</span>
+<span id="1204">1204</span>
+<span id="1205">1205</span>
+<span id="1206">1206</span>
+<span id="1207">1207</span>
+<span id="1208">1208</span>
+<span id="1209">1209</span>
+<span id="1210">1210</span>
+<span id="1211">1211</span>
+<span id="1212">1212</span>
+<span id="1213">1213</span>
+<span id="1214">1214</span>
+<span id="1215">1215</span>
+<span id="1216">1216</span>
+<span id="1217">1217</span>
+<span id="1218">1218</span>
+<span id="1219">1219</span>
+<span id="1220">1220</span>
+<span id="1221">1221</span>
+<span id="1222">1222</span>
+<span id="1223">1223</span>
+<span id="1224">1224</span>
+<span id="1225">1225</span>
+<span id="1226">1226</span>
+<span id="1227">1227</span>
+<span id="1228">1228</span>
+<span id="1229">1229</span>
+<span id="1230">1230</span>
+<span id="1231">1231</span>
+<span id="1232">1232</span>
+<span id="1233">1233</span>
+<span id="1234">1234</span>
+<span id="1235">1235</span>
+<span id="1236">1236</span>
+<span id="1237">1237</span>
+<span id="1238">1238</span>
+<span id="1239">1239</span>
+<span id="1240">1240</span>
+<span id="1241">1241</span>
+<span id="1242">1242</span>
+<span id="1243">1243</span>
+<span id="1244">1244</span>
+<span id="1245">1245</span>
+<span id="1246">1246</span>
+<span id="1247">1247</span>
+<span id="1248">1248</span>
+<span id="1249">1249</span>
+<span id="1250">1250</span>
+<span id="1251">1251</span>
+<span id="1252">1252</span>
+<span id="1253">1253</span>
+<span id="1254">1254</span>
+<span id="1255">1255</span>
+<span id="1256">1256</span>
+<span id="1257">1257</span>
+<span id="1258">1258</span>
+<span id="1259">1259</span>
+<span id="1260">1260</span>
+<span id="1261">1261</span>
+<span id="1262">1262</span>
+<span id="1263">1263</span>
+<span id="1264">1264</span>
+<span id="1265">1265</span>
+<span id="1266">1266</span>
+<span id="1267">1267</span>
+<span id="1268">1268</span>
+<span id="1269">1269</span>
+<span id="1270">1270</span>
+<span id="1271">1271</span>
+<span id="1272">1272</span>
+<span id="1273">1273</span>
+<span id="1274">1274</span>
+<span id="1275">1275</span>
+<span id="1276">1276</span>
+<span id="1277">1277</span>
+<span id="1278">1278</span>
+<span id="1279">1279</span>
+<span id="1280">1280</span>
+<span id="1281">1281</span>
+<span id="1282">1282</span>
+<span id="1283">1283</span>
+<span id="1284">1284</span>
+<span id="1285">1285</span>
+<span id="1286">1286</span>
+<span id="1287">1287</span>
+<span id="1288">1288</span>
+<span id="1289">1289</span>
+<span id="1290">1290</span>
+<span id="1291">1291</span>
+<span id="1292">1292</span>
+<span id="1293">1293</span>
+<span id="1294">1294</span>
+<span id="1295">1295</span>
+<span id="1296">1296</span>
+<span id="1297">1297</span>
+<span id="1298">1298</span>
+<span id="1299">1299</span>
+<span id="1300">1300</span>
+<span id="1301">1301</span>
+<span id="1302">1302</span>
+<span id="1303">1303</span>
+<span id="1304">1304</span>
+<span id="1305">1305</span>
+<span id="1306">1306</span>
+<span id="1307">1307</span>
+<span id="1308">1308</span>
+<span id="1309">1309</span>
+<span id="1310">1310</span>
 </pre><pre class="rust"><code><span class="doccomment">//! The action structs for CRUD operations.</span>
 
 <span class="comment">// TODO: Add overwrite option.</span>
@@ -1208,7 +1330,10 @@
 };
 
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::error</span>::{<span class="ident">ActionError</span>, <span class="ident">ActionRunError</span>, <span class="ident">ActionValidationError</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::error</span>::{
+	<span class="ident">ActionError</span>, <span class="ident">ActionErrorType</span>, <span class="ident">ActionRunError</span>, <span class="ident">ActionRunErrorType</span>, <span class="ident">ActionValidationError</span>,
+	<span class="ident">ActionValidationErrorType</span>,
+};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{
 	<span class="ident">kind::ActionKind</span>,
 	<span class="ident">r#impl</span>::{
@@ -1419,12 +1544,18 @@
 		<span class="kw-2">&amp;</span><span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
 		<span class="ident">table_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="ident">B::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="ident">backend</span>
 			.<span class="ident">get</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">table_name</span>, <span class="ident">METADATA_KEY</span>)
 			.<span class="kw">await</span> <span class="comment">// coverage:ignore-line</span>
 			.<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {})
-			.<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">ActionRunError::Metadata</span>(<span class="ident">type_name</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(), <span class="ident">table_name</span>.<span class="ident">to_owned</span>()))
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Metadata</span> {
+					<span class="ident">type_name</span>: <span class="ident">type_name</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(),
+					<span class="ident">table_name</span>: <span class="ident">table_name</span>.<span class="ident">to_owned</span>(),
+				},
+			})
 	}
 
 	<span class="doccomment">/// Validates that the table key is set.</span>
@@ -1434,7 +1565,10 @@
 	<span class="doccomment">/// Errors if [`Self::set_table`] has not yet been called.</span>
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_table</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionValidationError</span><span class="op">&gt;</span> {
 		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">table</span>().<span class="ident">is_none</span>() {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError::Table</span>);
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">None</span>,
+				<span class="ident">kind</span>: <span class="ident">ActionValidationErrorType::Table</span>,
+			});
 		}
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
@@ -1451,7 +1585,10 @@
 	<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::unused_self</span>)]</span>
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionValidationError</span><span class="op">&gt;</span> {
 		<span class="kw">if</span> <span class="ident">key</span> <span class="op">==</span> <span class="prelude-val">Some</span>(<span class="ident">METADATA_KEY</span>) {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError::Metadata</span>);
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">None</span>,
+				<span class="ident">kind</span>: <span class="ident">ActionValidationErrorType::Metadata</span>,
+			});
 		}
 
 		<span class="prelude-val">Ok</span>(())
@@ -1488,7 +1625,10 @@
 	<span class="doccomment">/// Errors if [`Self::set_key`] has not yet been called.</span>
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionValidationError</span><span class="op">&gt;</span> {
 		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">key</span>().<span class="ident">is_none</span>() {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError::Key</span>);
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">None</span>,
+				<span class="ident">kind</span>: <span class="ident">ActionValidationErrorType::Key</span>,
+			});
 		}
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
@@ -1504,7 +1644,10 @@
 	<span class="doccomment">/// Errors if [`Self::set_data`] has not yet been called.</span>
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_data</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionValidationError</span><span class="op">&gt;</span> {
 		<span class="kw">if</span> <span class="self">self</span>.<span class="ident">data</span>().<span class="ident">is_none</span>() {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError::Data</span>);
+			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ActionValidationError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">None</span>,
+				<span class="ident">kind</span>: <span class="ident">ActionValidationErrorType::Data</span>,
+			});
 		}
 
 		<span class="prelude-val">Ok</span>(())
@@ -1582,13 +1725,6 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">Entry</span>, <span class="ident">C</span>: <span class="ident">CrudOperation</span>, <span class="ident">T</span>: <span class="ident">OperationTarget</span><span class="op">&gt;</span> <span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Action</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">C</span>, <span class="ident">T</span><span class="op">&gt;</span> {
 	<span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">FmtResult</span> {
-		<span class="comment">// f.debug_struct(&quot;Action&quot;)</span>
-		<span class="comment">// 	.field(&quot;kind&quot;, &amp;self.kind())</span>
-		<span class="comment">// 	.field(&quot;table&quot;, &amp;self.table())</span>
-		<span class="comment">// 	.field(&quot;data&quot;, &amp;self.data())</span>
-		<span class="comment">// 	.field(&quot;key&quot;, &amp;self.key())</span>
-		<span class="comment">// 	.field(&quot;target&quot;, &amp;self.target())</span>
-		<span class="comment">// 	.finish()</span>
 		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Action&quot;</span>);
 
 		<span class="ident">state</span>
@@ -1639,7 +1775,7 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ActionResult</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ActionResult</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionError</span><span class="op">&gt;</span> {
 		<span class="kw">match</span> <span class="self">self</span>.<span class="ident">target</span>() {
 			<span class="ident">TargetKind::Entry</span> =&gt; <span class="kw">match</span> <span class="self">self</span>.<span class="ident">kind</span>() {
 				<span class="ident">ActionKind::Create</span> =&gt; {
@@ -1701,11 +1837,15 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_create_entry</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">chart</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
-		<span class="self">self</span>.<span class="ident">validate_entry</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">validate_entry</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">chart</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_create_entry_unchecked</span>(<span class="ident">chart</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_create_entry_unchecked</span>(<span class="ident">chart</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>;
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(())
 	}
@@ -1724,18 +1864,30 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_create_entry_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="kw-2">mut</span> <span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">key</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">data</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
-		<span class="kw">if</span> <span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span> {
+		<span class="kw">if</span> <span class="ident">backend</span>
+			.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span> {
 			<span class="kw">return</span> <span class="prelude-val">Ok</span>(());
 		}
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		<span class="self">self</span>.<span class="ident">check_metadata</span>(<span class="ident">backend</span>, <span class="kw-2">&amp;</span><span class="ident">table_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="ident">backend</span>.<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">entry</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="ident">backend</span>
+			.<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>, <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">entry</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="prelude-val">Ok</span>(())
 	}
@@ -1750,11 +1902,15 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_read_entry</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
-		<span class="self">self</span>.<span class="ident">validate_key</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">validate_key</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_read_entry_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_read_entry_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 	}
@@ -1772,14 +1928,20 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_read_entry_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="kw-2">mut</span> <span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>, <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table_name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">key</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		<span class="self">self</span>.<span class="ident">check_metadata</span>(<span class="ident">backend</span>, <span class="kw-2">&amp;</span><span class="ident">table_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="prelude-val">Ok</span>(<span class="ident">backend</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>)
+		<span class="ident">backend</span>
+			.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">table_name</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})
 	}
 }
 
@@ -1792,11 +1954,15 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_update_entry</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">chart</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
-		<span class="self">self</span>.<span class="ident">validate_entry</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">validate_entry</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">chart</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_update_entry_unchecked</span>(<span class="ident">chart</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_update_entry_unchecked</span>(<span class="ident">chart</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>;
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(())
 	}
@@ -1815,7 +1981,7 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_update_entry_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="kw-2">mut</span> <span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">key</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">new_data</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">data</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
@@ -1823,9 +1989,13 @@
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		<span class="self">self</span>.<span class="ident">check_metadata</span>(<span class="ident">backend</span>, <span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="ident">backend</span>.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>, <span class="kw-2">&amp;</span><span class="ident">new_data</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-
-		<span class="prelude-val">Ok</span>(())
+		<span class="ident">backend</span>
+			.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>, <span class="kw-2">&amp;</span><span class="ident">new_data</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})
 	}
 }
 
@@ -1838,11 +2008,15 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_delete_entry</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
-		<span class="self">self</span>.<span class="ident">validate_key</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">validate_key</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_delete_entry_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_delete_entry_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 	}
@@ -1860,14 +2034,32 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_delete_entry_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="kw-2">mut</span> <span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
 		<span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">key</span>.<span class="ident">take</span>().<span class="ident">inner_unwrap</span>();
-		<span class="kw">let</span> <span class="ident">exists</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">exists</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
-		<span class="ident">backend</span>.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="ident">backend</span>
+			.<span class="ident">delete</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
-		<span class="kw">let</span> <span class="ident">after_exists</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">after_exists</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">has</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">key</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="prelude-val">Ok</span>(<span class="ident">exists</span> <span class="op">!</span><span class="op">=</span> <span class="ident">after_exists</span>)
 	}
@@ -1882,10 +2074,14 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_create_table</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_create_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_create_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>;
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(())
 	}
@@ -1903,15 +2099,27 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_create_table_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">inner_unwrap</span>();
 
-		<span class="ident">backend</span>.<span class="ident">ensure_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="ident">backend</span>
+			.<span class="ident">ensure_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		{
 			<span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">S::default</span>();
-			<span class="ident">backend</span>.<span class="ident">ensure</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="ident">METADATA_KEY</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+			<span class="ident">backend</span>
+				.<span class="ident">ensure</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="ident">METADATA_KEY</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>)
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+					<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+					<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+				})<span class="question-mark">?</span>;
 		}
 
 		<span class="prelude-val">Ok</span>(())
@@ -1927,13 +2135,17 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_read_table</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span>, <span class="ident">I</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">ActionError</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
 		<span class="ident">I</span>: <span class="ident">FromIterator</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>,
 	{
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">guard</span>.<span class="ident">shared</span>();
-		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_read_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_read_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 	}
@@ -1951,7 +2163,7 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_read_table_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span>, <span class="ident">I</span><span class="op">&gt;</span>(
 		<span class="kw-2">mut</span> <span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">ActionRunError</span><span class="op">&gt;</span>
 	<span class="kw">where</span>
 		<span class="ident">I</span>: <span class="ident">FromIterator</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>,
 	{
@@ -1960,7 +2172,13 @@
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		<span class="self">self</span>.<span class="ident">check_metadata</span>(<span class="ident">backend</span>, <span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-		<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">get_keys</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;metadata&quot;</span>)]</span>
 		<span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">keys</span>
@@ -1970,7 +2188,13 @@
 
 		<span class="kw">let</span> <span class="ident">keys_borrowed</span> <span class="op">=</span> <span class="ident">keys</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="ident">String::as_str</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
 
-		<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">get_all</span>::<span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">I</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">keys_borrowed</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">get_all</span>::<span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">I</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>, <span class="kw-2">&amp;</span><span class="ident">keys_borrowed</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="prelude-val">Ok</span>(<span class="ident">data</span>)
 	}
@@ -1985,10 +2209,14 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_delete_table</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">gateway</span>: <span class="kw-2">&amp;</span><span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-		<span class="self">self</span>.<span class="ident">validate_table</span>()<span class="question-mark">?</span>;
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionError</span><span class="op">&gt;</span> {
+		<span class="self">self</span>.<span class="ident">validate_table</span>().<span class="ident">map_err</span>(<span class="ident">ActionError::validation</span>)<span class="question-mark">?</span>;
 		<span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">gateway</span>.<span class="ident">guard</span>.<span class="ident">exclusive</span>();
-		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">run_delete_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>()).<span class="kw">await</span><span class="question-mark">?</span> };
+		<span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+			<span class="self">self</span>.<span class="ident">run_delete_table_unchecked</span>(<span class="ident">gateway</span>.<span class="ident">backend</span>())
+				.<span class="kw">await</span>
+				.<span class="ident">map_err</span>(<span class="ident">ActionError::run</span>)<span class="question-mark">?</span>
+		};
 		<span class="ident">drop</span>(<span class="ident">lock</span>);
 		<span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 	}
@@ -2006,12 +2234,30 @@
 	<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">run_delete_table_unchecked</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Backend</span><span class="op">&gt;</span>(
 		<span class="self">self</span>,
 		<span class="ident">backend</span>: <span class="kw-2">&amp;</span><span class="ident">B</span>,
-	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionRunError</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">B</span> <span class="kw">as</span> <span class="ident">Backend</span><span class="op">&gt;</span><span class="ident">::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">ActionRunError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">table</span>.<span class="ident">inner_unwrap</span>();
 
-		<span class="kw">let</span> <span class="ident">exists</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">has_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-		<span class="ident">backend</span>.<span class="ident">delete_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-		<span class="kw">let</span> <span class="ident">new_exists</span> <span class="op">=</span> <span class="ident">backend</span>.<span class="ident">has_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">exists</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">has_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
+		<span class="ident">backend</span>
+			.<span class="ident">delete_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
+		<span class="kw">let</span> <span class="ident">new_exists</span> <span class="op">=</span> <span class="ident">backend</span>
+			.<span class="ident">has_table</span>(<span class="kw-2">&amp;</span><span class="ident">table</span>)
+			.<span class="kw">await</span>
+			.<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">ActionRunError</span> {
+				<span class="ident">source</span>: <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">e</span>)),
+				<span class="ident">kind</span>: <span class="ident">ActionRunErrorType::Backend</span>,
+			})<span class="question-mark">?</span>;
 
 		<span class="prelude-val">Ok</span>(<span class="ident">exists</span> <span class="op">!</span><span class="op">=</span> <span class="ident">new_exists</span>)
 	}
@@ -2027,9 +2273,7 @@
 		<span class="ident">ReadEntryAction</span>, <span class="ident">ReadOperation</span>, <span class="ident">ReadTableAction</span>, <span class="ident">TableTarget</span>, <span class="ident">UpdateEntryAction</span>,
 		<span class="ident">UpdateOperation</span>,
 	};
-	<span class="kw">use</span> <span class="kw">crate</span>::{
-		<span class="ident">action::TargetKind</span>, <span class="ident">backend::MemoryBackend</span>, <span class="ident">error::MemoryError</span>, <span class="ident">IndexEntry</span>, <span class="ident">Starchart</span>,
-	};
+	<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">action::TargetKind</span>, <span class="ident">backend::MemoryBackend</span>, <span class="ident">IndexEntry</span>, <span class="ident">Starchart</span>};
 
 	<span class="attribute">#[<span class="ident">derive</span>(
 		<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>,
@@ -2218,7 +2462,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">basic_run</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">basic_run</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">action</span>: <span class="ident">Action</span><span class="op">&lt;</span><span class="ident">Settings</span>, <span class="ident">CreateOperation</span>, <span class="ident">TableTarget</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
 
@@ -2275,7 +2519,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">duplicate_creates</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">duplicate_creates</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 
@@ -2296,7 +2540,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_and_update</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_and_update</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 		{
@@ -2342,7 +2586,7 @@
 
 	<span class="attribute">#[<span class="ident">tokio::test</span>]</span>
 	<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">miri</span>, <span class="ident">ignore</span>)]</span>
-	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">deletes</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&lt;</span><span class="ident">MemoryError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+	<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">deletes</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ActionError</span><span class="op">&gt;</span> {
 		<span class="kw">let</span> <span class="ident">gateway</span> <span class="op">=</span> <span class="ident">setup_gateway</span>().<span class="kw">await</span>;
 		<span class="ident">setup_table</span>(<span class="kw-2">&amp;</span><span class="ident">gateway</span>).<span class="kw">await</span>;
 
@@ -2378,5 +2622,5 @@
 	}
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.60.0-nightly (092e1c9d2 2022-01-09)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.60.0-nightly (1409c015b 2022-01-11)" ></div>
 </body></html>

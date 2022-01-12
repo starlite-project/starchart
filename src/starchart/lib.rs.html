@@ -42,8 +42,6 @@
 <span id="39">39</span>
 <span id="40">40</span>
 <span id="41">41</span>
-<span id="42">42</span>
-<span id="43">43</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">warn</span>(
 	<span class="ident">clippy::pedantic</span>,
 	<span class="ident">clippy::nursery</span>,
@@ -60,6 +58,8 @@
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">test</span>), <span class="ident">warn</span>(<span class="ident">clippy::panic_in_result_fn</span>))]</span>
 <span class="doccomment">//! A simple database system that allows the use of multiple different backends.</span>
 
+<span class="kw">use</span> <span class="ident">std::result::Result</span> <span class="kw">as</span> <span class="ident">StdResult</span>;
+
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">action</span>;
 <span class="kw">mod</span> <span class="ident">atomics</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">backend</span>;
@@ -73,20 +73,16 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::{
 	<span class="ident">action::Action</span>,
 	<span class="ident">entry</span>::{<span class="ident">Entry</span>, <span class="ident">IndexEntry</span>, <span class="ident">Key</span>},
-	<span class="ident">error::ChartError</span> <span class="kw">as</span> <span class="ident">Error</span>,
+	<span class="ident">error::Error</span>,
 	<span class="ident">starchart::Starchart</span>,
 };
 
 <span class="doccomment">/// A type alias for a [`Result`] that wraps around [`Error`].</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ChartResult</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">B</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Error</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-
-<span class="doccomment">/// A type alias for a [`Starchart`].</span>
-<span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.8.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Gateway has been renamed to `Starchart`&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Gateway</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Starchart</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span> <span class="op">=</span> <span class="ident">Error</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">StdResult</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>;
 
 <span class="doccomment">/// The helper derive macro for easily implementing [`IndexEntry`].</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">starchart_derive::IndexEntry</span>;
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.60.0-nightly (092e1c9d2 2022-01-09)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.60.0-nightly (1409c015b 2022-01-11)" ></div>
 </body></html>
