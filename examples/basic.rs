@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use starchart::{
 	action::{CreateEntryAction, CreateTableAction, ReadEntryAction},
 	backend::MemoryBackend,
-	Action, ChartResult, IndexEntry, Starchart,
+	Action, IndexEntry, Result, Starchart,
 };
 
 static IDS: AtomicU64 = AtomicU64::new(1);
@@ -27,7 +27,7 @@ impl Settings {
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> ChartResult<(), MemoryBackend> {
+async fn main() -> Result<()> {
 	// Create an initialize the database.
 	let chart = Starchart::new(MemoryBackend::default()).await?;
 

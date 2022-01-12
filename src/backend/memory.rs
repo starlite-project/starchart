@@ -1,8 +1,11 @@
-use std::iter::FromIterator;
+use std::{
+	error::Error,
+	fmt::{Display, Formatter, Result as FmtResult},
+	iter::FromIterator,
+};
 
 use dashmap::{mapref::one::Ref, DashMap};
-use serde_value::{to_value, DeserializerError, SerializerError, Value};
-use thiserror::Error;
+use serde_value::{to_value, Value};
 
 use super::{
 	future::{
@@ -14,21 +17,89 @@ use super::{
 use crate::Entry;
 
 /// An error returned from the [`MemoryBackend`].
-#[derive(Debug, Error)]
+#[cfg(feature = "memory")]
+#[derive(Debug)]
+pub struct MemoryError {
+	source: Option<Box<dyn Error + Send + Sync>>,
+	kind: MemoryErrorType,
+}
+
+#[cfg(feature = "memory")]
+impl MemoryError {
+	/// Immutable reference to the type of error that occurred.
+	#[must_use = "retrieving the type has no effect if left unused"]
+	pub const fn kind(&self) -> &MemoryErrorType {
+		&self.kind
+	}
+
+	/// Consume the error, returning the source error if there is any.
+	#[must_use = "consuming the error and retrieving the source has no effect if left unused"]
+	pub fn into_source(self) -> Option<Box<dyn Error + Send + Sync>> {
+		self.source
+	}
+
+	/// Consume the error, returning the owned error type and the source error.
+	#[must_use = "consuming the error into it's parts has no effect if left unused"]
+	pub fn into_parts(self) -> (MemoryErrorType, Option<Box<dyn Error + Send + Sync>>) {
+		(self.kind, self.source)
+	}
+
+	#[inline]
+	fn table_doesnt_exist(table: String) -> Self {
+		Self {
+			source: None,
+			kind: MemoryErrorType::TableDoesntExist { table },
+		}
+	}
+}
+
+#[cfg(feature = "memory")]
+impl Display for MemoryError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		match &self.kind {
+			MemoryErrorType::Serialization => f.write_str("a serialization error occurred"),
+			MemoryErrorType::Deserialization => f.write_str("a deserialization error occurred"),
+			MemoryErrorType::TableDoesntExist { table } => {
+				f.write_str("the table ")?;
+				Display::fmt(table, f)?;
+				f.write_str(" does not exist")
+			}
+			MemoryErrorType::ValueAlreadyExists { key } => {
+				f.write_str("a value already exists for key ")?;
+				Display::fmt(key, f)
+			}
+		}
+	}
+}
+
+#[cfg(feature = "memory")]
+impl Error for MemoryError {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
+		self.source
+			.as_ref()
+			.map(|source| &**source as &(dyn Error + 'static))
+	}
+}
+
+/// The type of [`MemoryError`] that occurred.
+#[cfg(feature = "memory")]
+#[derive(Debug)]
 #[non_exhaustive]
-pub enum MemoryError {
+pub enum MemoryErrorType {
 	/// A serialization error occurred.
-	#[error("a serialization error occurred")]
-	Serialization(#[from] SerializerError),
+	Serialization,
 	/// A deserialization error occurred.
-	#[error("a deserialization error occurred")]
-	DeserializationError(#[from] DeserializerError),
+	Deserialization,
 	/// The specified table doesn't exist
-	#[error("the table {0} does not exist")]
-	TableDoesntExist(String),
-	/// The value already exists
-	#[error("value already exists")]
-	ValueAlreadyExists,
+	TableDoesntExist {
+		/// The table that doesn't exist.
+		table: String,
+	},
+	/// The specified value already exists
+	ValueAlreadyExists {
+		/// The existing value's key.
+		key: String,
+	},
 }
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
@@ -52,7 +123,7 @@ impl MemoryBackend {
 	) -> Result<Ref<'a, String, DashMap<String, Value>>, MemoryError> {
 		match self.tables.get(table) {
 			Some(table) => Ok(table),
-			None => Err(MemoryError::TableDoesntExist(table.to_owned())),
+			None => Err(MemoryError::table_doesnt_exist(table.to_owned())),
 		}
 	}
 }
@@ -105,7 +176,10 @@ impl Backend for MemoryBackend {
 				Some(json) => json.value().clone(),
 			};
 
-			Ok(value.deserialize_into()?)
+			value.deserialize_into().map_err(|e| MemoryError {
+				kind: MemoryErrorType::Deserialization,
+				source: Some(Box::new(e)),
+			})
 		})
 	}
 
@@ -130,10 +204,16 @@ impl Backend for MemoryBackend {
 			let table_value = self.get_table(table)?;
 
 			if table_value.contains_key(id) {
-				return Err(MemoryError::ValueAlreadyExists);
+				return Err(MemoryError {
+					kind: MemoryErrorType::ValueAlreadyExists { key: id.to_owned() },
+					source: None,
+				});
 			}
 
-			let serialized = to_value(value)?;
+			let serialized = to_value(value).map_err(|e| MemoryError {
+				kind: MemoryErrorType::Serialization,
+				source: Some(Box::new(e)),
+			})?;
 
 			table_value.insert(id.to_owned(), serialized);
 
@@ -153,7 +233,13 @@ impl Backend for MemoryBackend {
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
 
-			table_value.insert(id.to_owned(), to_value(value)?);
+			table_value.insert(
+				id.to_owned(),
+				to_value(value).map_err(|e| MemoryError {
+					kind: MemoryErrorType::Serialization,
+					source: Some(Box::new(e)),
+				})?,
+			);
 
 			Ok(())
 		})
@@ -195,7 +281,10 @@ mod tests {
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
 
-	use crate::backend::{Backend, MemoryBackend, MemoryError};
+	use crate::{
+		backend::{Backend, MemoryBackend, MemoryError},
+		error::MemoryErrorType,
+	};
 
 	assert_impl_all!(MemoryBackend: Backend, Clone, Debug, Default, Send, Sync);
 
@@ -276,11 +365,13 @@ mod tests {
 
 		cache_backend.create_table("test").await?;
 
-		cache_backend
-			.tables
-			.get("test")
-			.unwrap()
-			.insert("key".to_owned(), to_value("value")?);
+		cache_backend.tables.get("test").unwrap().insert(
+			"key".to_owned(),
+			to_value("value").map_err(|e| MemoryError {
+				kind: MemoryErrorType::Serialization,
+				source: Some(Box::new(e)),
+			})?,
+		);
 
 		let keys = cache_backend.get_keys::<Vec<_>>("test").await?;
 

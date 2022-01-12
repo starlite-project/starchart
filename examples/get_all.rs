@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use starchart::{
 	action::{CreateEntryAction, CreateTableAction, ReadTableAction},
 	backend::JsonBackend,
-	Action, ChartResult, IndexEntry, Starchart,
+	Action, IndexEntry, Result, Starchart,
 };
 
 static IDS: AtomicU64 = AtomicU64::new(1);
@@ -40,7 +40,7 @@ impl Ord for Settings {
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> ChartResult<(), JsonBackend> {
+async fn main() -> Result<()> {
 	let chart = Starchart::new(JsonBackend::new("./examples/get_all_db")?).await?;
 
 	{

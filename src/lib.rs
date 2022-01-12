@@ -14,6 +14,8 @@
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! A simple database system that allows the use of multiple different backends.
 
+use std::result::Result as StdResult;
+
 pub mod action;
 mod atomics;
 pub mod backend;
@@ -27,16 +29,12 @@ mod util;
 pub use self::{
 	action::Action,
 	entry::{Entry, IndexEntry, Key},
-	error::ChartError as Error,
+	error::Error,
 	starchart::Starchart,
 };
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
-pub type ChartResult<T, B> = Result<T, Error<B>>;
-
-/// A type alias for a [`Starchart`].
-#[deprecated(since = "0.8.0", note = "Gateway has been renamed to `Starchart`")]
-pub type Gateway<B> = Starchart<B>;
+pub type Result<T, E = Error> = StdResult<T, E>;
 
 /// The helper derive macro for easily implementing [`IndexEntry`].
 #[cfg(feature = "derive")]

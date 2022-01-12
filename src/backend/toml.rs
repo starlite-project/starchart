@@ -4,7 +4,10 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use super::fs::{FsBackend, FsError};
+use super::{
+	fs::{FsBackend, FsError},
+	FsErrorType,
+};
 use crate::Entry;
 
 /// A TOML based backend.
@@ -18,12 +21,12 @@ impl TomlBackend {
 	///
 	/// # Errors
 	///
-	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	/// Returns an [`FsError`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::PathNotDirectory(path))
+			Err(FsError::path_not_directory(path))
 		} else {
 			Ok(Self(path))
 		}
@@ -40,15 +43,21 @@ impl FsBackend for TomlBackend {
 		T: Entry,
 	{
 		let mut output = String::new();
-		rdr.read_to_string(&mut output)?;
-		serde_toml::from_str(&output).map_err(|_| FsError::Serde)
+		rdr.read_to_string(&mut output).map_err(FsError::io)?;
+		serde_toml::from_str(&output).map_err(|e| FsError {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Deserialization,
+		})
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_toml::to_vec(value).map_err(|_| FsError::Serde)
+		serde_toml::to_vec(value).map_err(|e| FsError {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Serialization,
+		})
 	}
 
 	fn base_directory(&self) -> PathBuf {
@@ -67,12 +76,12 @@ impl TomlPrettyBackend {
 	///
 	/// # Errors
 	///
-	/// Returns a [`FsError::PathNotDirectory`] if the given path is not a directory.
+	/// Returns an [`FsError`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::PathNotDirectory(path))
+			Err(FsError::path_not_directory(path))
 		} else {
 			Ok(Self(path))
 		}
@@ -89,8 +98,11 @@ impl FsBackend for TomlPrettyBackend {
 		T: Entry,
 	{
 		let mut output = String::new();
-		rdr.read_to_string(&mut output)?;
-		serde_toml::from_str(&output).map_err(|_| FsError::Serde)
+		rdr.read_to_string(&mut output).map_err(FsError::io)?;
+		serde_toml::from_str(&output).map_err(|e| FsError {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Deserialization,
+		})
 	}
 
 	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
@@ -99,7 +111,10 @@ impl FsBackend for TomlPrettyBackend {
 	{
 		serde_toml::to_string_pretty(value)
 			.map(String::into_bytes)
-			.map_err(|_| FsError::Serde)
+			.map_err(|e| FsError {
+				source: Some(Box::new(e)),
+				kind: FsErrorType::Serialization,
+			})
 	}
 
 	fn base_directory(&self) -> PathBuf {

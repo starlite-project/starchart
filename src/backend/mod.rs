@@ -29,8 +29,8 @@ mod yaml;
 #[cfg(feature = "bincode")]
 pub use self::bincode::BincodeBackend;
 #[cfg(feature = "fs")]
-#[cfg_attr(feature = "fs", doc(hidden))]
-pub use self::fs::FsError;
+#[doc(hidden)]
+pub use self::fs::{FsError, FsErrorType};
 #[cfg(feature = "json")]
 pub use self::json::JsonBackend;
 #[cfg(all(feature = "json", feature = "pretty"))]
@@ -38,8 +38,8 @@ pub use self::json::JsonPrettyBackend;
 #[cfg(feature = "memory")]
 pub use self::memory::MemoryBackend;
 #[cfg(feature = "memory")]
-#[cfg_attr(feature = "memory", doc(hidden))]
-pub use self::memory::MemoryError;
+#[doc(hidden)]
+pub use self::memory::{MemoryError, MemoryErrorType};
 #[cfg(feature = "toml")]
 pub use self::toml::TomlBackend;
 #[cfg(all(feature = "toml", feature = "pretty"))]
