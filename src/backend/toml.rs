@@ -101,7 +101,7 @@ impl FsBackend for TomlPrettyBackend {
 		rdr.read_to_string(&mut output).map_err(FsError::io)?;
 		serde_toml::from_str(&output).map_err(|e| FsError {
 			source: Some(Box::new(e)),
-			kind: FsErrorType::Deserialization
+			kind: FsErrorType::Deserialization,
 		})
 	}
 

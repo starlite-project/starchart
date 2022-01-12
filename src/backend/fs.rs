@@ -81,7 +81,7 @@ impl FsError {
 	pub fn deserialization(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
 		Self {
 			source: err,
-			kind: FsErrorType::Deserialization
+			kind: FsErrorType::Deserialization,
 		}
 	}
 }

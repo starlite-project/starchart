@@ -4,7 +4,10 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use super::{FsErrorType, fs::{FsBackend, FsError}};
+use super::{
+	fs::{FsBackend, FsError},
+	FsErrorType,
+};
 use crate::Entry;
 
 /// A JSON based backend.

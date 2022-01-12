@@ -960,9 +960,7 @@ mod tests {
 		ReadEntryAction, ReadOperation, ReadTableAction, TableTarget, UpdateEntryAction,
 		UpdateOperation,
 	};
-	use crate::{
-		action::TargetKind, backend::MemoryBackend, IndexEntry, Starchart,
-	};
+	use crate::{action::TargetKind, backend::MemoryBackend, IndexEntry, Starchart};
 
 	#[derive(
 		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,

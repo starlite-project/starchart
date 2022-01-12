@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use starchart::{
 	action::{CreateEntryAction, CreateTableAction, ReadEntryAction},
 	backend::MemoryBackend,
-	Action, Result, IndexEntry, Starchart,
+	Action, IndexEntry, Result, Starchart,
 };
 
 static IDS: AtomicU64 = AtomicU64::new(1);
