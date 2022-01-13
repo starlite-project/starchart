@@ -64,6 +64,9 @@ impl<O: Options + Copy> Clone for BincodeBackend<O> {
 	}
 }
 
+unsafe impl<O: Options + Copy> Send for BincodeBackend<O> {}
+unsafe impl<O: Options + Copy> Sync for BincodeBackend<O> {}
+
 // We use copy because Options is sealed and all the implementors implement copy
 impl<O: Options + Send + Sync + Copy> FsBackend for BincodeBackend<O> {
 	const EXTENSION: &'static str = "bin";
