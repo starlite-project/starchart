@@ -1,0 +1,61 @@
+version: v1
+
+labels:
+  - label: "s-all"
+    matcher:
+      files: "*"
+
+  - label: "s-derive"
+    sync: true
+    matcher:
+      files: "starchart-derive/**/*"
+
+  - label: "s-atomics"
+    sync: true
+    matcher:
+      files: "src/atomics.rs"
+
+  - label: "s-errors"
+    sync: true
+    matcher:
+      files: ["src/error.rs", "src/action/error.rs", "src/backend/fs.rs", "src/backend/memory.rs"]
+
+  - label: "s-backends"
+    sync: true
+    matcher:
+      files: "src/backend/**/*"
+
+  - label: "s-actions"
+    sync: true
+    matcher:
+      files: "src/action/**/*"
+
+  - label: "t-ci"
+    matcher:
+      files: ".github/**/*"
+      title: "^ci: .*"
+
+  - label: "m-breaking-change"
+    sync: true
+    matcher:
+      title: "^[a-z]+(\\(.+\\))?!: .*"
+
+  - label: "t-docs"
+    sync: true
+    matcher:
+      title: "^docs(\\(.+\\))?!?: .*"
+
+  - label: "t-feature"
+    sync: true
+    matcher:
+      title: "^feat(\\(.+\\))?!?: .*"
+
+  - label: "t-fix"
+    sync: true
+    matcher:
+      title: "^fix(\\(.+\\))?!?: .*"
+
+  - label: "t-refactor"
+    sync: true
+    matcher:
+      title: "^refactor(\\(.+\\))?!?: .*"
