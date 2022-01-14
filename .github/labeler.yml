@@ -2,6 +2,7 @@ version: v1
 
 labels:
   - label: "s-all"
+    sync: true
     matcher:
       files: "src/**/*"
 
