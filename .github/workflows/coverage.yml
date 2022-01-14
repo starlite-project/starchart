@@ -1,0 +1,33 @@
+name: 'Code coverage'
+
+on:
+  schedule:
+    - cron: 13 9 * * *
+
+jobs:
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    container:
+      image: xd009642/tarpaulin:develop-nightly
+      options: --security-opt seccomp=unconfined
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Collect coverage
+        uses: actions-rs/cargo@v1
+        with:
+          command: tarpaulin
+          args: -- --test-threads 1
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
+
+      - name: Archive code coverage
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: tarpaulin-report.html

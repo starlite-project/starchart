@@ -1,5 +1,5 @@
 use std::{
-	fmt::Debug,
+	fmt::{Debug, Formatter, Result as FmtResult},
 	io,
 	path::{Path, PathBuf},
 };
@@ -13,55 +13,83 @@ use super::{
 use crate::Entry;
 
 /// A Binary format based backend.
-#[derive(Debug, Default, Clone)]
 #[cfg(feature = "bincode")]
-pub struct BincodeBackend(PathBuf);
+pub struct BincodeBackend<O>(PathBuf, O);
 
-impl BincodeBackend {
-	/// Create a new [`BincodeBackend`].
+impl BincodeBackend<DefaultOptions> {
+	/// Create a new [`BincodeBackend`] with the [`DefaultOptions`].
 	///
 	/// # Errors
 	///
 	/// Returns an [`FsError`] if the given path is not a directory.
 	pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, FsError> {
+		Self::with_options(path, DefaultOptions::new())
+	}
+}
+
+impl<O: Options + Copy> BincodeBackend<O> {
+	/// Creates a new [`BincodeBackend`] with the specified [`Options`].
+	///
+	/// # Errors
+	///
+	/// Returns an [`FsError`] if the given path is not a directory.
+	pub fn with_options<P: AsRef<Path>>(path: P, options: O) -> Result<Self, FsError> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
 			Err(FsError::path_not_directory(path))
 		} else {
-			Ok(Self(path))
+			Ok(Self(path, options))
 		}
 	}
 }
 
-impl FsBackend for BincodeBackend {
+impl<O> Debug for BincodeBackend<O> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("BincodeBackend")
+			.field("path", &self.0)
+			.finish()
+	}
+}
+
+impl Default for BincodeBackend<DefaultOptions> {
+	fn default() -> Self {
+		Self(PathBuf::default(), DefaultOptions::default())
+	}
+}
+
+impl<O: Options + Copy> Clone for BincodeBackend<O> {
+	fn clone(&self) -> Self {
+		Self(self.0.clone(), self.1)
+	}
+}
+
+unsafe impl<O: Options + Copy> Send for BincodeBackend<O> {}
+unsafe impl<O: Options + Copy> Sync for BincodeBackend<O> {}
+
+// We use copy because Options is sealed and all the implementors implement copy
+impl<O: Options + Send + Sync + Copy> FsBackend for BincodeBackend<O> {
 	const EXTENSION: &'static str = "bin";
 
-	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
 	{
-		DefaultOptions::new()
-			.with_native_endian()
-			.deserialize_from(rdr)
-			.map_err(|e| FsError {
-				kind: FsErrorType::Deserialization,
-				source: Some(e),
-			})
+		self.1.deserialize_from(rdr).map_err(|e| FsError {
+			kind: FsErrorType::Deserialization,
+			source: Some(e),
+		})
 	}
 
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		DefaultOptions::new()
-			.with_native_endian()
-			.serialize(value)
-			.map_err(|e| FsError {
-				kind: FsErrorType::Serialization,
-				source: Some(e),
-			})
+		self.1.serialize(value).map_err(|e| FsError {
+			kind: FsErrorType::Serialization,
+			source: Some(e),
+		})
 	}
 
 	fn base_directory(&self) -> PathBuf {
@@ -73,6 +101,7 @@ impl FsBackend for BincodeBackend {
 mod tests {
 	use std::{fmt::Debug, fs, path::PathBuf};
 
+	use serde_bincode::DefaultOptions;
 	use static_assertions::assert_impl_all;
 
 	use crate::{
@@ -80,7 +109,7 @@ mod tests {
 		util::testing::FsCleanup as Cleanup,
 	};
 
-	assert_impl_all!(BincodeBackend: Backend, Clone, Debug, Default, Send, Sync);
+	assert_impl_all!(BincodeBackend<DefaultOptions>: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[test]
 	fn new() -> Result<(), FsError> {
