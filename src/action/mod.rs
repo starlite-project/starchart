@@ -444,6 +444,8 @@ unsafe impl<S: Entry + Send, C: CrudOperation, T: OperationTarget> Send for Acti
 
 unsafe impl<S: Entry + Sync, C: CrudOperation, T: OperationTarget> Sync for Action<S, C, T> {}
 
+impl<S: Entry + Unpin, C: CrudOperation, T: OperationTarget> Unpin for Action<S, C, T> {}
+
 // Action run impls
 
 impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {

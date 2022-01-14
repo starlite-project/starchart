@@ -11,9 +11,12 @@ repository = "https://github.com/starlite-project/starchart"
 version = "0.14.0"
 
 [dependencies]
-dashmap = "5.0"
 parking_lot = "0.11.2"
 send_wrapper = "0.5.0"
+
+[dependencies.dashmap]
+optional = true
+version = "4.0"
 
 [dependencies.futures]
 default-features = false
@@ -93,7 +96,7 @@ default = []
 derive = ["starchart-derive"]
 fs = ["tokio", "tokio-stream"]
 json = ["serde_json", "fs"]
-memory = ["serde-value"]
+memory = ["serde-value", "dashmap"]
 metadata = []
 pretty = []
 toml = ["serde_toml", "fs"]

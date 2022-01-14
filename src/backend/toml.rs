@@ -37,7 +37,7 @@ impl TomlBackend {
 impl FsBackend for TomlBackend {
 	const EXTENSION: &'static str = "toml";
 
-	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(&self, mut rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
@@ -50,7 +50,7 @@ impl FsBackend for TomlBackend {
 		})
 	}
 
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -92,7 +92,7 @@ impl TomlPrettyBackend {
 impl FsBackend for TomlPrettyBackend {
 	const EXTENSION: &'static str = "toml";
 
-	fn from_reader<R, T>(mut rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(&self, mut rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
@@ -105,7 +105,7 @@ impl FsBackend for TomlPrettyBackend {
 		})
 	}
 
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{

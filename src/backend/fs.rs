@@ -182,7 +182,7 @@ pub trait FsBackend: Send + Sync {
 	/// # Errors
 	///
 	/// Implementors should return an error with [`FsError::serialization`] error upon failure.
-	fn from_reader<R, T>(rdr: R) -> Result<T, FsError>
+	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: Read,
 		T: Entry;
@@ -192,7 +192,7 @@ pub trait FsBackend: Send + Sync {
 	/// # Errors
 	///
 	/// Implementors should return an error with [`FsError::deserialization`] error upon failure.
-	fn to_bytes<T>(value: &T) -> Result<Vec<u8>, FsError>
+	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry;
 
@@ -329,7 +329,7 @@ impl<RW: FsBackend> Backend for RW {
 			let path = self.resolve_path(&[table, filename.as_str()]);
 			handle_io_result!(fs::File::open(&path).await, file, {
 				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
-				Ok(Some(RW::from_reader(reader)?))
+				Ok(Some(self.from_reader(reader)?))
 			})
 		})
 	}
@@ -363,7 +363,7 @@ impl<RW: FsBackend> Backend for RW {
 				});
 			}
 
-			let serialized = RW::to_bytes(value)?;
+			let serialized = self.to_bytes(value)?;
 
 			fs::write(path, serialized).await.map_err(FsError::io)?;
 
@@ -381,7 +381,7 @@ impl<RW: FsBackend> Backend for RW {
 		S: Entry,
 	{
 		Box::pin(async move {
-			let serialized = RW::to_bytes(value)?;
+			let serialized = self.to_bytes(value)?;
 			let filepath = RW::filename(id);
 
 			let path = self.resolve_path(&[table, filepath.as_str()]);
@@ -435,7 +435,7 @@ mod tests {
 	impl FsBackend for MockFsBackend {
 		const EXTENSION: &'static str = "test";
 
-		fn from_reader<R, T>(_: R) -> Result<T, FsError>
+		fn from_reader<R, T>(&self, _: R) -> Result<T, FsError>
 		where
 			R: io::Read,
 			T: Entry,
@@ -446,7 +446,7 @@ mod tests {
 			})
 		}
 
-		fn to_bytes<T>(_: &T) -> Result<Vec<u8>, FsError>
+		fn to_bytes<T>(&self, _: &T) -> Result<Vec<u8>, FsError>
 		where
 			T: Entry,
 		{
