@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
+#[cfg(not(nighttime))]
 use std::hint::unreachable_unchecked;
 
 pub unsafe trait InnerUnwrap<T> {
