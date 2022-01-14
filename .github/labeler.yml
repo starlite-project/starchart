@@ -3,7 +3,7 @@ version: v1
 labels:
   - label: "s-all"
     matcher:
-      files: "*"
+      files: "src/**/*"
 
   - label: "s-derive"
     sync: true
