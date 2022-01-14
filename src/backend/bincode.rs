@@ -27,7 +27,7 @@ impl BincodeBackend<DefaultOptions> {
 	}
 }
 
-impl<O: Options> BincodeBackend<O> {
+impl<O: Options + Copy> BincodeBackend<O> {
 	/// Creates a new [`BincodeBackend`] with the specified [`Options`].
 	///
 	/// # Errors
