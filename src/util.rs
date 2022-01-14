@@ -1,11 +1,13 @@
 #![allow(clippy::missing_safety_doc)]
 
+#[cfg(not(nighttime))]
 use std::hint::unreachable_unchecked;
 
 pub unsafe trait InnerUnwrap<T> {
 	unsafe fn inner_unwrap(self) -> T;
 }
 
+#[cfg(not(nighttime))]
 unsafe impl<T> InnerUnwrap<T> for Option<T> {
 	#[inline]
 	#[track_caller]
@@ -15,6 +17,17 @@ unsafe impl<T> InnerUnwrap<T> for Option<T> {
 	}
 }
 
+#[cfg(nighttime)]
+unsafe impl<T> InnerUnwrap<T> for Option<T> {
+	#[allow(clippy::inline_always)]
+	#[inline(always)]
+	#[track_caller]
+	unsafe fn inner_unwrap(self) -> T {
+		self.unwrap_unchecked()
+	}
+}
+
+#[cfg(not(nighttime))]
 unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 	#[inline]
 	#[track_caller]
@@ -25,6 +38,16 @@ unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 		} else {
 			unreachable_unchecked()
 		}
+	}
+}
+
+#[cfg(nighttime)]
+unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
+	#[allow(clippy::inline_always)]
+	#[inline(always)]
+	#[track_caller]
+	unsafe fn inner_unwrap(self) -> T {
+		self.unwrap_unchecked()
 	}
 }
 

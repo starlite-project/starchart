@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --workspace --no-deps --all-features
+          args: --workspace --no-deps --all-features -Zrustdoc-map -Zunstable-options -Z rustdoc-scrape-examples=all
         env:
           RUSTDOCFLAGS: --cfg docsrs -D rustdoc::broken_intra_doc_links
 
@@ -73,7 +73,7 @@ jobs:
           path: ./target/doc/
           key: ${{ github.sha }}
 
-  deploy_docs:
+  deploy-docs:
     name: Deploy docs
     runs-on: ubuntu-latest
     needs: build-docs
