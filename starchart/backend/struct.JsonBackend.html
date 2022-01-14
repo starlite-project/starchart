@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A JSON based backend."><meta name="keywords" content="rust, rustlang, rust-lang, JsonBackend"><title>JsonBackend in starchart::backend - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A JSON based backend."><meta name="keywords" content="rust, rustlang, rust-lang, JsonBackend"><title>JsonBackend in starchart::backend - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../scrape-examples.js"></script>
     <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a class="sidebar-logo" href="../../starchart/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.png" alt="logo"></div>
         </a><h2 class="location">Struct JsonBackend</h2><div class="sidebar-elems"><div class="block items"><h3 class="sidebar-title"><a href="#implementations">Associated Constants</a></h3><div class="sidebar-links"><a href="#associatedconstant.EXTENSION">EXTENSION</a></div><h3 class="sidebar-title"><a href="#implementations">Methods</a></h3><div class="sidebar-links"><a href="#method.new">new</a></div><h3 class="sidebar-title"><a href="#trait-implementations">Trait Implementations</a></h3><div class="sidebar-links"><a href="#impl-Clone">Clone</a><a href="#impl-Debug">Debug</a><a href="#impl-Default">Default</a><a href="#impl-FsBackend">FsBackend</a></div><h3 class="sidebar-title"><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><div class="sidebar-links"><a href="#impl-RefUnwindSafe">RefUnwindSafe</a><a href="#impl-Send">Send</a><a href="#impl-Sync">Sync</a><a href="#impl-Unpin">Unpin</a><a href="#impl-UnwindSafe">UnwindSafe</a></div><h3 class="sidebar-title"><a href="#blanket-implementations">Blanket Implementations</a></h3><div class="sidebar-links"><a href="#impl-Any">Any</a><a href="#impl-Backend">Backend</a><a href="#impl-Borrow%3CT%3E">Borrow&lt;T&gt;</a><a href="#impl-BorrowMut%3CT%3E">BorrowMut&lt;T&gt;</a><a href="#impl-From%3CT%3E">From&lt;T&gt;</a><a href="#impl-Into%3CU%3E">Into&lt;U&gt;</a><a href="#impl-ToOwned">ToOwned</a><a href="#impl-TryFrom%3CU%3E">TryFrom&lt;U&gt;</a><a href="#impl-TryInto%3CU%3E">TryInto&lt;U&gt;</a></div></div><h2 class="location">Other items in<br><a href="../index.html">starchart</a>::<wbr><a href="index.html">backend</a></h2><div id="sidebar-vars" data-name="JsonBackend" data-ty="struct" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../starchart/index.html"><img class="rust-logo" src="../../rust-logo.png" alt="logo"></a><nav class="sub"><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><div>
                                 <input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
@@ -6,7 +6,125 @@
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor"></a></h2><details class="rustdoc-toggle implementors-toggle" open><summary><div id="impl" class="impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#19-34" title="goto source code">source</a></div><a href="#impl" class="anchor"></a><h3 class="code-header in-band">impl <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h3></div></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.new" class="method has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#25-33" title="goto source code">source</a></div><a href="#method.new" class="anchor"></a><h4 class="code-header">pub fn <a href="#method.new" class="fnname">new</a>&lt;P:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>&gt;&gt;(path: P) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self, <a class="struct" href="../error/struct.FsError.html" title="struct starchart::error::FsError">FsError</a>&gt;</h4></div></summary><div class="docblock"><p>Create a new <a href="struct.JsonBackend.html" title="JsonBackend"><code>JsonBackend</code></a>.</p>
 <h5 id="errors" class="section-header"><a href="#errors">Errors</a></h5>
 <p>Returns an <a href="../error/struct.FsError.html" title="FsError"><code>FsError</code></a> if the given path is not a directory.</p>
-</div></details></div></details><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><div id="impl-Clone" class="impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#impl-Clone" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h3></div></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.clone" class="method trait-impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#method.clone" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fnname">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h4></div></summary><div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><div class="docblock scraped-example-list"><span></span><h5 id="scraped-examples" class="section-header"><a href="#scraped-examples">Examples found in repository</a></h5><div class="scraped-example " data-locs="[[[1,1],&quot;../../src/get_all/get_all.rs.html#44&quot;,&quot;line 44&quot;]]"><div class="scraped-example-title">examples/get_all.rs (<a href="../../src/get_all/get_all.rs.html#44">line 44</a>)</div><div class="code-wrapper"><span class="expand">&varr;</span><div class="example-wrap"><pre class="line-numbers"><span>43</span>
+<span>44</span>
+<span>45</span>
+<span>46</span>
+<span>47</span>
+<span>48</span>
+<span>49</span>
+<span>50</span>
+<span>51</span>
+<span>52</span>
+<span>53</span>
+<span>54</span>
+<span>55</span>
+<span>56</span>
+<span>57</span>
+<span>58</span>
+<span>59</span>
+<span>60</span>
+<span>61</span>
+<span>62</span>
+<span>63</span>
+<span>64</span>
+<span>65</span>
+<span>66</span>
+<span>67</span>
+<span>68</span>
+<span>69</span>
+<span>70</span>
+<span>71</span>
+<span>72</span>
+<span>73</span>
+<span>74</span>
+<span>75</span>
+<span>76</span>
+<span>77</span>
+<span>78</span>
+<span>79</span>
+<span>80</span>
+<span>81</span>
+<span>82</span>
+<span>83</span>
+<span>84</span>
+<span>85</span>
+<span>86</span>
+<span>87</span>
+<span>88</span>
+<span>89</span>
+<span>90</span>
+<span>91</span>
+<span>92</span>
+<span>93</span>
+<span>94</span>
+<span>95</span>
+<span>96</span>
+<span>97</span>
+<span>98</span>
+<span>99</span>
+<span>100</span>
+<span>101</span>
+</pre><pre class="rust"><code><span class="kw">fn</span> <span class="ident">main</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+	<span class="kw">let</span> <span class="ident">chart</span> <span class="op">=</span> <span class="ident">Starchart::new</span>(<span class="highlight focus"><span class="ident">JsonBackend::new</span>(<span class="string">&quot;./examples/get_all_db&quot;</span>)</span><span class="question-mark">?</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+
+	{
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">action</span>: <span class="ident">CreateTableAction</span><span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
+		<span class="ident">action</span>.<span class="ident">set_table</span>(<span class="string">&quot;foo&quot;</span>.<span class="ident">to_owned</span>());
+
+		<span class="comment">// chart.run(action).await??;</span>
+		<span class="ident">action</span>.<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="ident">chart</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap_create</span>();
+	}
+
+	<span class="comment">// Insert some entries into the table.</span>
+	<span class="kw">for</span> (<span class="ident">age</span>, <span class="ident">name</span>) <span class="kw">in</span> <span class="macro">vec!</span>[
+		(<span class="number">21</span>, <span class="string">&quot;John Doe&quot;</span>.<span class="ident">to_owned</span>()),
+		(<span class="number">42</span>, <span class="string">&quot;Ferris&quot;</span>.<span class="ident">to_owned</span>()),
+		(<span class="number">73</span>, <span class="string">&quot;The Queen&quot;</span>.<span class="ident">to_owned</span>()),
+	] {
+		<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">action</span>: <span class="ident">CreateEntryAction</span><span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
+		<span class="ident">action</span>
+			.<span class="ident">set_table</span>(<span class="string">&quot;foo&quot;</span>.<span class="ident">to_owned</span>())
+			.<span class="ident">set_entry</span>(<span class="kw-2">&amp;</span><span class="ident">Settings::new</span>(<span class="ident">name</span>, <span class="ident">age</span>));
+		<span class="comment">// chart.run(action).await??;</span>
+		<span class="ident">action</span>.<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="ident">chart</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap_create</span>();
+	}
+
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">read_all_action</span>: <span class="ident">ReadTableAction</span><span class="op">&lt;</span><span class="ident">Settings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Action::new</span>();
+	<span class="ident">read_all_action</span>.<span class="ident">set_table</span>(<span class="string">&quot;foo&quot;</span>.<span class="ident">to_owned</span>());
+
+	<span class="comment">// let mut values: Vec&lt;Settings&gt; = chart.run(read_all_action).await??;</span>
+	<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">read_all_action</span>
+		.<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="ident">chart</span>)
+		.<span class="kw">await</span><span class="question-mark">?</span>
+		.<span class="ident">unwrap_multi_read</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+
+	<span class="ident">values</span>.<span class="ident">sort</span>();
+
+	<span class="macro">assert_eq!</span>(
+		<span class="ident">values</span>,
+		<span class="macro">vec!</span>[
+			<span class="ident">Settings</span> {
+				<span class="ident">id</span>: <span class="number">1</span>,
+				<span class="ident">name</span>: <span class="string">&quot;John Doe&quot;</span>.<span class="ident">to_owned</span>(),
+				<span class="ident">age</span>: <span class="number">21</span>
+			},
+			<span class="ident">Settings</span> {
+				<span class="ident">id</span>: <span class="number">2</span>,
+				<span class="ident">name</span>: <span class="string">&quot;Ferris&quot;</span>.<span class="ident">to_owned</span>(),
+				<span class="ident">age</span>: <span class="number">42</span>
+			},
+			<span class="ident">Settings</span> {
+				<span class="ident">id</span>: <span class="number">3</span>,
+				<span class="ident">name</span>: <span class="string">&quot;The Queen&quot;</span>.<span class="ident">to_owned</span>(),
+				<span class="ident">age</span>: <span class="number">73</span>
+			}
+		]
+	);
+
+	<span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+</div></div></div></details></div></details><h2 id="trait-implementations" class="small-section-header">Trait Implementations<a href="#trait-implementations" class="anchor"></a></h2><div id="trait-implementations-list"><details class="rustdoc-toggle implementors-toggle" open><summary><div id="impl-Clone" class="impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#impl-Clone" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h3></div></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.clone" class="method trait-impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#method.clone" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone" class="fnname">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h4></div></summary><div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div></details><details class="rustdoc-toggle method-toggle" open><summary><div id="method.clone_from" class="method trait-impl has-srclink"><div class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="srclink" href="https://doc.rust-lang.org/nightly/src/core/clone.rs.html#130" title="goto source code">source</a></div><a href="#method.clone_from" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from" class="fnname">clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</h4></div></summary><div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><div id="impl-Debug" class="impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#impl-Debug" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h3></div></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.fmt" class="method trait-impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#method.fmt" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt" class="fnname">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></div></summary><div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
 </div></details></div></details><details class="rustdoc-toggle implementors-toggle" open><summary><div id="impl-Default" class="impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#impl-Default" class="anchor"></a><h3 class="code-header in-band">impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h3></div></summary><div class="impl-items"><details class="rustdoc-toggle method-toggle" open><summary><div id="method.default" class="method trait-impl has-srclink"><div class="rightside"><a class="srclink" href="../../src/starchart/backend/json.rs.html#14" title="goto source code">source</a></div><a href="#method.default" class="anchor"></a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default" class="fnname">default</a>() -&gt; <a class="struct" href="struct.JsonBackend.html" title="struct starchart::backend::JsonBackend">JsonBackend</a></h4></div></summary><div class='docblock'><p>Returns the “default value” for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
