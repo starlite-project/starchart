@@ -85,8 +85,10 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
+<span id="85">85</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::missing_safety_doc</span>)]</span>
 
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">nighttime</span>))]</span>
 <span class="kw">use</span> <span class="ident">std::hint::unreachable_unchecked</span>;
 
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">InnerUnwrap</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
