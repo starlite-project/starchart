@@ -61,6 +61,10 @@ pub mod testing {
 		path::{Path, PathBuf},
 	};
 
+	use crate::atomics::Guard;
+
+	pub static TEST_GUARD: Guard = Guard::new();
+
 	#[cfg(feature = "fs")]
 	#[derive(Debug, Clone)]
 	#[repr(transparent)]

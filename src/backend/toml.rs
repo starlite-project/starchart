@@ -131,7 +131,7 @@ mod tests {
 
 	use crate::{
 		backend::{Backend, FsError, TomlBackend},
-		util::testing::FsCleanup as Cleanup,
+		util::testing::{FsCleanup as Cleanup, TEST_GUARD},
 		IndexEntry,
 	};
 
@@ -157,6 +157,7 @@ mod tests {
 
 	#[test]
 	fn new() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("new", "toml", true)?;
 		let _blank = Cleanup::new("", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
@@ -177,6 +178,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("init", "toml", false)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -192,6 +194,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn has_and_create_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("has_and_create_table", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -209,6 +212,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_keys", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -233,6 +237,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn create_and_delete_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("create_and_delete_table", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -252,6 +257,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_and_create", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -290,6 +296,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_replace() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("update_and_replace", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 
@@ -357,6 +364,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn delete() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("delete", "toml", true)?;
 		let backend = TomlBackend::new(&path)?;
 

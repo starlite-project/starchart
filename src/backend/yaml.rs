@@ -69,13 +69,14 @@ mod tests {
 
 	use crate::{
 		backend::{Backend, FsError, YamlBackend},
-		util::testing::FsCleanup as Cleanup,
+		util::testing::{FsCleanup as Cleanup, TEST_GUARD},
 	};
 
 	assert_impl_all!(YamlBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[test]
 	fn new() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("new", "yaml", true)?;
 		let _blank = Cleanup::new("", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
@@ -96,6 +97,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("init", "yaml", false)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -111,6 +113,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn has_and_create_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("has_and_create_table", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -128,6 +131,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_keys", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -152,6 +156,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn create_and_delete_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("create_and_delete_table", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -171,6 +176,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_and_create", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -192,6 +198,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_replace() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("update_and_replace", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 
@@ -215,6 +222,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn delete() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("delete", "yaml", true)?;
 		let backend = YamlBackend::new(&path)?;
 

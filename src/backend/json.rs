@@ -124,13 +124,14 @@ mod tests {
 
 	use crate::{
 		backend::{Backend, FsError, JsonBackend},
-		util::testing::FsCleanup as Cleanup,
+		util::testing::{FsCleanup as Cleanup, TEST_GUARD},
 	};
 
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[test]
 	fn new() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("new", "json", true)?;
 		let _blank = Cleanup::new("", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
@@ -151,6 +152,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("init", "json", false)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -166,6 +168,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn has_and_create_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("has_and_create_table", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -183,6 +186,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_keys", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -207,6 +211,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn create_and_delete_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("create_and_delete_table", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -226,6 +231,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("get_and_create", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -247,6 +253,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_replace() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("update_and_replace", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
@@ -270,6 +277,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn delete() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("delete", "json", true)?;
 		let backend = JsonBackend::new(&path)?;
 
