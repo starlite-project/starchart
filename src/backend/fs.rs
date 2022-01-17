@@ -286,15 +286,13 @@ impl<RW: FsBackend> Backend for RW {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
 			handle_io_result!(fs::File::open(&path).await, file, {
-				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
-				Ok(Some(self.read_data(reader)?))
+				Ok(Some(self.read_data(file.into_std().await)?))
 			})
 		})
 	}
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
 		Box::pin(async move {
-			// let filename = RW::filename(id);
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
 			handle_io_result!(fs::metadata(&path).await, _val, Ok(true), Ok(false))
