@@ -6,7 +6,7 @@ use std::{
 	fs::File as StdFile,
 	io::{self, Read},
 	iter::FromIterator,
-	path::{Path, PathBuf},
+	path::PathBuf,
 };
 
 use tokio::fs;
@@ -196,49 +196,6 @@ pub trait FsBackend: Send + Sync {
 	where
 		T: Entry;
 
-	/// Turns a key into a valid filename, with the extension.
-	#[must_use]
-	fn filename(id: &str) -> String {
-		id.to_owned() + "." + Self::EXTENSION
-	}
-
-	/// Resolves the path of a file.
-	fn resolve_path<P: AsRef<Path>>(&self, path: &[P]) -> PathBuf {
-		let mut base = self.base_directory();
-
-		for value in path {
-			base = base.join(value);
-		}
-
-		base // coverage:ignore-line
-	}
-
-	/// Turns a filename into a valid key.
-	///
-	/// # Errors
-	///
-	/// Returns an [`FsError`] when the file path does not have the correct extension.
-	fn resolve_key<P: AsRef<Path>>(&self, p: P) -> Result<String, FsError> {
-		let path = p.as_ref().to_path_buf();
-
-		let mut stringified = path.display().to_string();
-
-		let extension = ".".to_owned() + Self::EXTENSION;
-
-		if stringified.ends_with(&extension) {
-			let range = unsafe { stringified.rfind(&extension).inner_unwrap().. };
-
-			stringified.replace_range(range, "");
-
-			Ok(stringified)
-		} else {
-			Err(FsError {
-				kind: FsErrorType::InvalidFile { path },
-				source: None,
-			})
-		}
-	}
-
 	/// The base directory of the Fs database.
 	fn base_directory(&self) -> PathBuf;
 }
@@ -260,7 +217,7 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
 		Box::pin(async move {
-			let result = fs::read_dir(self.resolve_path(&[table])).await;
+			let result = fs::read_dir(util::resolve_path(self.base_directory(), &[table])).await;
 
 			handle_io_result!(result, _val, Ok(true), Ok(false))
 		})
@@ -268,7 +225,7 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
 		Box::pin(async move {
-			fs::create_dir(self.resolve_path(&[table]))
+			fs::create_dir(util::resolve_path(self.base_directory(), &[table]))
 				.await
 				.map_err(FsError::io)?;
 
@@ -279,7 +236,7 @@ impl<RW: FsBackend> Backend for RW {
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if self.has_table(table).await? {
-				fs::remove_dir(self.resolve_path(&[table]))
+				fs::remove_dir(util::resolve_path(self.base_directory(), &[table]))
 					.await
 					.map_err(FsError::io)?;
 			}
@@ -294,7 +251,7 @@ impl<RW: FsBackend> Backend for RW {
 	{
 		Box::pin(async move {
 			let mut stream = ReadDirStream::new(
-				fs::read_dir(self.resolve_path(&[table]))
+				fs::read_dir(util::resolve_path(self.base_directory(), &[table]))
 					.await
 					.map_err(FsError::io)?,
 			);
@@ -307,7 +264,8 @@ impl<RW: FsBackend> Backend for RW {
 					continue; // coverage:ignore-line
 				}
 
-				let filename = self.resolve_key(entry.file_name()).ok();
+				// let filename = self.resolve_key(entry.file_name()).ok();
+				let filename = util::resolve_key(Self::EXTENSION, &entry.file_name()).ok();
 
 				if filename.is_none() {
 					continue; // coverage:ignore-line
@@ -325,8 +283,8 @@ impl<RW: FsBackend> Backend for RW {
 		D: Entry,
 	{
 		Box::pin(async move {
-			let filename = RW::filename(id);
-			let path = self.resolve_path(&[table, filename.as_str()]);
+			let filename = util::filename(id.to_owned(), Self::EXTENSION);
+			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
 			handle_io_result!(fs::File::open(&path).await, file, {
 				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
 				Ok(Some(self.from_reader(reader)?))
@@ -336,8 +294,9 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
 		Box::pin(async move {
-			let filename = RW::filename(id);
-			let path = self.resolve_path(&[table, filename.as_str()]);
+			// let filename = RW::filename(id);
+			let filename = util::filename(id.to_owned(), Self::EXTENSION);
+			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
 			handle_io_result!(fs::metadata(&path).await, _val, Ok(true), Ok(false))
 		})
 	}
@@ -352,9 +311,9 @@ impl<RW: FsBackend> Backend for RW {
 		S: Entry,
 	{
 		Box::pin(async move {
-			let filepath = RW::filename(id);
+			let filepath = util::filename(id.to_owned(), Self::EXTENSION);
 
-			let path = self.resolve_path(&[table, filepath.as_str()]);
+			let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
 
 			if self.has(table, id).await? {
 				return Err(FsError {
@@ -382,9 +341,9 @@ impl<RW: FsBackend> Backend for RW {
 	{
 		Box::pin(async move {
 			let serialized = self.to_bytes(value)?;
-			let filepath = RW::filename(id);
+			let filepath = util::filename(id.to_owned(), Self::EXTENSION);
 
-			let path = self.resolve_path(&[table, filepath.as_str()]);
+			let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
 
 			fs::write(path, serialized).await.map_err(FsError::io)?;
 
@@ -410,11 +369,14 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		Box::pin(async move {
-			let filename = RW::filename(id);
+			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 
-			fs::remove_file(self.resolve_path(&[table, filename.as_str()]))
-				.await
-				.map_err(FsError::io)?;
+			fs::remove_file(util::resolve_path(
+				self.base_directory(),
+				&[table, filename.as_str()],
+			))
+			.await
+			.map_err(FsError::io)?;
 
 			Ok(())
 		})
@@ -423,9 +385,9 @@ impl<RW: FsBackend> Backend for RW {
 
 #[cfg(all(test, feature = "fs"))]
 mod tests {
-	use std::{io, path::PathBuf};
+	use std::{ffi::OsStr, io, path::PathBuf};
 
-	use super::{FsBackend, FsError, FsErrorType};
+	use super::{util, FsBackend, FsError, FsErrorType};
 	use crate::Entry;
 
 	#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -467,16 +429,63 @@ mod tests {
 
 	#[test]
 	fn resolve_key() -> Result<(), FsError> {
-		let backend = MockFsBackend;
-
 		let key = "foo.test";
 
-		assert_eq!(backend.resolve_key(key)?, "foo");
+		assert_eq!(
+			util::resolve_key(MockFsBackend::EXTENSION, OsStr::new(key))?,
+			"foo"
+		);
 
 		let invalid = "bar.json";
 
-		assert!(backend.resolve_key(invalid).is_err());
+		assert!(util::resolve_key(MockFsBackend::EXTENSION, OsStr::new(invalid)).is_err());
 
 		Ok(())
+	}
+}
+
+mod util {
+	use std::{
+		borrow::Cow,
+		ffi::OsStr,
+		path::{Path, PathBuf},
+	};
+
+	use super::{FsError, FsErrorType};
+
+	pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError> {
+		let path_ref: &Path = file_name.as_ref();
+
+		if path_ref.extension().map_or(false, |path| path == extension) {
+			path_ref
+				.file_name()
+				.ok_or(FsError {
+					source: None,
+					kind: FsErrorType::InvalidFile {
+						path: path_ref.to_path_buf(),
+					},
+				})
+				.map(OsStr::to_string_lossy)
+				.map(Cow::into_owned)
+		} else {
+			Err(FsError {
+				kind: FsErrorType::InvalidFile {
+					path: path_ref.to_path_buf(),
+				},
+				source: None,
+			})
+		}
+	}
+
+	pub fn resolve_path(mut base: PathBuf, to_join: &[&str]) -> PathBuf {
+		for value in to_join {
+			base = base.join(value);
+		}
+
+		base
+	}
+
+	pub fn filename(file_name: String, extension: &str) -> String {
+		file_name + "." + extension
 	}
 }
