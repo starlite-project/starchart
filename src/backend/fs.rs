@@ -383,6 +383,50 @@ impl<RW: FsBackend> Backend for RW {
 	}
 }
 
+mod util {
+	use std::{
+		ffi::OsStr,
+		path::{Path, PathBuf},
+	};
+
+	use super::{FsError, FsErrorType};
+
+	pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError> {
+		let path_ref: &Path = file_name.as_ref();
+
+		if path_ref.extension().map_or(false, |path| path == extension) {
+			path_ref
+				.file_name()
+				.ok_or(FsError {
+					source: None,
+					kind: FsErrorType::InvalidFile {
+						path: path_ref.to_path_buf(),
+					},
+				})
+				.map(|raw| raw.to_string_lossy().into_owned())
+		} else {
+			Err(FsError {
+				kind: FsErrorType::InvalidFile {
+					path: path_ref.to_path_buf(),
+				},
+				source: None,
+			})
+		}
+	}
+
+	pub fn resolve_path(mut base: PathBuf, to_join: &[&str]) -> PathBuf {
+		for value in to_join {
+			base = base.join(value);
+		}
+
+		base
+	}
+
+	pub fn filename(file_name: String, extension: &str) -> String {
+		file_name + "." + extension
+	}
+}
+
 #[cfg(all(test, feature = "fs"))]
 mod tests {
 	use std::{ffi::OsStr, io, path::PathBuf};
@@ -441,49 +485,5 @@ mod tests {
 		assert!(util::resolve_key(MockFsBackend::EXTENSION, OsStr::new(invalid)).is_err());
 
 		Ok(())
-	}
-}
-
-mod util {
-	use std::{
-		ffi::OsStr,
-		path::{Path, PathBuf},
-	};
-
-	use super::{FsError, FsErrorType};
-
-	pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError> {
-		let path_ref: &Path = file_name.as_ref();
-
-		if path_ref.extension().map_or(false, |path| path == extension) {
-			path_ref
-				.file_name()
-				.ok_or(FsError {
-					source: None,
-					kind: FsErrorType::InvalidFile {
-						path: path_ref.to_path_buf(),
-					},
-				})
-				.map(|raw| raw.to_string_lossy().into_owned())
-		} else {
-			Err(FsError {
-				kind: FsErrorType::InvalidFile {
-					path: path_ref.to_path_buf(),
-				},
-				source: None,
-			})
-		}
-	}
-
-	pub fn resolve_path(mut base: PathBuf, to_join: &[&str]) -> PathBuf {
-		for value in to_join {
-			base = base.join(value);
-		}
-
-		base
-	}
-
-	pub fn filename(file_name: String, extension: &str) -> String {
-		file_name + "." + extension
 	}
 }
