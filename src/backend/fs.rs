@@ -446,7 +446,6 @@ mod tests {
 
 mod util {
 	use std::{
-		borrow::Cow,
 		ffi::OsStr,
 		path::{Path, PathBuf},
 	};
@@ -465,8 +464,7 @@ mod util {
 						path: path_ref.to_path_buf(),
 					},
 				})
-				.map(OsStr::to_string_lossy)
-				.map(Cow::into_owned)
+				.map(|raw| raw.to_string_lossy().into_owned())
 		} else {
 			Err(FsError {
 				kind: FsErrorType::InvalidFile {
