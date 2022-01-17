@@ -4,14 +4,14 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
-use self::future::{
+use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
 use crate::{util::InnerUnwrap, Entry};
 
-pub mod future;
+pub mod futures;
 
 #[cfg(feature = "bincode")]
 mod bincode;

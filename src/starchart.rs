@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use futures::executor::block_on;
+use futures_executor::block_on;
 
 use crate::{atomics::Guard, backend::Backend};
 
@@ -74,7 +74,7 @@ mod tests {
 
 	use crate::{
 		backend::{
-			future::{
+			futures::{
 				CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
 				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
 			},

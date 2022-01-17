@@ -8,7 +8,7 @@ use dashmap::{mapref::one::Ref, DashMap};
 use serde_value::{to_value, Value};
 
 use super::{
-	future::{
+	futures::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
 		HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
 	},
