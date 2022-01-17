@@ -37,7 +37,7 @@ impl TomlBackend {
 impl FsBackend for TomlBackend {
 	const EXTENSION: &'static str = "toml";
 
-	fn from_reader<R, T>(&self, mut rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, mut rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
@@ -92,7 +92,7 @@ impl TomlPrettyBackend {
 impl FsBackend for TomlPrettyBackend {
 	const EXTENSION: &'static str = "toml";
 
-	fn from_reader<R, T>(&self, mut rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, mut rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,

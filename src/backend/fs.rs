@@ -182,7 +182,7 @@ pub trait FsBackend: Send + Sync {
 	/// # Errors
 	///
 	/// Implementors should return an error with [`FsError::serialization`] error upon failure.
-	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: Read,
 		T: Entry;
@@ -287,7 +287,7 @@ impl<RW: FsBackend> Backend for RW {
 			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
 			handle_io_result!(fs::File::open(&path).await, file, {
 				let reader = io::BufReader::<StdFile>::new(file.into_std().await);
-				Ok(Some(self.from_reader(reader)?))
+				Ok(Some(self.read_data(reader)?))
 			})
 		})
 	}
@@ -441,7 +441,7 @@ mod tests {
 	impl FsBackend for MockFsBackend {
 		const EXTENSION: &'static str = "test";
 
-		fn from_reader<R, T>(&self, _: R) -> Result<T, FsError>
+		fn read_data<R, T>(&self, _: R) -> Result<T, FsError>
 		where
 			R: io::Read,
 			T: Entry,
