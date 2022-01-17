@@ -396,7 +396,7 @@ mod util {
 
 		if path_ref.extension().map_or(false, |path| path == extension) {
 			path_ref
-				.file_name()
+				.file_stem()
 				.ok_or(FsError {
 					source: None,
 					kind: FsErrorType::InvalidFile {
