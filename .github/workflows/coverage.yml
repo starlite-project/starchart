@@ -21,7 +21,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: tarpaulin
-          args: -- --test-threads 1
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2

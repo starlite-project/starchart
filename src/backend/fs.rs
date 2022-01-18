@@ -13,7 +13,7 @@ use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
 use super::{
-	future::{
+	futures::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
 		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
 	},

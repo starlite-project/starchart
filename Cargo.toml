@@ -18,9 +18,7 @@ send_wrapper = "0.5.0"
 optional = true
 version = "4.0"
 
-[dependencies.futures]
-default-features = false
-features = ["executor"]
+[dependencies.futures-executor]
 version = "0.3"
 
 [dependencies.futures-util]
