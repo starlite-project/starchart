@@ -281,14 +281,14 @@
 
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error::Error</span> <span class="kw">as</span> <span class="ident">StdError</span>, <span class="ident">iter::FromIterator</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="self">self</span>::future</span>::{
+<span class="kw">use</span> <span class="ident"><span class="self">self</span>::futures</span>::{
 	<span class="ident">CreateFuture</span>, <span class="ident">CreateTableFuture</span>, <span class="ident">DeleteFuture</span>, <span class="ident">DeleteTableFuture</span>, <span class="ident">EnsureFuture</span>,
 	<span class="ident">EnsureTableFuture</span>, <span class="ident">GetAllFuture</span>, <span class="ident">GetFuture</span>, <span class="ident">GetKeysFuture</span>, <span class="ident">HasFuture</span>, <span class="ident">HasTableFuture</span>,
 	<span class="ident">InitFuture</span>, <span class="ident">ReplaceFuture</span>, <span class="ident">ShutdownFuture</span>, <span class="ident">UpdateFuture</span>,
 };
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">util::InnerUnwrap</span>, <span class="ident">Entry</span>};
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">future</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">futures</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;bincode&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">bincode</span>;

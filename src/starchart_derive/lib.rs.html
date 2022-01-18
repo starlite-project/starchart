@@ -108,16 +108,6 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
-<span id="110">110</span>
-<span id="111">111</span>
-<span id="112">112</span>
-<span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
-<span id="116">116</span>
-<span id="117">117</span>
 </pre><pre class="rust"><code><span class="attribute">#![<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
 <span class="attribute">#![<span class="ident">warn</span>(
 	<span class="ident">clippy::pedantic</span>,
@@ -142,19 +132,19 @@
 <span class="attribute">#[<span class="ident">proc_macro_derive</span>(<span class="ident">IndexEntry</span>, <span class="ident">attributes</span>(<span class="ident">key</span>))]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">derive_entity</span>(<span class="ident">input</span>: <span class="ident">proc_macro::TokenStream</span>) -&gt; <span class="ident">proc_macro::TokenStream</span> {
 	<span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">parse_macro_input!</span>(<span class="ident">input</span> <span class="kw">as</span> <span class="ident">DeriveInput</span>);
-	<span class="ident">parse</span>(<span class="ident">input</span>)
+	<span class="ident">parse</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>)
 		.<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">err</span>.<span class="ident">to_compile_error</span>())
 		.<span class="ident">into</span>()
 }
 
-<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="ident">DeriveInput</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TokenStream</span><span class="op">&gt;</span> {
-	<span class="kw">let</span> <span class="ident">ident</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">ident</span>;
+<span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">DeriveInput</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TokenStream</span><span class="op">&gt;</span> {
+	<span class="kw">let</span> <span class="ident">ident</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">ident</span>.<span class="ident">clone</span>();
 
-	<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">input</span>.<span class="ident">data</span> {
-		<span class="ident">Data::Struct</span>(<span class="kw-2">ref</span> <span class="ident">st</span>) =&gt; <span class="ident">st</span>,
+	<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">data</span> {
+		<span class="ident">Data::Struct</span>(<span class="ident">st</span>) =&gt; <span class="ident">st</span>,
 		<span class="kw">_</span> =&gt; {
 			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::new_spanned</span>(
-				<span class="ident">input</span>,
+				<span class="kw-2">&amp;</span><span class="ident">input</span>,
 				<span class="string">&quot;IndexEntry can only be derived on structs&quot;</span>,
 			))
 		}
@@ -170,22 +160,19 @@
 		}
 	};
 
-	<span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">named_fields</span>.<span class="ident">clone</span>().<span class="ident">into_iter</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+	<span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">named_fields</span>.<span class="ident">into_iter</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
 
-	<span class="kw">let</span> <span class="ident">id_field</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">get_id_field</span>(<span class="kw-2">&amp;</span><span class="ident">fields</span>) {
-		<span class="prelude-val">Some</span>(<span class="ident">field</span>) =&gt; <span class="ident">field</span>,
-		<span class="prelude-val">None</span> =&gt; {
-			<span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::new_spanned</span>(
-				<span class="ident">input</span>,
-				<span class="string">&quot;Expected a #[key] attribute or a field named `key` or `id`.&quot;</span>,
-			))
-		}
-	};
+	<span class="kw">let</span> <span class="ident">id_field</span> <span class="op">=</span> <span class="ident">get_id_field</span>(<span class="kw-2">&amp;</span><span class="ident">fields</span>).<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+		<span class="ident">Error::new_spanned</span>(
+			<span class="kw-2">&amp;</span><span class="ident">input</span>,
+			<span class="string">&quot;Expected a #[key] attribute or a field named `key` or `id`.&quot;</span>,
+		)
+	})<span class="question-mark">?</span>;
 
-	<span class="kw">let</span> <span class="ident">id_ident</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">id_field</span>.<span class="ident">ident</span> {
-		<span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::new_spanned</span>(<span class="ident">id_field</span>, <span class="string">&quot;expected a named field&quot;</span>)),
-		<span class="prelude-val">Some</span>(<span class="ident">f</span>) =&gt; <span class="ident">f</span>,
-	};
+	<span class="kw">let</span> <span class="ident">id_ident</span> <span class="op">=</span> <span class="ident">id_field</span>
+		.<span class="ident">ident</span>
+		.<span class="ident">as_ref</span>()
+		.<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Error::new_spanned</span>(<span class="ident">id_field</span>, <span class="string">&quot;expected a named field&quot;</span>))<span class="question-mark">?</span>;
 
 	<span class="kw">let</span> <span class="ident">id_type</span> <span class="op">=</span> <span class="ident">id_field</span>.<span class="ident">ty</span>.<span class="ident">clone</span>();
 
@@ -211,24 +198,17 @@
 
 <span class="kw">fn</span> <span class="ident">get_id_field</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="ident">Field</span>]) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span> {
 	<span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">fields</span> {
-		<span class="kw">let</span> <span class="ident">attrs</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">attrs</span>;
-		<span class="kw">if</span> <span class="ident">attrs</span>.<span class="ident">is_empty</span>() {
-			<span class="kw">continue</span>;
-		}
-
-		<span class="kw">for</span> <span class="ident">attr</span> <span class="kw">in</span> <span class="ident">attrs</span> {
-			<span class="kw">if</span> <span class="ident">attr</span>.<span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="ident">KEY_IDENT</span>) {
-				<span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">field</span>);
-			}
+		<span class="kw">if</span> <span class="ident">field</span>.<span class="ident">attrs</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">attr</span><span class="op">|</span> <span class="ident">attr</span>.<span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="ident">KEY_IDENT</span>)) {
+			<span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">field</span>);
 		}
 	}
 
 	<span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">fields</span> {
-		<span class="kw">let</span> <span class="ident">ident</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">ident</span> {
-			<span class="prelude-val">None</span> =&gt; <span class="kw">continue</span>,
-			<span class="prelude-val">Some</span>(<span class="ident">i</span>) =&gt; <span class="ident">i</span>,
-		};
-		<span class="kw">if</span> <span class="ident">ident</span> <span class="op">==</span> <span class="ident">KEY_IDENT</span> <span class="op">|</span><span class="op">|</span> <span class="ident">ident</span> <span class="op">==</span> <span class="ident">ID_IDENT</span> {
+		<span class="kw">if</span> <span class="ident">field</span>
+			.<span class="ident">ident</span>
+			.<span class="ident">as_ref</span>()
+			.<span class="ident">map_or</span>(<span class="bool-val">false</span>, <span class="op">|</span><span class="ident">ident</span><span class="op">|</span> <span class="ident">ident</span> <span class="op">==</span> <span class="ident">KEY_IDENT</span> <span class="op">|</span><span class="op">|</span> <span class="ident">ident</span> <span class="op">==</span> <span class="ident">ID_IDENT</span>)
+		{
 			<span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">field</span>);
 		}
 	}
