@@ -71,7 +71,7 @@ unsafe impl<O: Options + Copy> Sync for BincodeBackend<O> {}
 impl<O: Options + Send + Sync + Copy> FsBackend for BincodeBackend<O> {
 	const EXTENSION: &'static str = "bin";
 
-	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,

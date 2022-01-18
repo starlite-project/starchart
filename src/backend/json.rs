@@ -37,7 +37,7 @@ impl JsonBackend {
 impl FsBackend for JsonBackend {
 	const EXTENSION: &'static str = "json";
 
-	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
@@ -90,7 +90,7 @@ impl JsonPrettyBackend {
 impl FsBackend for JsonPrettyBackend {
 	const EXTENSION: &'static str = "json";
 
-	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
