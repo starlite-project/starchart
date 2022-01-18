@@ -35,7 +35,7 @@ impl YamlBackend {
 impl FsBackend for YamlBackend {
 	const EXTENSION: &'static str = "yaml";
 
-	fn from_reader<R, T>(&self, rdr: R) -> Result<T, FsError>
+	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: io::Read,
 		T: Entry,
