@@ -487,13 +487,11 @@
 <span id="484">484</span>
 <span id="485">485</span>
 <span id="486">486</span>
-<span id="487">487</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Helpers for creating file-system based backends.</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{
 	<span class="ident">error::Error</span>,
 	<span class="ident">fmt</span>::{<span class="ident">Debug</span>, <span class="ident">Display</span>, <span class="ident">Formatter</span>, <span class="prelude-ty">Result</span> <span class="kw">as</span> <span class="ident">FmtResult</span>},
-	<span class="ident">fs::File</span> <span class="kw">as</span> <span class="ident">StdFile</span>,
 	<span class="ident">io</span>::{<span class="self">self</span>, <span class="ident">Read</span>},
 	<span class="ident">iter::FromIterator</span>,
 	<span class="ident">path::PathBuf</span>,
