@@ -3,7 +3,6 @@
 use std::{
 	error::Error,
 	fmt::{Debug, Display, Formatter, Result as FmtResult},
-	fs::File as StdFile,
 	io::{self, Read},
 	iter::FromIterator,
 	path::PathBuf,
