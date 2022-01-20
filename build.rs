@@ -1,5 +1,6 @@
-use rustc_version::{version_meta, Channel, Error};
 use std::fmt::{Display, Formatter, Result as FmtResult};
+
+use rustc_version::{version_meta, Channel, Error};
 
 // this is wholley unneeded but it makes things easier.
 #[derive(Debug, Clone, Copy)]

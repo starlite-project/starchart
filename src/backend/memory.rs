@@ -262,10 +262,7 @@ impl Backend for MemoryBackend {
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
 
-			table_value.insert(
-				id.to_owned(),
-				to_value(value)?,
-			);
+			table_value.insert(id.to_owned(), to_value(value)?);
 
 			Ok(())
 		})
