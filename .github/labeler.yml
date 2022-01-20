@@ -4,7 +4,7 @@ labels:
   - label: "s-all"
     sync: true
     matcher:
-      files: ["*"]
+      files: ["src/**/*", "starchart-derive/**/*"]
 
   - label: "s-derive"
     sync: true
