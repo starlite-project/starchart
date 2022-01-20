@@ -37,8 +37,13 @@
 <span id="31">31</span>
 <span id="32">32</span>
 <span id="33">33</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">parking_lot</span>::{<span class="ident">lock_api::RawRwLock</span> <span class="kw">as</span> <span class="kw">_</span>, <span class="ident">RawRwLock</span>, <span class="ident">RwLock</span>, <span class="ident">RwLockReadGuard</span>, <span class="ident">RwLockWriteGuard</span>};
-<span class="kw">use</span> <span class="ident">send_wrapper::SendWrapper</span>;
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::non_send_fields_in_send_ty</span>)]</span>
+<span class="kw">use</span> <span class="ident">parking_lot</span>::{<span class="ident">lock_api::RawRwLock</span> <span class="kw">as</span> <span class="kw">_</span>, <span class="ident">RawRwLock</span>, <span class="ident">RwLock</span>, <span class="ident">RwLockReadGuard</span>, <span class="ident">RwLockWriteGuard</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Guard</span>(<span class="ident">RwLock</span><span class="op">&lt;</span>()<span class="op">&gt;</span>);
@@ -51,13 +56,13 @@
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">shared</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SharedGuard</span> {
 		<span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">read</span>();
 
-		<span class="ident">SharedGuard</span>(<span class="ident">SendWrapper::new</span>(<span class="ident">inner</span>))
+		<span class="ident">SharedGuard</span>(<span class="ident">inner</span>)
 	}
 
 	<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">exclusive</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ExclusiveGuard</span> {
 		<span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">write</span>();
 
-		<span class="ident">ExclusiveGuard</span>(<span class="ident">SendWrapper::new</span>(<span class="ident">inner</span>))
+		<span class="ident">ExclusiveGuard</span>(<span class="ident">inner</span>)
 	}
 }
 
@@ -67,9 +72,14 @@
 	}
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SharedGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">SendWrapper</span><span class="op">&lt;</span><span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, ()<span class="op">&gt;</span><span class="op">&gt;</span>);
+<span class="comment">// implementing send doesn&#39;t matter bc we&#39;re not actually editing the value, just using it for a locking mechanism</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SharedGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, ()<span class="op">&gt;</span>);
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExclusiveGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">SendWrapper</span><span class="op">&lt;</span><span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, ()<span class="op">&gt;</span><span class="op">&gt;</span>);
+<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">SharedGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
+
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExclusiveGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, ()<span class="op">&gt;</span>);
+
+<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">ExclusiveGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {}
 </code></pre></div>
 </section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="starchart" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.60.0-nightly (5e57faa78 2022-01-19)" ></div>
 </body></html>
