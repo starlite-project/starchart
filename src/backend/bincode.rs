@@ -47,11 +47,21 @@ impl<O: Options + Copy> BincodeBackend<O> {
 	}
 }
 
+#[cfg(no_debug_non_exhaustive)]
 impl<O> Debug for BincodeBackend<O> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("BincodeBackend")
 			.field("path", &self.0)
 			.finish()
+	}
+}
+
+#[cfg(not(no_debug_non_exhaustive))]
+impl<O> Debug for BincodeBackend<O> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("BincodeBackend")
+			.field("path", &self.0)
+			.finish_non_exhaustive()
 	}
 }
 

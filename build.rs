@@ -7,6 +7,7 @@ use rustc_version::{version_meta, Channel, Error};
 enum CfgKeys {
 	Docsrs,
 	NoUnwrapUnchecked,
+	NoDebugNonExhaustive,
 }
 
 impl Display for CfgKeys {
@@ -14,6 +15,7 @@ impl Display for CfgKeys {
 		match self {
 			Self::Docsrs => f.write_str("docsrs"),
 			Self::NoUnwrapUnchecked => f.write_str("no_unwrap_unchecked"),
+			Self::NoDebugNonExhaustive => f.write_str("no_debug_non_exhaustive"),
 		}
 	}
 }
@@ -27,6 +29,10 @@ fn main() -> Result<(), Error> {
 
 	if minor < 58 {
 		println!("cargo:rustc-cfg={}", CfgKeys::NoUnwrapUnchecked);
+	}
+
+	if minor < 53 {
+		println!("cargo:rustc-cfg={}", CfgKeys::NoDebugNonExhaustive);
 	}
 
 	Ok(())
