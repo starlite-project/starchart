@@ -1,6 +1,6 @@
 [package]
 name = "starchart-derive"
-version = "0.17.0"
+version = "0.17.1"
 edition = "2018"
 description = "Derive macros used by the starchart crate"
 authors = ["Gryffon Bellish <owenbellish@gmail.com>"]
