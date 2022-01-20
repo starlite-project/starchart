@@ -15,7 +15,6 @@ use crate::Entry;
 #[cfg(feature = "json")]
 pub struct JsonBackend(PathBuf);
 
-#[cfg(feature = "json")]
 impl JsonBackend {
 	/// Create a new [`JsonBackend`].
 	///
@@ -26,14 +25,16 @@ impl JsonBackend {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::path_not_directory(path))
+			Err(FsError {
+				source: None,
+				kind: FsErrorType::PathNotDirectory { path },
+			})
 		} else {
 			Ok(Self(path))
 		}
 	}
 }
 
-#[cfg(feature = "json")]
 impl FsBackend for JsonBackend {
 	const EXTENSION: &'static str = "json";
 
@@ -42,20 +43,14 @@ impl FsBackend for JsonBackend {
 		R: io::Read,
 		T: Entry,
 	{
-		serde_json::from_reader(rdr).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Deserialization,
-		})
+		Ok(serde_json::from_reader(rdr)?)
 	}
 
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_json::to_vec(value).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Serialization,
-		})
+		Ok(serde_json::to_vec(value)?)
 	}
 
 	fn base_directory(&self) -> PathBuf {
@@ -79,7 +74,10 @@ impl JsonPrettyBackend {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::path_not_directory(path))
+			Err(FsError {
+				source: None,
+				kind: FsErrorType::PathNotDirectory { path },
+			})
 		} else {
 			Ok(Self(path))
 		}
@@ -95,20 +93,14 @@ impl FsBackend for JsonPrettyBackend {
 		R: io::Read,
 		T: Entry,
 	{
-		serde_json::from_reader(rdr).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Deserialization,
-		})
+		Ok(serde_json::from_reader(rdr)?)
 	}
 
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_json::to_vec_pretty(value).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Serialization,
-		})
+		Ok(serde_json::to_vec_pretty(value)?)
 	}
 
 	fn base_directory(&self) -> PathBuf {

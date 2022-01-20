@@ -5,12 +5,12 @@ use std::{
 };
 
 use dashmap::{mapref::one::Ref, DashMap};
-use serde_value::{to_value, Value};
+use serde_value::{to_value, DeserializerError, SerializerError, Value};
 
 use super::{
 	futures::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
-		HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
+		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
+		GetKeysFuture, HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
 	},
 	Backend,
 };
@@ -24,7 +24,6 @@ pub struct MemoryError {
 	kind: MemoryErrorType,
 }
 
-#[cfg(feature = "memory")]
 impl MemoryError {
 	/// Immutable reference to the type of error that occurred.
 	#[must_use = "retrieving the type has no effect if left unused"]
@@ -43,17 +42,8 @@ impl MemoryError {
 	pub fn into_parts(self) -> (MemoryErrorType, Option<Box<dyn Error + Send + Sync>>) {
 		(self.kind, self.source)
 	}
-
-	#[inline]
-	fn table_doesnt_exist(table: String) -> Self {
-		Self {
-			source: None,
-			kind: MemoryErrorType::TableDoesntExist { table },
-		}
-	}
 }
 
-#[cfg(feature = "memory")]
 impl Display for MemoryError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
@@ -72,12 +62,29 @@ impl Display for MemoryError {
 	}
 }
 
-#[cfg(feature = "memory")]
 impl Error for MemoryError {
 	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		self.source
 			.as_ref()
 			.map(|source| &**source as &(dyn Error + 'static))
+	}
+}
+
+impl From<SerializerError> for MemoryError {
+	fn from(err: SerializerError) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: MemoryErrorType::Serialization,
+		}
+	}
+}
+
+impl From<DeserializerError> for MemoryError {
+	fn from(err: DeserializerError) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: MemoryErrorType::Deserialization,
+		}
 	}
 }
 
@@ -121,10 +128,12 @@ impl MemoryBackend {
 		&'a self,
 		table: &'a str,
 	) -> Result<Ref<'a, String, DashMap<String, Value>>, MemoryError> {
-		match self.tables.get(table) {
-			Some(table) => Ok(table),
-			None => Err(MemoryError::table_doesnt_exist(table.to_owned())),
-		}
+		self.tables.get(table).ok_or(MemoryError {
+			source: None,
+			kind: MemoryErrorType::TableDoesntExist {
+				table: table.to_owned(),
+			},
+		})
 	}
 }
 
@@ -164,6 +173,32 @@ impl Backend for MemoryBackend {
 		})
 	}
 
+	fn get_all<'a, D, I>(
+		&'a self,
+		table: &'a str,
+		entries: &'a [&str],
+	) -> GetAllFuture<'a, I, Self::Error>
+	where
+		D: Entry,
+		I: FromIterator<D>,
+	{
+		Box::pin(async move {
+			let table_value = self.tables.get(table).ok_or(MemoryError {
+				kind: MemoryErrorType::TableDoesntExist {
+					table: table.to_owned(),
+				},
+				source: None,
+			})?;
+
+			table_value
+				.clone()
+				.into_iter()
+				.filter(|(key, _)| entries.contains(&key.as_str()))
+				.map(|(_, value)| value.deserialize_into().map_err(MemoryError::from))
+				.collect::<Result<I, Self::Error>>()
+		})
+	}
+
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
 		D: Entry,
@@ -176,10 +211,7 @@ impl Backend for MemoryBackend {
 				Some(json) => json.value().clone(),
 			};
 
-			value.deserialize_into().map_err(|e| MemoryError {
-				kind: MemoryErrorType::Deserialization,
-				source: Some(Box::new(e)),
-			})
+			Ok(value.deserialize_into()?)
 		})
 	}
 
@@ -210,10 +242,7 @@ impl Backend for MemoryBackend {
 				});
 			}
 
-			let serialized = to_value(value).map_err(|e| MemoryError {
-				kind: MemoryErrorType::Serialization,
-				source: Some(Box::new(e)),
-			})?;
+			let serialized = to_value(value)?;
 
 			table_value.insert(id.to_owned(), serialized);
 
@@ -235,10 +264,7 @@ impl Backend for MemoryBackend {
 
 			table_value.insert(
 				id.to_owned(),
-				to_value(value).map_err(|e| MemoryError {
-					kind: MemoryErrorType::Serialization,
-					source: Some(Box::new(e)),
-				})?,
+				to_value(value)?,
 			);
 
 			Ok(())

@@ -94,6 +94,7 @@ impl From<ActionError> for Error {
 			ActionErrorType::Validation => ErrorType::ActionValidation,
 		};
 		Self {
+			// source will always be an ActionRunError or ActionValidationError
 			source: e.into_source(),
 			kind,
 		}
