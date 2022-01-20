@@ -527,13 +527,11 @@ impl<S: Entry> CreateEntryAction<S> {
 		self,
 		chart: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
-		self.validate_entry().map_err(ActionError::validation)?;
+		self.validate_table()?;
+		self.validate_entry()?;
 		let lock = chart.guard.exclusive();
 		unsafe {
-			self.run_create_entry_unchecked(chart.backend())
-				.await
-				.map_err(ActionError::run)?;
+			self.run_create_entry_unchecked(chart.backend()).await?;
 		};
 		drop(lock);
 		Ok(())
@@ -592,14 +590,10 @@ impl<S: Entry> ReadEntryAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<Option<S>, ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
-		self.validate_key().map_err(ActionError::validation)?;
+		self.validate_table()?;
+		self.validate_key()?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe {
-			self.run_read_entry_unchecked(gateway.backend())
-				.await
-				.map_err(ActionError::run)?
-		};
+		let res = unsafe { self.run_read_entry_unchecked(gateway.backend()).await? };
 		drop(lock);
 		Ok(res)
 	}
@@ -644,13 +638,11 @@ impl<S: Entry> UpdateEntryAction<S> {
 		self,
 		chart: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
-		self.validate_entry().map_err(ActionError::validation)?;
+		self.validate_table()?;
+		self.validate_entry()?;
 		let lock = chart.guard.exclusive();
 		unsafe {
-			self.run_update_entry_unchecked(chart.backend())
-				.await
-				.map_err(ActionError::run)?;
+			self.run_update_entry_unchecked(chart.backend()).await?;
 		};
 		drop(lock);
 		Ok(())
@@ -698,14 +690,10 @@ impl<S: Entry> DeleteEntryAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
-		self.validate_key().map_err(ActionError::validation)?;
+		self.validate_table()?;
+		self.validate_key()?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe {
-			self.run_delete_entry_unchecked(gateway.backend())
-				.await
-				.map_err(ActionError::run)?
-		};
+		let res = unsafe { self.run_delete_entry_unchecked(gateway.backend()).await? };
 		drop(lock);
 		Ok(res)
 	}
@@ -764,12 +752,10 @@ impl<S: Entry> CreateTableAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_table()?;
 		let lock = gateway.guard.exclusive();
 		unsafe {
-			self.run_create_table_unchecked(gateway.backend())
-				.await
-				.map_err(ActionError::run)?;
+			self.run_create_table_unchecked(gateway.backend()).await?;
 		};
 		drop(lock);
 		Ok(())
@@ -828,13 +814,9 @@ impl<S: Entry> ReadTableAction<S> {
 	where
 		I: FromIterator<S>,
 	{
-		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_table()?;
 		let lock = gateway.guard.shared();
-		let res = unsafe {
-			self.run_read_table_unchecked(gateway.backend())
-				.await
-				.map_err(ActionError::run)?
-		};
+		let res = unsafe { self.run_read_table_unchecked(gateway.backend()).await? };
 		drop(lock);
 		Ok(res)
 	}
@@ -899,13 +881,9 @@ impl<S: Entry> DeleteTableAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		self.validate_table().map_err(ActionError::validation)?;
+		self.validate_table()?;
 		let lock = gateway.guard.exclusive();
-		let res = unsafe {
-			self.run_delete_table_unchecked(gateway.backend())
-				.await
-				.map_err(ActionError::run)?
-		};
+		let res = unsafe { self.run_delete_table_unchecked(gateway.backend()).await? };
 		drop(lock);
 		Ok(res)
 	}

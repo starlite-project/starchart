@@ -37,18 +37,31 @@ impl<O: Options + Copy> BincodeBackend<O> {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::path_not_directory(path))
+			Err(FsError {
+				source: None,
+				kind: FsErrorType::PathNotDirectory { path },
+			})
 		} else {
 			Ok(Self(path, options))
 		}
 	}
 }
 
+#[cfg(no_debug_non_exhaustive)]
 impl<O> Debug for BincodeBackend<O> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		f.debug_struct("BincodeBackend")
 			.field("path", &self.0)
 			.finish()
+	}
+}
+
+#[cfg(not(no_debug_non_exhaustive))]
+impl<O> Debug for BincodeBackend<O> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("BincodeBackend")
+			.field("path", &self.0)
+			.finish_non_exhaustive()
 	}
 }
 
@@ -76,20 +89,14 @@ impl<O: Options + Send + Sync + Copy> FsBackend for BincodeBackend<O> {
 		R: io::Read,
 		T: Entry,
 	{
-		self.1.deserialize_from(rdr).map_err(|e| FsError {
-			kind: FsErrorType::Deserialization,
-			source: Some(e),
-		})
+		Ok(self.1.deserialize_from(rdr)?)
 	}
 
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		self.1.serialize(value).map_err(|e| FsError {
-			kind: FsErrorType::Serialization,
-			source: Some(e),
-		})
+		Ok(self.1.serialize(value)?)
 	}
 
 	fn base_directory(&self) -> PathBuf {

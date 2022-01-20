@@ -15,7 +15,6 @@ use crate::Entry;
 #[cfg(feature = "toml")]
 pub struct TomlBackend(PathBuf);
 
-#[cfg(feature = "toml")]
 impl TomlBackend {
 	/// Create a new [`TomlBackend`].
 	///
@@ -26,14 +25,16 @@ impl TomlBackend {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::path_not_directory(path))
+			Err(FsError {
+				source: None,
+				kind: FsErrorType::PathNotDirectory { path },
+			})
 		} else {
 			Ok(Self(path))
 		}
 	}
 }
 
-#[cfg(feature = "toml")]
 impl FsBackend for TomlBackend {
 	const EXTENSION: &'static str = "toml";
 
@@ -43,21 +44,15 @@ impl FsBackend for TomlBackend {
 		T: Entry,
 	{
 		let mut output = String::new();
-		rdr.read_to_string(&mut output).map_err(FsError::io)?;
-		serde_toml::from_str(&output).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Deserialization,
-		})
+		rdr.read_to_string(&mut output)?;
+		Ok(serde_toml::from_str(&output)?)
 	}
 
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_toml::to_vec(value).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Serialization,
-		})
+		Ok(serde_toml::to_vec(value)?)
 	}
 
 	fn base_directory(&self) -> PathBuf {
@@ -81,7 +76,10 @@ impl TomlPrettyBackend {
 		let path = path.as_ref().to_path_buf();
 
 		if path.is_file() {
-			Err(FsError::path_not_directory(path))
+			Err(FsError {
+				source: None,
+				kind: FsErrorType::PathNotDirectory { path },
+			})
 		} else {
 			Ok(Self(path))
 		}
@@ -98,23 +96,15 @@ impl FsBackend for TomlPrettyBackend {
 		T: Entry,
 	{
 		let mut output = String::new();
-		rdr.read_to_string(&mut output).map_err(FsError::io)?;
-		serde_toml::from_str(&output).map_err(|e| FsError {
-			source: Some(Box::new(e)),
-			kind: FsErrorType::Deserialization,
-		})
+		rdr.read_to_string(&mut output)?;
+		Ok(serde_toml::from_str(&output)?)
 	}
 
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
-		serde_toml::to_string_pretty(value)
-			.map(String::into_bytes)
-			.map_err(|e| FsError {
-				source: Some(Box::new(e)),
-				kind: FsErrorType::Serialization,
-			})
+		Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
 	}
 
 	fn base_directory(&self) -> PathBuf {

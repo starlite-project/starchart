@@ -30,22 +30,6 @@ impl ActionError {
 	pub fn into_parts(self) -> (ActionErrorType, Option<Box<dyn Error + Send + Sync>>) {
 		(self.kind, self.source)
 	}
-
-	#[inline]
-	pub(super) fn validation(err: ActionValidationError) -> Self {
-		Self {
-			source: Some(Box::new(err)),
-			kind: ActionErrorType::Validation,
-		}
-	}
-
-	#[inline]
-	pub(super) fn run(err: ActionRunError) -> Self {
-		Self {
-			source: Some(Box::new(err)),
-			kind: ActionErrorType::Run,
-		}
-	}
 }
 
 impl Display for ActionError {
@@ -62,6 +46,24 @@ impl Error for ActionError {
 		self.source
 			.as_ref()
 			.map(|source| &**source as &(dyn Error + 'static))
+	}
+}
+
+impl From<ActionRunError> for ActionError {
+	fn from(err: ActionRunError) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: ActionErrorType::Run,
+		}
+	}
+}
+
+impl From<ActionValidationError> for ActionError {
+	fn from(err: ActionValidationError) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: ActionErrorType::Validation,
+		}
 	}
 }
 

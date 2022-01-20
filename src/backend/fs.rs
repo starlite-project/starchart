@@ -24,8 +24,10 @@ use crate::{util::InnerUnwrap, Entry};
 #[cfg(feature = "fs")]
 #[derive(Debug)]
 pub struct FsError {
-	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
-	pub(super) kind: FsErrorType,
+	/// Source error, if there was any.
+	pub source: Option<Box<dyn Error + Send + Sync>>,
+	/// Type of [`FsError`] that occurred.
+	pub kind: FsErrorType,
 }
 
 #[cfg(feature = "fs")]
@@ -47,42 +49,6 @@ impl FsError {
 	pub fn into_parts(self) -> (FsErrorType, Option<Box<dyn Error + Send + Sync>>) {
 		(self.kind, self.source)
 	}
-
-	#[inline]
-	pub(super) fn io(err: io::Error) -> Self {
-		Self {
-			source: Some(Box::new(err)),
-			kind: FsErrorType::Io,
-		}
-	}
-
-	#[inline]
-	pub(super) fn path_not_directory(path: PathBuf) -> Self {
-		Self {
-			source: None,
-			kind: FsErrorType::PathNotDirectory { path },
-		}
-	}
-
-	/// A shortcut for easily creating a serialization error.
-	#[must_use]
-	#[inline]
-	pub fn serialization(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
-		Self {
-			source: err,
-			kind: FsErrorType::Serialization,
-		}
-	}
-
-	/// A shortcut for easily creating a deserialization error.
-	#[must_use]
-	#[inline]
-	pub fn deserialization(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
-		Self {
-			source: err,
-			kind: FsErrorType::Deserialization,
-		}
-	}
 }
 
 #[cfg(feature = "fs")]
@@ -95,8 +61,7 @@ impl Display for FsError {
 				Display::fmt(&path.display(), f)?;
 				f.write_str(" is not a directory")
 			}
-			FsErrorType::Serialization => f.write_str("a serialization error occurred"),
-			FsErrorType::Deserialization => f.write_str("a deserialization error occurred"),
+			FsErrorType::Serde => f.write_str("an error occurred during (de)serialization"),
 			FsErrorType::InvalidFile { path } => {
 				f.write_str("file ")?;
 				Display::fmt(&path.display(), f)?;
@@ -120,10 +85,73 @@ impl Error for FsError {
 	}
 }
 
-#[cfg(test)]
+#[cfg(feature = "fs")]
 impl From<io::Error> for FsError {
-	fn from(e: io::Error) -> Self {
-		Self::io(e)
+	fn from(err: io::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Io,
+		}
+	}
+}
+
+#[cfg(feature = "json")]
+impl From<serde_json::Error> for FsError {
+	fn from(err: serde_json::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Serde,
+		}
+	}
+}
+
+#[cfg(feature = "bincode")]
+impl From<serde_bincode::Error> for FsError {
+	fn from(err: serde_bincode::Error) -> Self {
+		Self {
+			source: Some(err),
+			kind: FsErrorType::Serde,
+		}
+	}
+}
+
+#[cfg(feature = "bincode")]
+impl From<serde_bincode::ErrorKind> for FsError {
+	fn from(err: serde_bincode::ErrorKind) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Serde,
+		}
+	}
+}
+
+#[cfg(feature = "toml")]
+impl From<serde_toml::ser::Error> for FsError {
+	fn from(err: serde_toml::ser::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Serde,
+		}
+	}
+}
+
+#[cfg(feature = "toml")]
+impl From<serde_toml::de::Error> for FsError {
+	fn from(err: serde_toml::de::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Serde,
+		}
+	}
+}
+
+#[cfg(feature = "yaml")]
+impl From<serde_yaml::Error> for FsError {
+	fn from(err: serde_yaml::Error) -> Self {
+		Self {
+			source: Some(Box::new(err)),
+			kind: FsErrorType::Serde,
+		}
 	}
 }
 
@@ -139,10 +167,8 @@ pub enum FsErrorType {
 		/// The provided path.
 		path: PathBuf,
 	},
-	/// An error occurred during serialization.
-	Serialization,
-	/// An error occurred during deserialization.
-	Deserialization,
+	/// An error occurred during (de)serialization.
+	Serde,
 	/// The given file was invalid in some way.
 	InvalidFile {
 		/// The provided path to the file.
@@ -163,7 +189,9 @@ macro_rules! handle_io_result {
 		match $res {
 			Ok($name) => $okay,
 			Err(err) if err.kind() == ::std::io::ErrorKind::NotFound => $not_found,
-			Err(e) => Err($crate::error::FsError::io(e)),
+			Err(e) => Err(<$crate::error::FsError as ::std::convert::From<
+				::std::io::Error,
+			>>::from(e)),
 		}
 	};
 }
@@ -180,7 +208,7 @@ pub trait FsBackend: Send + Sync {
 	///
 	/// # Errors
 	///
-	/// Implementors should return an error with [`FsError::serialization`] error upon failure.
+	/// Implementors should return an error of type [`FsErrorType::Serde`] error upon failure.
 	fn read_data<R, T>(&self, rdr: R) -> Result<T, FsError>
 	where
 		R: Read,
@@ -190,7 +218,7 @@ pub trait FsBackend: Send + Sync {
 	///
 	/// # Errors
 	///
-	/// Implementors should return an error with [`FsError::deserialization`] error upon failure.
+	/// Implementors should return an error of type [`FsErrorType::Serde`] error upon failure.
 	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry;
@@ -206,9 +234,7 @@ impl<RW: FsBackend> Backend for RW {
 	fn init(&self) -> InitFuture<'_, FsError> {
 		Box::pin(async move {
 			if fs::read_dir(&self.base_directory()).await.is_err() {
-				fs::create_dir_all(&self.base_directory())
-					.await
-					.map_err(FsError::io)?;
+				fs::create_dir_all(&self.base_directory()).await?;
 			}
 			Ok(())
 		})
@@ -224,9 +250,7 @@ impl<RW: FsBackend> Backend for RW {
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
 		Box::pin(async move {
-			fs::create_dir(util::resolve_path(self.base_directory(), &[table]))
-				.await
-				.map_err(FsError::io)?;
+			fs::create_dir(util::resolve_path(self.base_directory(), &[table])).await?;
 
 			Ok(())
 		})
@@ -235,9 +259,7 @@ impl<RW: FsBackend> Backend for RW {
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 		Box::pin(async move {
 			if self.has_table(table).await? {
-				fs::remove_dir(util::resolve_path(self.base_directory(), &[table]))
-					.await
-					.map_err(FsError::io)?;
+				fs::remove_dir(util::resolve_path(self.base_directory(), &[table])).await?;
 			}
 
 			Ok(())
@@ -250,16 +272,14 @@ impl<RW: FsBackend> Backend for RW {
 	{
 		Box::pin(async move {
 			let mut stream = ReadDirStream::new(
-				fs::read_dir(util::resolve_path(self.base_directory(), &[table]))
-					.await
-					.map_err(FsError::io)?,
+				fs::read_dir(util::resolve_path(self.base_directory(), &[table])).await?,
 			);
 			let mut output = Vec::new();
 
 			while let Some(raw) = stream.next().await {
-				let entry = raw.map_err(FsError::io)?;
+				let entry = raw?;
 
-				if entry.file_type().await.map_err(FsError::io)?.is_dir() {
+				if entry.file_type().await?.is_dir() {
 					continue; // coverage:ignore-line
 				}
 
@@ -321,7 +341,7 @@ impl<RW: FsBackend> Backend for RW {
 
 			let serialized = self.to_bytes(value)?;
 
-			fs::write(path, serialized).await.map_err(FsError::io)?;
+			fs::write(path, serialized).await?;
 
 			Ok(())
 		})
@@ -342,7 +362,7 @@ impl<RW: FsBackend> Backend for RW {
 
 			let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
 
-			fs::write(path, serialized).await.map_err(FsError::io)?;
+			fs::write(path, serialized).await?;
 
 			Ok(())
 		})
@@ -372,8 +392,7 @@ impl<RW: FsBackend> Backend for RW {
 				self.base_directory(),
 				&[table, filename.as_str()],
 			))
-			.await
-			.map_err(FsError::io)?;
+			.await?;
 
 			Ok(())
 		})
@@ -444,7 +463,7 @@ mod tests {
 			T: Entry,
 		{
 			Err(FsError {
-				kind: FsErrorType::Deserialization,
+				kind: FsErrorType::Serde,
 				source: None,
 			})
 		}
@@ -454,7 +473,7 @@ mod tests {
 			T: Entry,
 		{
 			Err(FsError {
-				kind: FsErrorType::Serialization,
+				kind: FsErrorType::Serde,
 				source: None,
 			})
 		}
