@@ -16,6 +16,9 @@
 
 use std::result::Result as StdResult;
 
+#[cfg(not(any(feature = "passive", feature = "active")))]
+compile_error!("either the \"active\" feature or the \"passive\" feature must be active.");
+
 pub mod action;
 mod atomics;
 pub mod backend;
