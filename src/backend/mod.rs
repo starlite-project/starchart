@@ -103,7 +103,7 @@ pub trait Backend: Send + Sync {
 	fn get_all<'a, D, I>(
 		&'a self,
 		table: &'a str,
-		entries: &'a [&str],
+		entries: &'a [String],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
@@ -112,7 +112,7 @@ pub trait Backend: Send + Sync {
 		Box::pin(async move {
 			let mut output = Vec::with_capacity(entries.len());
 
-			for key in entries.iter().copied() {
+			for key in entries {
 				let value: Option<D> = self.get(table, key).await?;
 				if value.is_none() {
 					continue; // coverage:ignore-line
@@ -260,7 +260,10 @@ mod tests {
 		backend.create("test", "id", &"value".to_owned()).await?;
 		backend.create("test", "id2", &"value2".to_owned()).await?;
 
-		let keys = vec!["id", "id2", "doesn't exist"];
+		let keys = vec!["id", "id2", "doesn't exist"]
+			.into_iter()
+			.map(ToOwned::to_owned)
+			.collect::<Vec<_>>();
 		let mut values: Vec<String> = backend.get_all("test", &keys).await?;
 		let mut expected = vec!["value".to_owned(), "value2".to_owned()];
 

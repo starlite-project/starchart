@@ -16,6 +16,9 @@ use std::{
 	marker::PhantomData,
 };
 
+#[cfg(not(feature = "metadata"))]
+use futures_util::{Future, future::ok};
+
 #[doc(hidden)]
 pub use self::error::{
 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
@@ -32,7 +35,11 @@ pub use self::{
 };
 #[cfg(feature = "metadata")]
 use crate::METADATA_KEY;
-use crate::{backend::Backend, util::{InnerUnwrap, is_metadata}, Entry, IndexEntry, Key, Starchart};
+use crate::{
+	backend::Backend,
+	util::{is_metadata, InnerUnwrap},
+	Entry, IndexEntry, Key, Starchart,
+};
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 #[cfg(feature = "active")]
@@ -251,6 +258,11 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 					table_name: table_name.to_owned(),
 				},
 			})
+	}
+
+	#[cfg(not(feature = "metadata"))]
+	fn check_metadata<B: Backend>(&self, _: &B, _: &str) -> impl Future<Output = Result<(), ActionRunError>> {
+		ok(())
 	}
 
 	/// Validates that the table key is set.
@@ -573,7 +585,6 @@ impl<S: Entry> CreateEntryAction<S> {
 			return Ok(());
 		}
 
-		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table_name).await?;
 
 		backend
@@ -623,7 +634,6 @@ impl<S: Entry> ReadEntryAction<S> {
 		let table_name = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
 
-		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table_name).await?;
 
 		backend
@@ -675,7 +685,6 @@ impl<S: Entry> UpdateEntryAction<S> {
 		let key = self.inner.key.take().inner_unwrap();
 		let new_data = self.inner.data.take().inner_unwrap();
 
-		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table).await?;
 
 		backend
@@ -848,7 +857,6 @@ impl<S: Entry> ReadTableAction<S> {
 	{
 		let table = self.inner.table.take().inner_unwrap();
 
-		#[cfg(feature = "metadata")]
 		self.check_metadata(backend, &table).await?;
 
 		let keys = backend
@@ -857,17 +865,13 @@ impl<S: Entry> ReadTableAction<S> {
 			.map_err(|e| ActionRunError {
 				source: Some(Box::new(e)),
 				kind: ActionRunErrorType::Backend,
-			})?;
-
-		let keys = keys
+			})?
 			.into_iter()
-			.filter(|value| is_metadata(value))
+			.filter(|value| !is_metadata(value))
 			.collect::<Vec<_>>();
 
-		let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();
-
 		let data = backend
-			.get_all::<S, I>(&table, &keys_borrowed)
+			.get_all::<S, I>(&table, &keys)
 			.await
 			.map_err(|e| ActionRunError {
 				source: Some(Box::new(e)),

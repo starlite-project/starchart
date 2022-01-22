@@ -1,7 +1,12 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::missing_panics_doc, clippy::missing_errors_doc)]
+#[cfg(feature = "metadata")]
+use std::any::type_name;
 use std::{iter::FromIterator, pin::Pin};
 
-use futures_util::{future::err, Future, FutureExt};
+use futures_util::{
+	future::{err, ok},
+	Future, FutureExt,
+};
 
 #[cfg(feature = "metadata")]
 use crate::METADATA_KEY;
@@ -9,7 +14,7 @@ use crate::{
 	atomics::Guard,
 	backend::Backend,
 	util::{is_metadata, InnerUnwrap},
-	Entry, Starchart,
+	Entry, IndexEntry, Key, Starchart,
 };
 
 type AccessorFuture<'a, O> = Pin<Box<dyn Future<Output = O> + Send + 'a>>;
@@ -33,97 +38,150 @@ impl<'a, B> ChartAccessor<'a, B> {
 }
 
 impl<'a, B: Backend> ChartAccessor<'a, B> {
-	#[must_use]
-	pub fn read_entry<S: Entry + 'static>(
+	pub async fn read_entry<S: Entry>(
 		self,
-		table: &'a str,
-		key: &'a str,
-	) -> AccessorFuture<'a, Result<Option<S>, AccessorError>> {
+		table: &str,
+		key: &str,
+	) -> Result<Option<S>, AccessorError> {
 		// check the keys before we lock.
-		if let Some(e) = Self::check_metadata(table).or_else(|| Self::check_metadata(key)) {
-			return err(e).boxed();
+		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
+			return Err(e);
+		}
+		let lock = self.guard.shared();
+
+		self.check_metadata::<S>(table).await?;
+		let value = self
+			.backend
+			.get::<S>(table, key)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			});
+
+		drop(lock);
+		value
+	}
+
+	pub async fn read_table<S: Entry, I: FromIterator<S> + Send>(
+		self,
+		table: &str,
+	) -> Result<I, AccessorError> {
+		if let Some(e) = Self::validate_metadata(table) {
+			return Err(e);
 		}
 
 		let lock = self.guard.shared();
-		let res = self
+
+		self.check_metadata::<S>(table).await?;
+
+		let keys = self
 			.backend
-			.get::<S>(table, key)
-			.map(|res| {
-				res.map_err(|e| AccessorError {
-					source: Some(Box::new(e)),
-					kind: AccessorErrorType::Backend,
-				})
-			})
-			.boxed();
-		drop(lock);
+			.get_keys::<Vec<_>>(table)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
 
-		res
-	}
-
-	#[must_use]
-	pub fn read_table<S: Entry + 'static, I: FromIterator<S> + Send + 'static>(
-		self,
-		table: &'a str,
-	) -> AccessorFuture<'a, Result<I, AccessorError>> {
-		let lock = self.guard.shared();
-		let res = Box::pin(async move {
-			if let Some(e) = Self::check_metadata(table) {
-				return Err(e);
-			}
-
-			let mut keys =
-				self.backend
-					.get_keys::<Vec<_>>(table)
-					.await
-					.map_err(|e| AccessorError {
-						source: Some(Box::new(e)),
-						kind: AccessorErrorType::Backend,
-					})?;
-
-			keys = keys.into_iter().filter(|k| !is_metadata(k)).collect();
-
-			let borrowed_keys = keys.iter().map(String::as_str).collect::<Vec<_>>();
-
-			self.backend
-				.get_all::<S, I>(table, &borrowed_keys)
-				.await
-				.map_err(|e| AccessorError {
-					source: Some(Box::new(e)),
-					kind: AccessorErrorType::Backend,
-				})
-		});
+		let values = self
+			.backend
+			.get_all(table, &keys)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			});
 
 		drop(lock);
 
-		res
+		values
 	}
 
-	pub fn create_entry<S: Entry + 'static>(
+	pub async fn create_entry<S: Entry>(
 		self,
-		table: &'a str,
-		key: &'a str,
-		entry: &'a S,
-	) -> AccessorFuture<'a, Result<(), AccessorError>> {
+		table: &str,
+		key: &str,
+		entry: &S,
+	) -> Result<(), AccessorError> {
+		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
+			return Err(e);
+		}
+
 		let lock = self.guard.exclusive();
-		let res = Box::pin(async move {
-			if self.backend.has(table, key).await.map_err(|e| AccessorError {
+
+		if self
+			.backend
+			.has(table, key)
+			.await
+			.map_err(|e| AccessorError {
 				source: Some(Box::new(e)),
 				kind: AccessorErrorType::Backend,
 			})? {
-				return Ok(());
-			}
+			return Ok(());
+		}
 
-			todo!()
-		});
+		self.check_metadata::<S>(table).await?;
+
+		self.backend
+			.create(table, key, entry)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
 
 		drop(lock);
 
-		res
+		Ok(())
+	}
+
+	pub async fn create_index_entry<S: IndexEntry>(
+		self,
+		table: &str,
+		entry: &S,
+	) -> Result<(), AccessorError> {
+		self.create_entry(table, entry.key().to_key().as_str(), entry)
+			.await
+	}
+
+	pub async fn create_table<S: Entry>(self, table: &str) -> Result<(), AccessorError> {
+		if let Some(e) = Self::validate_metadata(table) {
+			return Err(e);
+		}
+
+		let lock = self.guard.exclusive();
+
+		self.backend
+			.create_table(table)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		#[cfg(feature = "metadata")]
+		{
+			let metadata = S::default();
+			self.backend
+				.ensure(table, METADATA_KEY, &metadata)
+				.await
+				.map_err(|e| AccessorError {
+					source: Some(Box::new(e)),
+					kind: AccessorErrorType::Metadata {
+						type_and_table: None,
+					},
+				})?;
+		}
+
+		drop(lock);
+
+		Ok(())
 	}
 
 	// we return an option to make it compatible with the future above.
 	#[cfg(feature = "metadata")]
-	fn check_metadata(key: &str) -> Option<AccessorError> {
+	fn validate_metadata(key: &str) -> Option<AccessorError> {
 		if key == METADATA_KEY {
 			return Some(AccessorError {
 				source: None,
@@ -137,8 +195,27 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 	}
 
 	#[cfg(not(feature = "metadata"))]
-	fn check_metadata(key: &str) -> Option<AccessorError> {
+	fn validate_metadata(key: &str) -> Option<AccessorError> {
 		None
+	}
+
+	#[cfg(feature = "metadata")]
+	async fn check_metadata<S: Entry>(self, table_name: &str) -> Result<(), AccessorError> {
+		self.backend
+			.get::<S>(table_name, METADATA_KEY)
+			.await
+			.map(|_| {})
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Metadata {
+					type_and_table: Some((type_name::<S>(), table_name.to_owned())),
+				},
+			})
+	}
+
+	#[cfg(not(feature = "metadata"))]
+	fn check_metadata<S: Entry>(self, _: &str) -> impl Future<Output = Result<(), AccessorError>> {
+		ok(())
 	}
 }
 

@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
 
 /// The key trait to be implemented on [`Entry`] to allow an easy way to get keys.
-pub trait Key {
+pub trait Key: Send + Sync {
 	/// The method to transform a [`Key`] into a value.
 	fn to_key(&self) -> String;
 }
 
-impl<T: ToString> Key for T {
+impl<T: ToString + Send + Sync> Key for T {
 	fn to_key(&self) -> String {
 		self.to_string()
 	}
