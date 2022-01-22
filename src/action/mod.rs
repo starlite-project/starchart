@@ -30,35 +30,42 @@ pub use self::{
 	result::ActionResult,
 	target::TargetKind,
 };
-use crate::{backend::Backend, util::InnerUnwrap, Entry, IndexEntry, Key, Starchart};
-
-#[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-const METADATA_KEY: &str = "__metadata__";
+#[cfg(feature = "metadata")]
+use crate::METADATA_KEY;
+use crate::{backend::Backend, util::{InnerUnwrap, is_metadata}, Entry, IndexEntry, Key, Starchart};
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
 ///
 /// This action can never been ran.
+#[cfg(feature = "active")]
 pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
+#[cfg(feature = "active")]
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
 #[derive(Debug, Clone)]
@@ -102,6 +109,7 @@ impl<S> Default for InnerAction<S> {
 /// [`Starchart`]: crate::Starchart
 #[derive(Clone)]
 #[must_use = "an action alone has no side effects"]
+#[cfg(feature = "active")]
 pub struct Action<S, C, T> {
 	pub(crate) inner: InnerAction<S>,
 	kind: PhantomData<C>,
@@ -592,7 +600,7 @@ impl<S: Entry> ReadEntryAction<S> {
 	) -> Result<Option<S>, ActionError> {
 		self.validate_table()?;
 		self.validate_key()?;
-		let lock = gateway.guard.exclusive();
+		let lock = gateway.guard.shared();
 		let res = unsafe { self.run_read_entry_unchecked(gateway.backend()).await? };
 		drop(lock);
 		Ok(res)
@@ -851,10 +859,9 @@ impl<S: Entry> ReadTableAction<S> {
 				kind: ActionRunErrorType::Backend,
 			})?;
 
-		#[cfg(feature = "metadata")]
 		let keys = keys
 			.into_iter()
-			.filter(|value| value != METADATA_KEY)
+			.filter(|value| is_metadata(value))
 			.collect::<Vec<_>>();
 
 		let keys_borrowed = keys.iter().map(String::as_str).collect::<Vec<_>>();

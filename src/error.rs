@@ -5,7 +5,10 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
+#[cfg(feature = "passive")]
+pub use crate::accessor::{AccessorError, AccessorErrorType};
 #[doc(inline)]
+#[cfg(feature = "active")]
 pub use crate::action::{
 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
 	ActionValidationErrorType,
@@ -53,8 +56,12 @@ impl Display for Error {
 			ErrorType::Memory => f.write_str("an error occurred with the memory backend"),
 			#[cfg(feature = "fs")]
 			ErrorType::Fs => f.write_str("an error occurred with a file-system backend"),
+			#[cfg(feature = "active")]
 			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
+			#[cfg(feature = "active")]
 			ErrorType::ActionValidation => f.write_str("an action is invalid"),
+			#[cfg(feature = "passive")]
+			ErrorType::Accessor => f.write_str("an error occurred accessing data")
 		}
 	}
 }
@@ -87,6 +94,7 @@ impl From<FsError> for Error {
 	}
 }
 
+#[cfg(feature = "active")]
 impl From<ActionError> for Error {
 	fn from(e: ActionError) -> Self {
 		let kind = match e.kind() {
@@ -101,6 +109,7 @@ impl From<ActionError> for Error {
 	}
 }
 
+#[cfg(feature = "active")]
 impl From<ActionValidationError> for Error {
 	fn from(e: ActionValidationError) -> Self {
 		Self {
@@ -110,11 +119,23 @@ impl From<ActionValidationError> for Error {
 	}
 }
 
+#[cfg(feature = "active")]
 impl From<ActionRunError> for Error {
 	fn from(e: ActionRunError) -> Self {
 		Self {
 			source: Some(Box::new(e)),
 			kind: ErrorType::ActionRun,
+		}
+	}
+}
+
+#[cfg(feature = "passive")]
+impl From<AccessorError> for Error {
+	fn from(e: AccessorError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ErrorType::Accessor,
+
 		}
 	}
 }
@@ -135,7 +156,12 @@ pub enum ErrorType {
 	#[cfg(feature = "fs")]
 	Fs,
 	/// An [`ActionValidationError`] occurred.
+	#[cfg(feature = "active")]
 	ActionValidation,
 	/// An [`ActionRunError`] occurred.
+	#[cfg(feature = "active")]
 	ActionRun,
+	/// An [`AccessorError`] occurred.
+	#[cfg(feature = "passive")]
+	Accessor,
 }

@@ -51,6 +51,16 @@ unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 	}
 }
 
+#[cfg(feature = "metadata")]
+pub fn is_metadata(key: &str) -> bool {
+	key == crate::METADATA_KEY
+}
+
+#[cfg(not(feature = "metadata"))]
+pub fn is_metadata(key: &str) -> bool {
+	false
+}
+
 #[cfg(test)]
 pub mod testing {
 	#[cfg(feature = "fs")]

@@ -7,6 +7,7 @@ use std::{
 ///
 /// [`Action`]: super::Action
 #[derive(Debug)]
+#[cfg(feature = "active")]
 pub struct ActionError {
 	source: Option<Box<dyn Error + Send + Sync>>,
 	kind: ActionErrorType,
@@ -71,6 +72,7 @@ impl From<ActionValidationError> for ActionError {
 #[derive(Debug)]
 #[allow(missing_copy_implementations)]
 #[non_exhaustive]
+#[cfg(feature = "active")]
 pub enum ActionErrorType {
 	/// A [`run`] error occurred.
 	///
@@ -84,6 +86,7 @@ pub enum ActionErrorType {
 ///
 /// [`Action`]: super::Action
 #[derive(Debug)]
+#[cfg(feature = "active")]
 pub struct ActionValidationError {
 	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
 	pub(super) kind: ActionValidationErrorType,
@@ -141,6 +144,7 @@ impl Error for ActionValidationError {
 /// The type of [`ActionValidationError`] that occurred.
 #[derive(Debug)]
 #[allow(missing_copy_implementations)]
+#[cfg(feature = "active")]
 #[non_exhaustive]
 pub enum ActionValidationErrorType {
 	/// Data was missing when it was expected.
@@ -158,6 +162,7 @@ pub enum ActionValidationErrorType {
 ///
 /// [`Action`]: crate::action::Action
 #[derive(Debug)]
+#[cfg(feature = "active")]
 pub struct ActionRunError {
 	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
 	pub(super) kind: ActionRunErrorType,
@@ -213,6 +218,7 @@ impl Error for ActionRunError {
 #[derive(Debug)]
 #[allow(missing_copy_implementations)]
 #[non_exhaustive]
+#[cfg(feature = "active")]
 pub enum ActionRunErrorType {
 	/// An error occurred with a [`Backend`] method.
 	///
