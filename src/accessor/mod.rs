@@ -160,23 +160,42 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 				kind: AccessorErrorType::Backend,
 			})?;
 
-		#[cfg(feature = "metadata")]
-		{
-			let metadata = S::default();
-			self.backend
-				.ensure(table, METADATA_KEY, &metadata)
-				.await
-				.map_err(|e| AccessorError {
-					source: Some(Box::new(e)),
-					kind: AccessorErrorType::Metadata {
-						type_and_table: None,
-					},
-				})?;
-		}
+		self.create_metadata::<S>(table).await?;
 
 		drop(lock);
 
 		Ok(())
+	}
+
+	pub async fn update_entry<S: Entry>(
+		self,
+		table: &str,
+		key: &str,
+		entry: &S,
+	) -> Result<(), AccessorError> {
+		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
+			return Err(e);
+		}
+
+		let lock = self.guard.exclusive();
+
+		self.check_metadata::<S>(table).await?;
+
+		self.backend
+			.update(table, key, entry)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(())
+	}
+
+	pub async fn update_index_entry<S: IndexEntry>(self, table: &str, entry: &S) -> Result<(), AccessorError> {
+		self.update_entry(table, entry.key().to_key().as_str(), entry).await
 	}
 
 	// we return an option to make it compatible with the future above.
@@ -215,6 +234,24 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 
 	#[cfg(not(feature = "metadata"))]
 	fn check_metadata<S: Entry>(self, _: &str) -> impl Future<Output = Result<(), AccessorError>> {
+		ok(())
+	}
+
+	#[cfg(feature = "metadata")]
+	async fn create_metadata<S: Entry>(self, table_name: &str) -> Result<(), AccessorError> {
+		self.backend
+			.ensure(table_name, METADATA_KEY, &S::default())
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Metadata {
+					type_and_table: Some((type_name::<S>(), table_name.to_owned())),
+				},
+			})
+	}
+
+	#[cfg(not(feature = "metadata"))]
+	fn create_metadata<S: Entry>(self, _: &str) -> impl Future<Output = Result<(), AccessorError>> {
 		ok(())
 	}
 }
