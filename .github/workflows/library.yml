@@ -218,7 +218,7 @@ jobs:
         run: echo "::add-matcher::.github/problemMatchers/rust.json"
 
       - name: Check minimal versions
-        run: cargo minimal-versions check --workspace
+        run: cargo minimal-versions check --workspace --all-features
 
   test:
     strategy:
