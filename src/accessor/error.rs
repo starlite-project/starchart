@@ -43,5 +43,5 @@ pub enum AccessorErrorType {
 	#[cfg(feature = "metadata")]
 	Metadata {
 		type_and_table: Option<(&'static str, String)>,
-	}
+	},
 }

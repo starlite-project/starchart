@@ -194,8 +194,13 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		Ok(())
 	}
 
-	pub async fn update_index_entry<S: IndexEntry>(self, table: &str, entry: &S) -> Result<(), AccessorError> {
-		self.update_entry(table, entry.key().to_key().as_str(), entry).await
+	pub async fn update_index_entry<S: IndexEntry>(
+		self,
+		table: &str,
+		entry: &S,
+	) -> Result<(), AccessorError> {
+		self.update_entry(table, entry.key().to_key().as_str(), entry)
+			.await
 	}
 
 	// we return an option to make it compatible with the future above.

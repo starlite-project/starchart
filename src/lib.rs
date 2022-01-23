@@ -20,7 +20,7 @@ use std::result::Result as StdResult;
 compile_error!("either the \"active\" feature or the \"passive\" feature must be active.");
 
 #[cfg(all(feature = "metadata", not(tarpaulin_include)))]
-pub (crate) const METADATA_KEY: &str = "__metadata__";
+pub(crate) const METADATA_KEY: &str = "__metadata__";
 
 #[cfg(feature = "passive")]
 mod accessor;
@@ -36,15 +36,15 @@ mod util;
 
 #[cfg(feature = "passive")]
 pub use self::accessor::ChartAccessor;
+#[cfg(feature = "active")]
+#[doc(inline)]
+pub use self::action::Action;
 #[doc(inline)]
 pub use self::{
 	entry::{Entry, IndexEntry, Key},
 	error::Error,
 	starchart::Starchart,
 };
-#[cfg(feature = "active")]
-#[doc(inline)]
-pub use self::action::Action;
 
 /// A type alias for a [`Result`] that wraps around [`Error`].
 pub type Result<T, E = Error> = StdResult<T, E>;

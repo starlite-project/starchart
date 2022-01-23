@@ -17,7 +17,7 @@ use std::{
 };
 
 #[cfg(not(feature = "metadata"))]
-use futures_util::{Future, future::ok};
+use futures_util::{future::ok, Future};
 
 #[doc(hidden)]
 pub use self::error::{
@@ -261,7 +261,11 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	}
 
 	#[cfg(not(feature = "metadata"))]
-	fn check_metadata<B: Backend>(&self, _: &B, _: &str) -> impl Future<Output = Result<(), ActionRunError>> {
+	fn check_metadata<B: Backend>(
+		&self,
+		_: &B,
+		_: &str,
+	) -> impl Future<Output = Result<(), ActionRunError>> {
 		ok(())
 	}
 

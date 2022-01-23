@@ -61,7 +61,7 @@ impl Display for Error {
 			#[cfg(feature = "active")]
 			ErrorType::ActionValidation => f.write_str("an action is invalid"),
 			#[cfg(feature = "passive")]
-			ErrorType::Accessor => f.write_str("an error occurred accessing data")
+			ErrorType::Accessor => f.write_str("an error occurred accessing data"),
 		}
 	}
 }
@@ -135,7 +135,6 @@ impl From<AccessorError> for Error {
 		Self {
 			source: Some(Box::new(e)),
 			kind: ErrorType::Accessor,
-
 		}
 	}
 }
