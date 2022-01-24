@@ -9,21 +9,17 @@ use std::{
 	path::PathBuf,
 };
 
-use futures_util::{
-	future::{err, join_all, ok, ready, Either},
-	FutureExt, Stream, StreamExt,
-};
+use futures_util::future::FutureExt;
 use tokio::fs;
-use tokio_stream::wrappers::ReadDirStream;
 
 use super::{
 	futures::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
-		GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
+		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
 	},
 	Backend,
 };
-use crate::{util::InnerUnwrap, Entry};
+use crate::Entry;
 
 /// An error occurred from an [`FsBackend`].
 #[cfg(feature = "fs")]

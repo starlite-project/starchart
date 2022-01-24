@@ -14,10 +14,8 @@ use crate::METADATA_KEY;
 use crate::{atomics::Guard, backend::Backend, util::is_metadata, Entry, IndexEntry, Key};
 
 mod error;
-mod helpers;
 #[doc(hidden)]
 pub use self::error::{AccessorError, AccessorErrorType};
-pub use self::helpers::EntryAccessor;
 
 /// A chart accessor used for passive access.
 #[cfg(feature = "passive")]

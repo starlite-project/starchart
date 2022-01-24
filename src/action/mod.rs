@@ -290,9 +290,11 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 
 	/// Validates that the key is not the private metadata key.
 	///
+	/// Does nothing if the `metadata` feature is not enabled.
+	///
 	/// # Errors
+	///
 	/// Errors if [`Self::set_key`] was passed the private metadata key.
-	#[cfg(feature = "metadata")]
 	#[allow(clippy::unused_self)]
 	pub fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
 		if key == Some(METADATA_KEY) {
@@ -302,6 +304,18 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 			});
 		}
 
+		Ok(())
+	}
+
+	/// Validates that the key is not the private metadata key.
+	///
+	/// Does nothing if the `metadata` feature is not enabled.
+	///
+	/// # Errors
+	///
+	/// Errors if [`Self::set_key`] was passed the private metadata key.
+	#[cfg(not(feature = "metadata"))]
+	pub fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionValidationError> {
 		Ok(())
 	}
 }
@@ -342,7 +356,6 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 			});
 		}
 
-		#[cfg(feature = "metadata")]
 		self.validate_metadata(self.key())?;
 
 		Ok(())
@@ -865,17 +878,6 @@ impl<S: Entry> ReadTableAction<S> {
 
 		self.check_metadata(backend, &table).await?;
 
-		// let keys = backend
-		// 	.get_keys::<Vec<_>>(&table)
-		// 	.await
-		// 	.map_err(|e| ActionRunError {
-		// 		source: Some(Box::new(e)),
-		// 		kind: ActionRunErrorType::Backend,
-		// 	})?
-		// 	.iter()
-		// 	.filter(|value| !is_metadata(value))
-		// 	.map(|v| v.as_str())
-		// 	.collect::<Vec<_>>();
 		let keys = backend
 			.get_keys::<Vec<_>>(&table)
 			.await

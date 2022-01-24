@@ -146,6 +146,7 @@ mod tests {
 	}
 
 	#[test]
+	#[cfg_attr(miri, ignore)]
 	fn new() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("new", "toml", true)?;

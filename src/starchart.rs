@@ -44,6 +44,7 @@ impl<B: Backend> Starchart<B> {
 		})
 	}
 
+	/// Generate an accessor to allow passive access to a database.
 	#[cfg(feature = "passive")]
 	pub fn access(&self) -> Accessor<'_, B> {
 		Accessor::new(&self.backend, &*self.guard)

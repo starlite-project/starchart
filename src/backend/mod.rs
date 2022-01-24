@@ -4,14 +4,17 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
-use futures_util::{future::join_all, FutureExt};
+use futures_util::{
+	future::{join_all, ok, ready},
+	FutureExt,
+};
 
 use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
 	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
 };
-use crate::{util::InnerUnwrap, Entry};
+use crate::Entry;
 
 pub mod futures;
 
@@ -60,7 +63,7 @@ pub trait Backend: Send + Sync {
 	///
 	/// The default impl does nothing
 	fn init(&self) -> InitFuture<'_, Self::Error> {
-		Box::pin(async { Ok(()) })
+		ok(()).boxed()
 	}
 
 	/// An optional shutdown function, useful for disconnecting from databases gracefully.
@@ -75,7 +78,7 @@ pub trait Backend: Send + Sync {
 	///
 	/// [`Starchart`]: crate::Starchart
 	unsafe fn shutdown(&self) -> ShutdownFuture {
-		Box::pin(async {})
+		ready(()).boxed()
 	}
 
 	/// Check if a table exists.
