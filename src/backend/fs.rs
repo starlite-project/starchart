@@ -282,9 +282,14 @@ impl<RW: FsBackend> Backend for RW {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			let mut path = self.base_directory();
 			path.extend(&[table, filename.as_str()]);
-			let file: StdFile = fs::File::open(&path).await?.into_std().await;
+			// let file: StdFile = fs::File::open(&path).await?.into_std().await;
+			let file: StdFile = match fs::File::open(&path).await {
+				Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
+				Err(e) => return Err(e.into()),
+				Ok(v) => v.into_std().await
+			};
 
-			self.read_data(file)
+			Ok(Some(self.read_data(file)?))
 		}
 		.boxed()
 	}
