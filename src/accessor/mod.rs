@@ -1,23 +1,14 @@
 #![allow(missing_docs, clippy::missing_panics_doc, clippy::missing_errors_doc)]
 #[cfg(feature = "metadata")]
 use std::any::type_name;
-use std::{iter::FromIterator, pin::Pin};
+use std::iter::FromIterator;
 
-use futures_util::{
-	future::{err, ok},
-	Future, FutureExt,
-};
+#[cfg(not(feature = "metadata"))]
+use futures_util::{future::ok, Future};
 
 #[cfg(feature = "metadata")]
 use crate::METADATA_KEY;
-use crate::{
-	atomics::Guard,
-	backend::Backend,
-	util::{is_metadata, InnerUnwrap},
-	Entry, IndexEntry, Key, Starchart,
-};
-
-type AccessorFuture<'a, O> = Pin<Box<dyn Future<Output = O> + Send + 'a>>;
+use crate::{atomics::Guard, backend::Backend, Entry, IndexEntry, Key};
 
 mod error;
 #[doc(hidden)]
@@ -201,6 +192,90 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 	) -> Result<(), AccessorError> {
 		self.update_entry(table, entry.key().to_key().as_str(), entry)
 			.await
+	}
+
+	pub async fn delete_entry<S: Entry>(
+		self,
+		table: &str,
+		key: &str,
+	) -> Result<bool, AccessorError> {
+		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
+			return Err(e);
+		}
+
+		let lock = self.guard.exclusive();
+
+		self.check_metadata::<S>(table).await?;
+
+		let exists = self
+			.backend
+			.has(table, key)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		self.backend
+			.delete(table, key)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		let new_exists = self
+			.backend
+			.has(table, key)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(exists != new_exists)
+	}
+
+	pub async fn delete_table<S: Entry>(self, table: &str) -> Result<bool, AccessorError> {
+		if let Some(e) = Self::validate_metadata(table) {
+			return Err(e);
+		}
+
+		let lock = self.guard.exclusive();
+
+		self.check_metadata::<S>(table).await?;
+
+		let exists = self
+			.backend
+			.has_table(table)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		self.backend
+			.delete_table(table)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		let new_exists = self
+			.backend
+			.has_table(table)
+			.await
+			.map_err(|e| AccessorError {
+				source: Some(Box::new(e)),
+				kind: AccessorErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(exists != new_exists)
 	}
 
 	// we return an option to make it compatible with the future above.

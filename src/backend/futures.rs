@@ -2,6 +2,7 @@
 //!
 //! [`Backend`]: crate::backend::Backend
 use std::{future::Future, pin::Pin};
+use crate::util::PinBoxFuture;
 
 #[cfg(doc)]
 use crate::backend::Backend;
@@ -50,5 +51,3 @@ pub type ReplaceFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 
 /// The future returned from [`Backend::delete`].
 pub type DeleteFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
-
-type PinBoxFuture<'a, Rt = ()> = Pin<Box<dyn Future<Output = Rt> + Send + 'a>>;

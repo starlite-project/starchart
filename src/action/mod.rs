@@ -735,6 +735,8 @@ impl<S: Entry> DeleteEntryAction<S> {
 	) -> Result<bool, ActionRunError> {
 		let table = self.inner.table.take().inner_unwrap();
 		let key = self.inner.key.take().inner_unwrap();
+
+		self.check_metadata(backend, &table).await?;
 		let exists = backend
 			.has(&table, &key)
 			.await

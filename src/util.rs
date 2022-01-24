@@ -2,6 +2,11 @@
 
 #[cfg(no_unwrap_unchecked)]
 use std::hint::unreachable_unchecked;
+use std::pin::Pin;
+
+use futures_util::Future;
+
+pub type PinBoxFuture<'a, Rt = ()> = Pin<Box<dyn Future<Output = Rt> + Send + 'a>>;
 
 pub unsafe trait InnerUnwrap<T> {
 	unsafe fn inner_unwrap(self) -> T;
