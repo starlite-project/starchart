@@ -281,7 +281,7 @@ impl<RW: FsBackend> Backend for RW {
 		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			let mut path = self.base_directory();
-			path.extend([table, filename.as_str()]);
+			path.extend(&[table, filename.as_str()]);
 			let file: StdFile = fs::File::open(&path).await?.into_std().await;
 
 			self.read_data(file)
@@ -293,7 +293,7 @@ impl<RW: FsBackend> Backend for RW {
 		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			let mut path = self.base_directory();
-			path.extend([table, filename.as_str()]);
+			path.extend(&[table, filename.as_str()]);
 			match fs::metadata(path).await {
 				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
 				Err(e) => Err(e.into()),
@@ -316,7 +316,7 @@ impl<RW: FsBackend> Backend for RW {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 			// let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
 			let mut path = self.base_directory();
-			path.extend([table, filename.as_str()]);
+			path.extend(&[table, filename.as_str()]);
 
 			let serialized = self.write_serial(value)?;
 
@@ -340,7 +340,7 @@ impl<RW: FsBackend> Backend for RW {
 			let serialized = self.write_serial(value)?;
 			let filepath = util::filename(id.to_owned(), Self::EXTENSION);
 			let mut path = self.base_directory();
-			path.extend([table, filepath.as_str()]);
+			path.extend(&[table, filepath.as_str()]);
 
 			fs::write(path, serialized).await?;
 
@@ -366,7 +366,7 @@ impl<RW: FsBackend> Backend for RW {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 
 			let mut path = self.base_directory();
-			path.extend([table, filename.as_str()]);
+			path.extend(&[table, filename.as_str()]);
 
 			match fs::remove_file(path).await {
 				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
