@@ -176,7 +176,7 @@ impl Backend for MemoryBackend {
 	fn get_all<'a, D, I>(
 		&'a self,
 		table: &'a str,
-		entries: &'a [String],
+		entries: &'a [&'a str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
@@ -193,8 +193,13 @@ impl Backend for MemoryBackend {
 			table_value
 				.clone()
 				.into_iter()
-				.filter(|(key, _)| entries.contains(key))
-				.map(|(_, value)| value.deserialize_into().map_err(MemoryError::from))
+				.filter_map(|(key, value)| {
+					if entries.contains(&key.as_str()) {
+						Some(value.deserialize_into().map_err(MemoryError::from))
+					} else {
+						None
+					}
+				})
 				.collect::<Result<I, Self::Error>>()
 		})
 	}

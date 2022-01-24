@@ -3,18 +3,23 @@
 use std::{
 	error::Error,
 	fmt::{Debug, Display, Formatter, Result as FmtResult},
-	io::{self, Read},
+	fs::File as StdFile,
+	io::{self, ErrorKind, Read},
 	iter::FromIterator,
 	path::PathBuf,
 };
 
+use futures_util::{
+	future::{err, join_all, ok, ready, Either},
+	FutureExt, Stream, StreamExt,
+};
 use tokio::fs;
-use tokio_stream::{wrappers::ReadDirStream, StreamExt};
+use tokio_stream::wrappers::ReadDirStream;
 
 use super::{
 	futures::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
-		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
+		GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
 	},
 	Backend,
 };
@@ -66,11 +71,6 @@ impl Display for FsError {
 				f.write_str("file ")?;
 				Display::fmt(&path.display(), f)?;
 				f.write_str(" is invalid")
-			}
-			FsErrorType::FileAlreadyExists { path } => {
-				f.write_str("file ")?;
-				Display::fmt(&path.display(), f)?;
-				f.write_str(" already exists")
 			}
 		}
 	}
@@ -174,26 +174,6 @@ pub enum FsErrorType {
 		/// The provided path to the file.
 		path: PathBuf,
 	},
-	/// The file already exists.
-	FileAlreadyExists {
-		/// The provided path to the file.
-		path: PathBuf,
-	},
-}
-
-macro_rules! handle_io_result {
-	($res:expr, $name:ident, $okay:expr) => {
-		handle_io_result!($res, $name, $okay, Ok(None))
-	};
-	($res:expr, $name:ident, $okay:expr, $not_found:expr) => {
-		match $res {
-			Ok($name) => $okay,
-			Err(err) if err.kind() == ::std::io::ErrorKind::NotFound => $not_found,
-			Err(e) => Err(<$crate::error::FsError as ::std::convert::From<
-				::std::io::Error,
-			>>::from(e)),
-		}
-	};
 }
 
 /// The trait for all File System based backends to implement
@@ -219,7 +199,7 @@ pub trait FsBackend: Send + Sync {
 	/// # Errors
 	///
 	/// Implementors should return an error of type [`FsErrorType::Serde`] error upon failure.
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry;
 
@@ -232,90 +212,99 @@ impl<RW: FsBackend> Backend for RW {
 	type Error = FsError;
 
 	fn init(&self) -> InitFuture<'_, FsError> {
-		Box::pin(async move {
-			if fs::read_dir(&self.base_directory()).await.is_err() {
-				fs::create_dir_all(&self.base_directory()).await?;
+		async move {
+			let path = self.base_directory();
+			if fs::read_dir(&path).await.is_err() {
+				fs::create_dir_all(&path).await?;
 			}
+
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
-		Box::pin(async move {
-			let result = fs::read_dir(util::resolve_path(self.base_directory(), &[table])).await;
-
-			handle_io_result!(result, _val, Ok(true), Ok(false))
-		})
+		let mut path = self.base_directory();
+		path.push(table);
+		fs::read_dir(path)
+			.map(|res| match res {
+				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
+				Err(e) => Err(e.into()),
+				Ok(_) => Ok(true),
+			})
+			.boxed()
 	}
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
-		Box::pin(async move {
-			fs::create_dir(util::resolve_path(self.base_directory(), &[table])).await?;
-
-			Ok(())
-		})
+		let mut path = self.base_directory();
+		path.push(table);
+		fs::create_dir(path)
+			.map(|res| res.map_err(Into::into))
+			.boxed()
 	}
 
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-		Box::pin(async move {
-			if self.has_table(table).await? {
-				fs::remove_dir(util::resolve_path(self.base_directory(), &[table])).await?;
+		async move {
+			let mut path = self.base_directory();
+			path.push(table);
+			match fs::remove_dir(path).await {
+				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
+				_ => Ok(()),
 			}
-
-			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
 	where
 		I: FromIterator<String>,
 	{
-		Box::pin(async move {
-			let mut stream = ReadDirStream::new(
-				fs::read_dir(util::resolve_path(self.base_directory(), &[table])).await?,
-			);
+		async move {
+			let mut path = self.base_directory();
+			path.push(table);
+			let mut read_dir = fs::read_dir(path).await?;
+
 			let mut output = Vec::new();
 
-			while let Some(raw) = stream.next().await {
-				let entry = raw?;
-
+			while let Some(entry) = read_dir.next_entry().await? {
 				if entry.file_type().await?.is_dir() {
-					continue; // coverage:ignore-line
+					continue;
 				}
-
-				// let filename = self.resolve_key(entry.file_name()).ok();
-				let filename = util::resolve_key(Self::EXTENSION, &entry.file_name()).ok();
-
-				if filename.is_none() {
-					continue; // coverage:ignore-line
-				}
-
-				output.push(unsafe { filename.inner_unwrap() });
+				output.push(util::resolve_key(Self::EXTENSION, &entry.file_name()));
 			}
 
-			Ok(output.into_iter().collect())
-		})
+			output.into_iter().collect::<Result<I, FsError>>()
+		}
+		.boxed()
 	}
 
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
 		D: Entry,
 	{
-		Box::pin(async move {
+		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
-			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
-			handle_io_result!(fs::File::open(&path).await, file, {
-				Ok(Some(self.read_data(file.into_std().await)?))
-			})
-		})
+			let mut path = self.base_directory();
+			path.extend([table, filename.as_str()]);
+			let file: StdFile = fs::File::open(&path).await?.into_std().await;
+
+			self.read_data(file)
+		}
+		.boxed()
 	}
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
-		Box::pin(async move {
+		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
-			let path = util::resolve_path(self.base_directory(), &[table, filename.as_str()]);
-			handle_io_result!(fs::metadata(&path).await, _val, Ok(true), Ok(false))
-		})
+			let mut path = self.base_directory();
+			path.extend([table, filename.as_str()]);
+			match fs::metadata(path).await {
+				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
+				Err(e) => Err(e.into()),
+				Ok(_) => Ok(true),
+			}
+		}
+		.boxed()
 	}
 
 	fn create<'a, S>(
@@ -327,24 +316,19 @@ impl<RW: FsBackend> Backend for RW {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
-			let filepath = util::filename(id.to_owned(), Self::EXTENSION);
+		async move {
+			let filename = util::filename(id.to_owned(), Self::EXTENSION);
+			// let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
+			let mut path = self.base_directory();
+			path.extend([table, filename.as_str()]);
 
-			let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
-
-			if self.has(table, id).await? {
-				return Err(FsError {
-					kind: FsErrorType::FileAlreadyExists { path },
-					source: None,
-				});
-			}
-
-			let serialized = self.to_bytes(value)?;
+			let serialized = self.write_serial(value)?;
 
 			fs::write(path, serialized).await?;
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	fn update<'a, S>(
@@ -356,16 +340,17 @@ impl<RW: FsBackend> Backend for RW {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
-			let serialized = self.to_bytes(value)?;
+		async move {
+			let serialized = self.write_serial(value)?;
 			let filepath = util::filename(id.to_owned(), Self::EXTENSION);
-
-			let path = util::resolve_path(self.base_directory(), &[table, filepath.as_str()]);
+			let mut path = self.base_directory();
+			path.extend([table, filepath.as_str()]);
 
 			fs::write(path, serialized).await?;
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	fn replace<'a, S>(
@@ -377,33 +362,27 @@ impl<RW: FsBackend> Backend for RW {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
-			self.update(table, id, value).await?;
-
-			Ok(())
-		})
+		self.update(table, id, value)
 	}
 
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
-		Box::pin(async move {
+		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);
 
-			fs::remove_file(util::resolve_path(
-				self.base_directory(),
-				&[table, filename.as_str()],
-			))
-			.await?;
+			let mut path = self.base_directory();
+			path.extend([table, filename.as_str()]);
 
-			Ok(())
-		})
+			match fs::remove_file(path).await {
+				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
+				_ => Ok(()),
+			}
+		}
+		.boxed()
 	}
 }
 
 mod util {
-	use std::{
-		ffi::OsStr,
-		path::{Path, PathBuf},
-	};
+	use std::{ffi::OsStr, path::Path};
 
 	use super::{FsError, FsErrorType};
 
@@ -428,14 +407,6 @@ mod util {
 				source: None,
 			})
 		}
-	}
-
-	pub fn resolve_path(mut base: PathBuf, to_join: &[&str]) -> PathBuf {
-		for value in to_join {
-			base = base.join(value);
-		}
-
-		base
 	}
 
 	pub fn filename(file_name: String, extension: &str) -> String {
@@ -468,7 +439,7 @@ mod tests {
 			})
 		}
 
-		fn to_bytes<T>(&self, _: &T) -> Result<Vec<u8>, FsError>
+		fn write_serial<T>(&self, _: &T) -> Result<Vec<u8>, FsError>
 		where
 			T: Entry,
 		{

@@ -865,15 +865,34 @@ impl<S: Entry> ReadTableAction<S> {
 
 		self.check_metadata(backend, &table).await?;
 
+		// let keys = backend
+		// 	.get_keys::<Vec<_>>(&table)
+		// 	.await
+		// 	.map_err(|e| ActionRunError {
+		// 		source: Some(Box::new(e)),
+		// 		kind: ActionRunErrorType::Backend,
+		// 	})?
+		// 	.iter()
+		// 	.filter(|value| !is_metadata(value))
+		// 	.map(|v| v.as_str())
+		// 	.collect::<Vec<_>>();
 		let keys = backend
 			.get_keys::<Vec<_>>(&table)
 			.await
 			.map_err(|e| ActionRunError {
 				source: Some(Box::new(e)),
 				kind: ActionRunErrorType::Backend,
-			})?
-			.into_iter()
-			.filter(|value| !is_metadata(value))
+			})?;
+
+		let keys = keys
+			.iter()
+			.filter_map(|v| {
+				if is_metadata(v) {
+					None
+				} else {
+					Some(v.as_str())
+				}
+			})
 			.collect::<Vec<_>>();
 
 		let data = backend

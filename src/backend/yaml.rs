@@ -46,7 +46,7 @@ impl FsBackend for YamlBackend {
 		Ok(serde_yaml::from_reader(rdr)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{

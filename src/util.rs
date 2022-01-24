@@ -62,7 +62,7 @@ pub fn is_metadata(key: &str) -> bool {
 }
 
 #[cfg(not(feature = "metadata"))]
-pub fn is_metadata(key: &str) -> bool {
+pub fn is_metadata(_: &str) -> bool {
 	false
 }
 

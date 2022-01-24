@@ -1,11 +1,9 @@
 //! Futures for [`Backend`] functions to return, for easier documentation.
 //!
 //! [`Backend`]: crate::backend::Backend
-use std::{future::Future, pin::Pin};
-use crate::util::PinBoxFuture;
-
 #[cfg(doc)]
 use crate::backend::Backend;
+use crate::util::PinBoxFuture;
 
 /// The future returned from [`Backend::init`].
 pub type InitFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;

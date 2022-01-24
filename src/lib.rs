@@ -23,7 +23,7 @@ compile_error!("either the \"active\" feature or the \"passive\" feature must be
 pub(crate) const METADATA_KEY: &str = "__metadata__";
 
 #[cfg(feature = "passive")]
-mod accessor;
+pub mod accessor;
 #[cfg(feature = "active")]
 pub mod action;
 mod atomics;
@@ -35,7 +35,8 @@ mod starchart;
 mod util;
 
 #[cfg(feature = "passive")]
-pub use self::accessor::ChartAccessor;
+#[doc(inline)]
+pub use self::accessor::Accessor;
 #[cfg(feature = "active")]
 #[doc(inline)]
 pub use self::action::Action;

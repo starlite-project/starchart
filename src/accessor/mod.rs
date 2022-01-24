@@ -1,34 +1,39 @@
 #![allow(missing_docs, clippy::missing_panics_doc, clippy::missing_errors_doc)]
 #[cfg(feature = "metadata")]
 use std::any::type_name;
-use std::iter::FromIterator;
+use std::{
+	fmt::{Debug, Formatter, Result as FmtResult},
+	iter::FromIterator,
+};
 
 #[cfg(not(feature = "metadata"))]
 use futures_util::{future::ok, Future};
 
 #[cfg(feature = "metadata")]
 use crate::METADATA_KEY;
-use crate::{atomics::Guard, backend::Backend, Entry, IndexEntry, Key};
+use crate::{atomics::Guard, backend::Backend, util::is_metadata, Entry, IndexEntry, Key};
 
 mod error;
+mod helpers;
 #[doc(hidden)]
 pub use self::error::{AccessorError, AccessorErrorType};
+pub use self::helpers::EntryAccessor;
 
 /// A chart accessor used for passive access.
 #[cfg(feature = "passive")]
-#[must_use = "a ChartAccessor does nothing if not used."]
-pub struct ChartAccessor<'a, B> {
+#[must_use = "a Accessor does nothing if not used."]
+pub struct Accessor<'a, B> {
 	backend: &'a B,
 	guard: &'a Guard,
 }
 
-impl<'a, B> ChartAccessor<'a, B> {
+impl<'a, B> Accessor<'a, B> {
 	pub(crate) const fn new(backend: &'a B, guard: &'a Guard) -> Self {
 		Self { backend, guard }
 	}
 }
 
-impl<'a, B: Backend> ChartAccessor<'a, B> {
+impl<'a, B: Backend> Accessor<'a, B> {
 	pub async fn read_entry<S: Entry>(
 		self,
 		table: &str,
@@ -72,6 +77,17 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 				source: Some(Box::new(e)),
 				kind: AccessorErrorType::Backend,
 			})?;
+
+		let keys = keys
+			.iter()
+			.filter_map(|v| {
+				if is_metadata(v) {
+					None
+				} else {
+					Some(v.as_str())
+				}
+			})
+			.collect::<Vec<_>>();
 
 		let values = self
 			.backend
@@ -276,7 +292,7 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 				source: None,
 				kind: AccessorErrorType::Metadata {
 					type_and_table: None,
-				}
+				},
 			});
 		}
 
@@ -326,10 +342,28 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 	}
 }
 
-impl<'a, B: Backend> Clone for ChartAccessor<'a, B> {
+#[cfg(no_debug_non_exhaustive)]
+impl<'a, B: Backend + Debug> Debug for Accessor<'a, B> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("Accessor")
+			.field("backend", &self.backend)
+			.finish()
+	}
+}
+
+#[cfg(not(no_debug_non_exhaustive))]
+impl<'a, B: Backend + Debug> Debug for Accessor<'a, B> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("Accessor")
+			.field("backend", &self.backend)
+			.finish_non_exhaustive()
+	}
+}
+
+impl<'a, B: Backend> Clone for Accessor<'a, B> {
 	fn clone(&self) -> Self {
 		*self
 	}
 }
 
-impl<'a, B: Backend> Copy for ChartAccessor<'a, B> {}
+impl<'a, B: Backend> Copy for Accessor<'a, B> {}

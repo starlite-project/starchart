@@ -4,6 +4,8 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
+use futures_util::{future::join_all, FutureExt};
+
 use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
@@ -88,13 +90,14 @@ pub trait Backend: Send + Sync {
 	/// Ensures a table exists.
 	/// Uses [`Self::has_table`] first, then [`Self::create_table`] if it returns false.
 	fn ensure_table<'a>(&'a self, table: &'a str) -> EnsureTableFuture<'a, Self::Error> {
-		Box::pin(async move {
+		async move {
 			if !self.has_table(table).await? {
 				self.create_table(table).await?;
 			}
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	/// Gets all entries that match a predicate, to get all entries, use [`get_keys`] first.
@@ -103,25 +106,22 @@ pub trait Backend: Send + Sync {
 	fn get_all<'a, D, I>(
 		&'a self,
 		table: &'a str,
-		entries: &'a [String],
+		entries: &'a [&'a str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
 		I: FromIterator<D>,
 	{
-		Box::pin(async move {
-			let mut output = Vec::with_capacity(entries.len());
+		async move {
+			let gets = entries.iter().copied().map(|v| self.get::<D>(table, v));
 
-			for key in entries {
-				let value: Option<D> = self.get(table, key).await?;
-				if value.is_none() {
-					continue; // coverage:ignore-line
-				}
-				output.push(unsafe { value.inner_unwrap() });
-			}
-
-			Ok(output.into_iter().collect())
-		})
+			join_all(gets)
+				.await
+				.into_iter()
+				.filter_map(Result::transpose)
+				.collect::<Result<I, Self::Error>>()
+		}
+		.boxed()
 	}
 
 	/// Gets all the keys in the table.
@@ -157,13 +157,14 @@ pub trait Backend: Send + Sync {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
+		async move {
 			if !self.has(table, id).await? {
 				self.create(table, id, value).await?;
 			}
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	/// Updates an existing entry in a table.
@@ -260,10 +261,7 @@ mod tests {
 		backend.create("test", "id", &"value".to_owned()).await?;
 		backend.create("test", "id2", &"value2".to_owned()).await?;
 
-		let keys = vec!["id", "id2", "doesn't exist"]
-			.into_iter()
-			.map(ToOwned::to_owned)
-			.collect::<Vec<_>>();
+		let keys = ["id", "id2", "doesn't exist"];
 		let mut values: Vec<String> = backend.get_all("test", &keys).await?;
 		let mut expected = vec!["value".to_owned(), "value2".to_owned()];
 

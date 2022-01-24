@@ -48,7 +48,7 @@ impl FsBackend for TomlBackend {
 		Ok(serde_toml::from_str(&output)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -100,7 +100,7 @@ impl FsBackend for TomlPrettyBackend {
 		Ok(serde_toml::from_str(&output)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{

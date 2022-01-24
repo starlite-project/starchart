@@ -46,7 +46,7 @@ impl FsBackend for JsonBackend {
 		Ok(serde_json::from_reader(rdr)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -96,7 +96,7 @@ impl FsBackend for JsonPrettyBackend {
 		Ok(serde_json::from_reader(rdr)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{

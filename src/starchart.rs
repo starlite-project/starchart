@@ -5,7 +5,7 @@ use std::sync::Arc;
 use futures_executor::block_on;
 
 #[cfg(feature = "passive")]
-use crate::ChartAccessor;
+use crate::Accessor;
 use crate::{atomics::Guard, backend::Backend};
 
 /// The base structure for managing data.
@@ -45,8 +45,8 @@ impl<B: Backend> Starchart<B> {
 	}
 
 	#[cfg(feature = "passive")]
-	pub fn access(&self) -> ChartAccessor<'_, B> {
-		ChartAccessor::new(&self.backend, &*self.guard)
+	pub fn access(&self) -> Accessor<'_, B> {
+		Accessor::new(&self.backend, &*self.guard)
 	}
 }
 
