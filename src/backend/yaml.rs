@@ -188,7 +188,7 @@ mod tests {
 
 		assert_eq!(backend.get::<u8>("table", "id2").await?, None);
 
-		assert!(backend.create("table", "id", &2_u8).await.is_err());
+		assert!(backend.create("table", "id", &2_u8).await.is_ok());
 
 		Ok(())
 	}
