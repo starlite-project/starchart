@@ -35,9 +35,9 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		key: &str,
 	) -> Result<Option<S>, AccessorError> {
 		// check the keys before we lock.
-		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
+		Self::validate_metadata(key)?;
+
 		let lock = self.guard.shared();
 
 		self.check_metadata::<S>(table).await?;
@@ -58,9 +58,7 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		self,
 		table: &str,
 	) -> Result<I, AccessorError> {
-		if let Some(e) = Self::validate_metadata(table) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
 
 		let lock = self.guard.shared();
 
@@ -95,9 +93,8 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		key: &str,
 		entry: &S,
 	) -> Result<(), AccessorError> {
-		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
+		Self::validate_metadata(key)?;
 
 		let lock = self.guard.exclusive();
 
@@ -137,9 +134,7 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 	}
 
 	pub async fn create_table<S: Entry>(self, table: &str) -> Result<(), AccessorError> {
-		if let Some(e) = Self::validate_metadata(table) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
 
 		let lock = self.guard.exclusive();
 
@@ -164,9 +159,8 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		key: &str,
 		entry: &S,
 	) -> Result<(), AccessorError> {
-		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
+		Self::validate_metadata(key)?;
 
 		let lock = self.guard.exclusive();
 
@@ -199,9 +193,8 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		table: &str,
 		key: &str,
 	) -> Result<bool, AccessorError> {
-		if let Some(e) = Self::validate_metadata(table).or_else(|| Self::validate_metadata(key)) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
+		Self::validate_metadata(key)?;
 
 		let lock = self.guard.exclusive();
 
@@ -239,9 +232,7 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 	}
 
 	pub async fn delete_table<S: Entry>(self, table: &str) -> Result<bool, AccessorError> {
-		if let Some(e) = Self::validate_metadata(table) {
-			return Err(e);
-		}
+		Self::validate_metadata(table)?;
 
 		let lock = self.guard.exclusive();
 
@@ -278,24 +269,23 @@ impl<'a, B: Backend> ChartAccessor<'a, B> {
 		Ok(exists != new_exists)
 	}
 
-	// we return an option to make it compatible with the future above.
 	#[cfg(feature = "metadata")]
-	fn validate_metadata(key: &str) -> Option<AccessorError> {
+	fn validate_metadata(key: &str) -> Result<(), AccessorError> {
 		if key == METADATA_KEY {
-			return Some(AccessorError {
+			return Err(AccessorError {
 				source: None,
 				kind: AccessorErrorType::Metadata {
 					type_and_table: None,
-				},
+				}
 			});
 		}
 
-		None
+		Ok(())
 	}
 
 	#[cfg(not(feature = "metadata"))]
-	fn validate_metadata(key: &str) -> Option<AccessorError> {
-		None
+	fn validate_metadata(_: &str) -> Result<(), AccessorError> {
+		Ok(())
 	}
 
 	#[cfg(feature = "metadata")]
