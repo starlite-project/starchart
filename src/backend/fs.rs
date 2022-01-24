@@ -286,7 +286,7 @@ impl<RW: FsBackend> Backend for RW {
 			let file: StdFile = match fs::File::open(&path).await {
 				Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
 				Err(e) => return Err(e.into()),
-				Ok(v) => v.into_std().await
+				Ok(v) => v.into_std().await,
 			};
 
 			Ok(Some(self.read_data(file)?))
