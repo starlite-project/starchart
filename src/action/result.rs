@@ -12,7 +12,7 @@ use crate::Entry;
 /// [`Action::run`]: crate::Action::run
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[must_use = "an ActionResult should be asserted"]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub enum ActionResult<R> {
 	/// Indicates a [`CreateOperation`] was performed.
 	///

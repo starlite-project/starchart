@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 #[must_use = "getting the information on what action will be performed has no side effects"]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub enum ActionKind {
 	/// Signifies that the operation will be a Create.
 	///

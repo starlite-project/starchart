@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use futures_executor::block_on;
 
-#[cfg(feature = "passive")]
+#[cfg(feature = "accessor")]
 use crate::Accessor;
 use crate::{atomics::Guard, backend::Backend};
 
@@ -45,7 +45,7 @@ impl<B: Backend> Starchart<B> {
 	}
 
 	/// Generate an accessor to allow passive access to a database.
-	#[cfg(feature = "passive")]
+	#[cfg(feature = "accessor")]
 	pub fn access(&self) -> Accessor<'_, B> {
 		Accessor::new(&self.backend, &*self.guard)
 	}

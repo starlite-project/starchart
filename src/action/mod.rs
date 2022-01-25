@@ -42,37 +42,37 @@ use crate::{
 };
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type CreateEntryAction<S> = Action<S, CreateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type ReadEntryAction<S> = Action<S, ReadOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type UpdateEntryAction<S> = Action<S, UpdateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type DeleteEntryAction<S> = Action<S, DeleteOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type CreateTableAction<S> = Action<S, CreateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type ReadTableAction<S> = Action<S, ReadOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
 ///
 /// This action can never been ran.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type UpdateTableAction<S> = Action<S, UpdateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub type DeleteTableAction<S> = Action<S, DeleteOperation, TableTarget>;
 
 #[derive(Debug, Clone)]
@@ -116,7 +116,7 @@ impl<S> Default for InnerAction<S> {
 /// [`Starchart`]: crate::Starchart
 #[derive(Clone)]
 #[must_use = "an action alone has no side effects"]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub struct Action<S, C, T> {
 	pub(crate) inner: InnerAction<S>,
 	kind: PhantomData<C>,

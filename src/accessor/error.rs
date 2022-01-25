@@ -4,6 +4,7 @@ use std::{
 };
 
 #[derive(Debug)]
+#[cfg(feature = "accessor")]
 pub struct AccessorError {
 	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
 	pub(super) kind: AccessorErrorType,

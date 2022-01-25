@@ -17,8 +17,8 @@ mod error;
 #[doc(hidden)]
 pub use self::error::{AccessorError, AccessorErrorType};
 
-/// A chart accessor used for passive access.
-#[cfg(feature = "passive")]
+/// A chart accessor used for accessor access.
+#[cfg(feature = "accessor")]
 #[must_use = "a Accessor does nothing if not used."]
 pub struct Accessor<'a, B> {
 	backend: &'a B,

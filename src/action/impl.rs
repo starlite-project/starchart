@@ -6,32 +6,32 @@ use super::{ActionKind, TargetKind};
 
 /// Marker type for a Create operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct CreateOperation;
 
 /// Marker type for a Read operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct ReadOperation;
 
 /// Marker type for an Update operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct UpdateOperation;
 
 /// Marker type for a Delete operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct DeleteOperation;
 
 /// A sealed marker trait for helping an [`Action`] represent what type of operation will occur.
 ///
 /// [`Action`]: crate::action::Action
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub trait CrudOperation: private::Sealed {
 	#[doc(hidden)]
 	fn kind() -> ActionKind;
@@ -63,13 +63,13 @@ impl CrudOperation for DeleteOperation {
 
 /// Marker type for a table operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct TableTarget;
 
 /// Marker type for an entry operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[non_exhaustive]
 pub struct EntryTarget;
 
@@ -77,7 +77,7 @@ pub struct EntryTarget;
 /// operation will cover.
 ///
 /// [`Action`]: crate::action::Action
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub trait OperationTarget: private::Sealed {
 	#[doc(hidden)]
 	fn target() -> TargetKind;

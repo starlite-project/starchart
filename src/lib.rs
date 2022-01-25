@@ -16,15 +16,15 @@
 
 use std::result::Result as StdResult;
 
-#[cfg(not(any(feature = "passive", feature = "active")))]
-compile_error!("either the \"active\" feature or the \"passive\" feature must be active.");
+#[cfg(not(any(feature = "accessor", feature = "action")))]
+compile_error!("either the \"action\" feature or the \"accessor\" feature must be enabled.");
 
 #[cfg(all(feature = "metadata", not(tarpaulin_include)))]
 pub(crate) const METADATA_KEY: &str = "__metadata__";
 
-#[cfg(feature = "passive")]
+#[cfg(feature = "accessor")]
 pub mod accessor;
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub mod action;
 mod atomics;
 pub mod backend;
@@ -34,10 +34,10 @@ mod starchart;
 #[cfg(not(tarpaulin_include))]
 mod util;
 
-#[cfg(feature = "passive")]
+#[cfg(feature = "accessor")]
 #[doc(inline)]
 pub use self::accessor::Accessor;
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 #[doc(inline)]
 pub use self::action::Action;
 #[doc(inline)]

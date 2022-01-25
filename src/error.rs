@@ -5,10 +5,10 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
-#[cfg(feature = "passive")]
+#[cfg(feature = "accessor")]
 pub use crate::accessor::{AccessorError, AccessorErrorType};
 #[doc(inline)]
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 pub use crate::action::{
 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
 	ActionValidationErrorType,
@@ -56,11 +56,11 @@ impl Display for Error {
 			ErrorType::Memory => f.write_str("an error occurred with the memory backend"),
 			#[cfg(feature = "fs")]
 			ErrorType::Fs => f.write_str("an error occurred with a file-system backend"),
-			#[cfg(feature = "active")]
+			#[cfg(feature = "action")]
 			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
-			#[cfg(feature = "active")]
+			#[cfg(feature = "action")]
 			ErrorType::ActionValidation => f.write_str("an action is invalid"),
-			#[cfg(feature = "passive")]
+			#[cfg(feature = "accessor")]
 			ErrorType::Accessor => f.write_str("an error occurred accessing data"),
 		}
 	}
@@ -94,7 +94,7 @@ impl From<FsError> for Error {
 	}
 }
 
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 impl From<ActionError> for Error {
 	fn from(e: ActionError) -> Self {
 		let kind = match e.kind() {
@@ -109,7 +109,7 @@ impl From<ActionError> for Error {
 	}
 }
 
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 impl From<ActionValidationError> for Error {
 	fn from(e: ActionValidationError) -> Self {
 		Self {
@@ -119,7 +119,7 @@ impl From<ActionValidationError> for Error {
 	}
 }
 
-#[cfg(feature = "active")]
+#[cfg(feature = "action")]
 impl From<ActionRunError> for Error {
 	fn from(e: ActionRunError) -> Self {
 		Self {
@@ -129,7 +129,7 @@ impl From<ActionRunError> for Error {
 	}
 }
 
-#[cfg(feature = "passive")]
+#[cfg(feature = "accessor")]
 impl From<AccessorError> for Error {
 	fn from(e: AccessorError) -> Self {
 		Self {
@@ -155,12 +155,12 @@ pub enum ErrorType {
 	#[cfg(feature = "fs")]
 	Fs,
 	/// An [`ActionValidationError`] occurred.
-	#[cfg(feature = "active")]
+	#[cfg(feature = "action")]
 	ActionValidation,
 	/// An [`ActionRunError`] occurred.
-	#[cfg(feature = "active")]
+	#[cfg(feature = "action")]
 	ActionRun,
 	/// An [`AccessorError`] occurred.
-	#[cfg(feature = "passive")]
+	#[cfg(feature = "accessor")]
 	Accessor,
 }
