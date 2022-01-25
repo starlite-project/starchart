@@ -1,6 +1,6 @@
 //! The base structure to use for starchart.
 
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use futures_executor::block_on;
 
@@ -19,18 +19,6 @@ pub struct Starchart<B: Backend> {
 }
 
 impl<B: Backend> Starchart<B> {
-	/// Gives access to the raw [`Backend`] instance.
-	///
-	/// # Safety
-	///
-	/// Accessing the backend functions directly isn't inheritly unsafe, however
-	/// care must be taken to ensure the data isn't modified directly, and
-	/// that [`Backend::shutdown`] isn't directly called.
-	#[must_use]
-	pub unsafe fn backend(&self) -> &B {
-		&*self.backend
-	}
-
 	/// Creates a new [`Starchart`], and initializes the [`Backend`].
 	///
 	/// # Errors
@@ -47,7 +35,7 @@ impl<B: Backend> Starchart<B> {
 	/// Generate an accessor to allow passive access to a database.
 	#[cfg(feature = "accessor")]
 	pub fn access(&self) -> Accessor<'_, B> {
-		Accessor::new(&self.backend, &*self.guard)
+		Accessor::new(&*self, &*self.guard)
 	}
 }
 
@@ -63,6 +51,14 @@ impl<B: Backend> Clone for Starchart<B> {
 impl<B: Backend> Drop for Starchart<B> {
 	fn drop(&mut self) {
 		block_on(unsafe { self.backend.shutdown() });
+	}
+}
+
+impl<B: Backend> Deref for Starchart<B> {
+	type Target = B;
+
+	fn deref(&self) -> &Self::Target {
+		&*self.backend
 	}
 }
 
@@ -202,7 +198,7 @@ mod tests {
 		let starchart = Starchart::new(backend).await?;
 
 		// SAFETY: this is a test
-		let backend = unsafe { starchart.backend() };
+		let backend = &*starchart;
 
 		assert!(backend.is_initialized());
 

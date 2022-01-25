@@ -196,9 +196,10 @@ impl<S: Entry> InnerAction<S> {
 
 		let lock = chart.guard.exclusive();
 
-		let (backend, table, key, entry) = unsafe {
+		let backend = &**chart;
+
+		let (table, key, entry) = unsafe {
 			(
-				chart.backend(),
 				self.table.take().inner_unwrap(),
 				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
@@ -228,9 +229,10 @@ impl<S: Entry> InnerAction<S> {
 
 		let lock = chart.guard.shared();
 
-		let (backend, table, key) = unsafe {
+		let backend = &**chart;
+
+		let (table, key) = unsafe {
 			(
-				chart.backend(),
 				self.table.take().inner_unwrap(),
 				self.key.take().inner_unwrap(),
 			)
@@ -257,9 +259,10 @@ impl<S: Entry> InnerAction<S> {
 
 		let lock = chart.guard.exclusive();
 
-		let (backend, table, key, entry) = unsafe {
+		let backend = &**chart;
+
+		let (table, key, entry) = unsafe {
 			(
-				chart.backend(),
 				self.table.take().inner_unwrap(),
 				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
@@ -286,9 +289,10 @@ impl<S: Entry> InnerAction<S> {
 		self.validate_key()?;
 		let lock = chart.guard.exclusive();
 
-		let (backend, table, key) = unsafe {
+		let backend = &**chart;
+
+		let (table, key) = unsafe {
 			(
-				chart.backend(),
 				self.table.take().inner_unwrap(),
 				self.key.take().inner_unwrap(),
 			)
@@ -325,7 +329,9 @@ impl<S: Entry> InnerAction<S> {
 
 		let lock = chart.guard.exclusive();
 
-		let (backend, table) = unsafe { (chart.backend(), self.table.inner_unwrap()) };
+		let backend = &**chart;
+
+		let table = unsafe { self.table.inner_unwrap() };
 
 		backend
 			.ensure_table(&table)
@@ -362,7 +368,9 @@ impl<S: Entry> InnerAction<S> {
 		self.validate_table()?;
 		let lock = chart.guard.shared();
 
-		let (backend, table) = unsafe { (chart.backend(), self.table.take().inner_unwrap()) };
+		let backend = &**chart;
+
+		let table = unsafe { self.table.take().inner_unwrap() };
 
 		self.check_metadata(backend, &table).await?;
 
@@ -403,7 +411,9 @@ impl<S: Entry> InnerAction<S> {
 
 		let lock = chart.guard.exclusive();
 
-		let (backend, table) = unsafe { (chart.backend(), self.table.take().inner_unwrap()) };
+		let backend = &**chart;
+
+		let table = unsafe { self.table.take().inner_unwrap() };
 
 		self.check_metadata(backend, &table).await?;
 
