@@ -10,7 +10,7 @@ use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use super::{
 	futures::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
-		GetKeysFuture, HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
+		GetKeysFuture, HasFuture, HasTableFuture, UpdateFuture,
 	},
 	Backend,
 };

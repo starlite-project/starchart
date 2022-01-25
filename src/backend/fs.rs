@@ -15,7 +15,7 @@ use tokio::fs;
 use super::{
 	futures::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture, GetKeysFuture,
-		HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+		HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 	},
 	Backend,
 };

@@ -12,7 +12,7 @@ use futures_util::{
 use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
-	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
+	InitFuture, ShutdownFuture, UpdateFuture,
 };
 use crate::Entry;
 

@@ -84,7 +84,7 @@ mod tests {
 		backend::{
 			futures::{
 				CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
-				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 			},
 			Backend, MemoryBackend,
 		},
