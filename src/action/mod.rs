@@ -102,6 +102,334 @@ impl<S> InnerAction<S> {
 	fn data_mut(&mut self) -> &mut Option<Box<S>> {
 		&mut self.data
 	}
+
+	fn validate_entry(&self) -> Result<(), ActionValidationError> {
+		self.validate_key()?;
+		self.validate_data()
+	}
+
+	fn validate_table(&self) -> Result<(), ActionValidationError> {
+		if self.table.is_none() {
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Table,
+			});
+		}
+
+		self.validate_metadata(self.table.as_deref())
+	}
+
+	fn validate_data(&self) -> Result<(), ActionValidationError> {
+		if self.data.is_none() {
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Data,
+			});
+		}
+
+		Ok(())
+	}
+
+	fn validate_key(&self) -> Result<(), ActionValidationError> {
+		if self.key.is_none() {
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Key,
+			});
+		}
+
+		self.validate_metadata(self.key.as_deref())
+	}
+
+	#[cfg(feature = "metadata")]
+	#[allow(clippy::unused_self)]
+	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
+		if key == Some(METADATA_KEY) {
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Metadata,
+			});
+		}
+
+		Ok(())
+	}
+
+	#[cfg(not(feature = "metadata"))]
+	#[allow(clippy::unused_self)]
+	fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionValidationError> {
+		Ok(())
+	}
+}
+
+impl<S: Entry> InnerAction<S> {
+	#[cfg(feature = "metadata")]
+	async fn check_metadata<B: Backend>(
+		&self,
+		backend: &B,
+		table_name: &str,
+	) -> Result<(), ActionRunError> {
+		backend
+			.get::<S>(table_name, METADATA_KEY)
+			.await
+			.map(|_| {})
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Metadata {
+					type_name: type_name::<S>(),
+					table_name: table_name.to_owned(),
+				},
+			})
+	}
+
+	#[cfg(not(feature = "metadata"))]
+	fn check_metadata<B: Backend>(
+		&self,
+		_: &B,
+		_: &str,
+	) -> impl Future<Output = Result<(), ActionRunError>> {
+		async { Ok(()) }
+	}
+
+	async fn create_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		self.validate_entry()?;
+		self.validate_table()?;
+
+		let lock = chart.guard.exclusive();
+
+		let (backend, table, key, entry) = unsafe {
+			(
+				chart.backend(),
+				self.table.take().inner_unwrap(),
+				self.key.take().inner_unwrap(),
+				self.data.take().inner_unwrap(),
+			)
+		};
+
+		self.check_metadata(backend, &table).await?;
+
+		backend
+			.ensure(&table, &key, &*entry)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+		Ok(())
+	}
+
+	async fn read_entry<B: Backend>(
+		mut self,
+		chart: &Starchart<B>,
+	) -> Result<Option<S>, ActionError> {
+		self.validate_table()?;
+		self.validate_key()?;
+
+		let lock = chart.guard.shared();
+
+		let (backend, table, key) = unsafe {
+			(
+				chart.backend(),
+				self.table.take().inner_unwrap(),
+				self.key.take().inner_unwrap(),
+			)
+		};
+
+		self.check_metadata(backend, &table).await?;
+
+		let res = backend
+			.get(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(res)
+	}
+
+	async fn update_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		self.validate_table()?;
+		self.validate_entry()?;
+
+		let lock = chart.guard.exclusive();
+
+		let (backend, table, key, entry) = unsafe {
+			(
+				chart.backend(),
+				self.table.take().inner_unwrap(),
+				self.key.take().inner_unwrap(),
+				self.data.take().inner_unwrap(),
+			)
+		};
+
+		self.check_metadata(backend, &table).await?;
+
+		backend
+			.update(&table, &key, &*entry)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(())
+	}
+
+	async fn delete_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+		self.validate_table()?;
+		self.validate_key()?;
+		let lock = chart.guard.exclusive();
+
+		let (backend, table, key) = unsafe {
+			(
+				chart.backend(),
+				self.table.take().inner_unwrap(),
+				self.key.take().inner_unwrap(),
+			)
+		};
+
+		self.check_metadata(backend, &table).await?;
+
+		if !backend
+			.has(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})? {
+			drop(lock);
+			return Ok(false);
+		}
+
+		backend
+			.delete(&table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(true)
+	}
+
+	async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		self.validate_table()?;
+
+		let lock = chart.guard.exclusive();
+
+		let (backend, table) = unsafe { (chart.backend(), self.table.inner_unwrap()) };
+
+		backend
+			.ensure_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		#[cfg(feature = "metadata")]
+		{
+			let metadata = S::default();
+			backend
+				.ensure(&table, METADATA_KEY, &metadata)
+				.await
+				.map_err(|e| ActionRunError {
+					source: Some(Box::new(e)),
+					kind: ActionRunErrorType::Metadata {
+						type_name: type_name::<S>(),
+						table_name: table,
+					},
+				})?;
+		}
+
+		drop(lock);
+
+		Ok(())
+	}
+
+	async fn read_table<B: Backend, I>(mut self, chart: &Starchart<B>) -> Result<I, ActionError>
+	where
+		I: FromIterator<S>,
+	{
+		self.validate_table()?;
+		let lock = chart.guard.shared();
+
+		let (backend, table) = unsafe { (chart.backend(), self.table.take().inner_unwrap()) };
+
+		self.check_metadata(backend, &table).await?;
+
+		let keys = backend
+			.get_keys::<Vec<_>>(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		let keys = keys
+			.iter()
+			.filter_map(|v| {
+				if is_metadata(v) {
+					None
+				} else {
+					Some(v.as_str())
+				}
+			})
+			.collect::<Vec<_>>();
+
+		let data = backend
+			.get_all::<S, I>(&table, &keys)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(data)
+	}
+
+	async fn delete_table<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+		self.validate_table()?;
+
+		let lock = chart.guard.exclusive();
+
+		let (backend, table) = unsafe { (chart.backend(), self.table.take().inner_unwrap()) };
+
+		self.check_metadata(backend, &table).await?;
+
+		if !backend
+			.has_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})? {
+			drop(lock);
+			return Ok(false);
+		}
+
+		backend
+			.delete_table(&table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
+
+		drop(lock);
+
+		Ok(true)
+	}
 }
 
 impl<S> Default for InnerAction<S> {
@@ -237,55 +565,14 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 		self // coverage:ignore-line
 	}
 
-	#[cfg(feature = "metadata")]
-	#[cfg_attr(
-		all(feature = "metadata", not(tarpaulin_include)),
-		allow(clippy::future_not_send)
-	)]
-	async fn check_metadata<B: Backend>(
-		&self,
-		backend: &B,
-		table_name: &str,
-	) -> Result<(), ActionRunError> {
-		backend
-			.get::<S>(table_name, METADATA_KEY)
-			.await // coverage:ignore-line
-			.map(|_| {})
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Metadata {
-					type_name: type_name::<S>(),
-					table_name: table_name.to_owned(),
-				},
-			})
-	}
-
-	#[cfg(not(feature = "metadata"))]
-	fn check_metadata<B: Backend>(
-		&self,
-		_: &B,
-		_: &str,
-	) -> impl Future<Output = Result<(), ActionRunError>> {
-		ok(())
-	}
-
 	/// Validates that the table key is set.
 	///
 	/// # Errors
 	///
 	/// Errors if [`Self::set_table`] has not yet been called.
+	#[inline]
 	pub fn validate_table(&self) -> Result<(), ActionValidationError> {
-		if self.table().is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Table,
-			});
-		}
-
-		#[cfg(feature = "metadata")]
-		self.validate_metadata(self.inner.table.as_deref())?;
-
-		Ok(())
+		self.inner.validate_table()
 	}
 
 	/// Validates that the key is not the private metadata key.
@@ -296,27 +583,9 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	///
 	/// Errors if [`Self::set_key`] was passed the private metadata key.
 	#[allow(clippy::unused_self)]
+	#[inline]
 	pub fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		if key == Some(METADATA_KEY) {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Metadata,
-			});
-		}
-
-		Ok(())
-	}
-
-	/// Validates that the key is not the private metadata key.
-	///
-	/// Does nothing if the `metadata` feature is not enabled.
-	///
-	/// # Errors
-	///
-	/// Errors if [`Self::set_key`] was passed the private metadata key.
-	#[cfg(not(feature = "metadata"))]
-	pub fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionValidationError> {
-		Ok(())
+		self.inner.validate_metadata(key)
 	}
 }
 
@@ -348,17 +617,9 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// # Errors
 	///
 	/// Errors if [`Self::set_key`] has not yet been called.
+	#[inline]
 	pub fn validate_key(&self) -> Result<(), ActionValidationError> {
-		if self.key().is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Key,
-			});
-		}
-
-		self.validate_metadata(self.key())?;
-
-		Ok(())
+		self.inner.validate_key()
 	}
 
 	/// Validates that the data has been set.
@@ -366,15 +627,9 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// # Errors
 	///
 	/// Errors if [`Self::set_data`] has not yet been called.
+	#[inline]
 	pub fn validate_data(&self) -> Result<(), ActionValidationError> {
-		if self.data().is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Data,
-			});
-		}
-
-		Ok(())
+		self.inner.validate_data()
 	}
 
 	/// Validates that both the key and data have been set.
@@ -382,9 +637,9 @@ impl<S: Entry, C: CrudOperation> Action<S, C, EntryTarget> {
 	/// # Errors
 	///
 	/// This errors if both the [`Self::set_key`] and [`Self::set_data`] (or [`Self::set_entry`]) has not been called.
+	#[inline]
 	pub fn validate_entry(&self) -> Result<(), ActionValidationError> {
-		self.validate_key()?;
-		self.validate_data()
+		self.inner.validate_entry()
 	}
 }
 
@@ -500,56 +755,38 @@ impl<S: Entry, C: CrudOperation, T: OperationTarget> Action<S, C, T> {
 	#[inline]
 	pub async fn run<B: Backend>(
 		self,
-		gateway: &Starchart<B>,
+		chart: &Starchart<B>,
 	) -> Result<ActionResult<S>, ActionError> {
-		match self.target() {
-			TargetKind::Entry => match self.kind() {
-				ActionKind::Create => {
-					let create_entry: CreateEntryAction<S> = self.into_action();
-
-					create_entry.run_create_entry(gateway).await?;
-					Ok(ActionResult::Create)
-				}
-				ActionKind::Read => {
-					let read_entry: ReadEntryAction<S> = self.into_action();
-
-					let res = read_entry.run_read_entry(gateway).await?;
-					Ok(ActionResult::SingleRead(res))
-				}
-				ActionKind::Update => {
-					let update_entry: UpdateEntryAction<S> = self.into_action();
-
-					update_entry.run_update_entry(gateway).await?;
-					Ok(ActionResult::Update)
-				}
-				ActionKind::Delete => {
-					let delete_entry: DeleteEntryAction<S> = self.into_action();
-
-					let res = delete_entry.run_delete_entry(gateway).await?;
-					Ok(ActionResult::Delete(res))
-				}
-			},
-			TargetKind::Table => match self.kind() {
-				ActionKind::Create => {
-					let create_table: CreateTableAction<S> = self.into_action();
-
-					create_table.run_create_table(gateway).await?;
-					Ok(ActionResult::Create)
-				}
-				ActionKind::Read => {
-					let read_table: ReadTableAction<S> = self.into_action();
-
-					let res = read_table.run_read_table(gateway).await?;
-					Ok(ActionResult::MultiRead(res))
-				}
-				ActionKind::Update => panic!("updating tables is unsupported"),
-				ActionKind::Delete => {
-					let delete_table: DeleteTableAction<S> = self.into_action();
-
-					let res = delete_table.run_delete_table(gateway).await?;
-					Ok(ActionResult::Delete(res))
-				}
-			},
+		match (self.kind(), self.target()) {
+			(ActionKind::Create, TargetKind::Entry) => {
+				self.inner.create_entry(chart).await?;
+				Ok(ActionResult::Create)
+			}
+			(ActionKind::Read, TargetKind::Entry) => {
+				let res = self.inner.read_entry(chart).await?;
+				Ok(ActionResult::SingleRead(res))
+			}
+			(ActionKind::Update, TargetKind::Entry) => {
+				self.inner.update_entry(chart).await?;
+				Ok(ActionResult::Update)
+			}
+			(ActionKind::Delete, TargetKind::Entry) => {
+				let res = self.inner.delete_entry(chart).await?;
+				Ok(ActionResult::Delete(res))
+			}
+			(ActionKind::Create, TargetKind::Table) => {
+				self.inner.create_table(chart).await?;
+				Ok(ActionResult::Create)
+			}
+			(ActionKind::Read, TargetKind::Table) => {
+				let res = self.inner.read_table(chart).await?;
+				Ok(ActionResult::MultiRead(res))
+			}
+			(ActionKind::Update, TargetKind::Table) => panic!("updating tables is not supported"),
+			(ActionKind::Delete, TargetKind::Table) => {
+				let res = self.inner.delete_table(chart).await?;
+				Ok(ActionResult::Delete(res))
+			}
 		}
 	}
 }
@@ -564,55 +801,7 @@ impl<S: Entry> CreateEntryAction<S> {
 		self,
 		chart: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table()?;
-		self.validate_entry()?;
-		let lock = chart.guard.exclusive();
-		unsafe {
-			self.run_create_entry_unchecked(chart.backend()).await?;
-		};
-		drop(lock);
-		Ok(())
-	}
-
-	/// Runs a [`CreateEntryAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`], [`Self::set_data`],
-	/// and [`Self::set_key`] (or [`Self::set_entry`] for the last two) will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_create_entry_unchecked<B: Backend>(
-		mut self,
-		backend: &B,
-	) -> Result<(), ActionRunError> {
-		let table_name = self.inner.table.take().inner_unwrap();
-		let key = self.inner.key.take().inner_unwrap();
-		let entry = self.inner.data.take().inner_unwrap();
-		if backend
-			.has(&table_name, &key)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})? {
-			return Ok(());
-		}
-
-		self.check_metadata(backend, &table_name).await?;
-
-		backend
-			.create(&table_name, &key, &*entry)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		Ok(())
+		self.inner.create_entry(chart).await
 	}
 }
 
@@ -626,40 +815,7 @@ impl<S: Entry> ReadEntryAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<Option<S>, ActionError> {
-		self.validate_table()?;
-		self.validate_key()?;
-		let lock = gateway.guard.shared();
-		let res = unsafe { self.run_read_entry_unchecked(gateway.backend()).await? };
-		drop(lock);
-		Ok(res)
-	}
-
-	/// Runs a [`ReadEntryAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`] and [`Self::set_key`] will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_read_entry_unchecked<B: Backend>(
-		mut self,
-		backend: &B,
-	) -> Result<Option<S>, ActionRunError> {
-		let table_name = self.inner.table.take().inner_unwrap();
-		let key = self.inner.key.take().inner_unwrap();
-
-		self.check_metadata(backend, &table_name).await?;
-
-		backend
-			.get(&table_name, &key)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})
+		self.inner.read_entry(gateway).await
 	}
 }
 
@@ -673,44 +829,7 @@ impl<S: Entry> UpdateEntryAction<S> {
 		self,
 		chart: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table()?;
-		self.validate_entry()?;
-		let lock = chart.guard.exclusive();
-		unsafe {
-			self.run_update_entry_unchecked(chart.backend()).await?;
-		};
-		drop(lock);
-		Ok(())
-	}
-
-	/// Runs a [`UpdateEntryAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`], [`Self::set_data`],
-	/// and [`Self::set_key`] (or [`Self::set_entry`] for the last two) will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_update_entry_unchecked<B: Backend>(
-		mut self,
-		backend: &B,
-	) -> Result<(), ActionRunError> {
-		let table = self.inner.table.take().inner_unwrap();
-		let key = self.inner.key.take().inner_unwrap();
-		let new_data = self.inner.data.take().inner_unwrap();
-
-		self.check_metadata(backend, &table).await?;
-
-		backend
-			.update(&table, &key, &new_data)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})
+		self.inner.update_entry(chart).await
 	}
 }
 
@@ -724,57 +843,7 @@ impl<S: Entry> DeleteEntryAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		self.validate_table()?;
-		self.validate_key()?;
-		let lock = gateway.guard.exclusive();
-		let res = unsafe { self.run_delete_entry_unchecked(gateway.backend()).await? };
-		drop(lock);
-		Ok(res)
-	}
-
-	/// Runs a [`DeleteEntryAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`] and [`Self::set_key`] will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_delete_entry_unchecked<B: Backend>(
-		mut self,
-		backend: &B,
-	) -> Result<bool, ActionRunError> {
-		let table = self.inner.table.take().inner_unwrap();
-		let key = self.inner.key.take().inner_unwrap();
-
-		self.check_metadata(backend, &table).await?;
-		let exists = backend
-			.has(&table, &key)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		backend
-			.delete(&table, &key)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		let after_exists = backend
-			.has(&table, &key)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		Ok(exists != after_exists)
+		self.inner.delete_entry(gateway).await
 	}
 }
 
@@ -788,52 +857,7 @@ impl<S: Entry> CreateTableAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_table()?;
-		let lock = gateway.guard.exclusive();
-		unsafe {
-			self.run_create_table_unchecked(gateway.backend()).await?;
-		};
-		drop(lock);
-		Ok(())
-	}
-
-	/// Runs a [`CreateTableAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`] will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_create_table_unchecked<B: Backend>(
-		self,
-		backend: &B,
-	) -> Result<(), ActionRunError> {
-		let table = self.inner.table.inner_unwrap();
-
-		backend
-			.ensure_table(&table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		#[cfg(feature = "metadata")]
-		{
-			let metadata = S::default();
-			backend
-				.ensure(&table, METADATA_KEY, &metadata)
-				.await
-				.map_err(|e| ActionRunError {
-					source: Some(Box::new(e)),
-					kind: ActionRunErrorType::Backend,
-				})?;
-		}
-
-		Ok(())
+		self.inner.create_table(gateway).await
 	}
 }
 
@@ -850,62 +874,7 @@ impl<S: Entry> ReadTableAction<S> {
 	where
 		I: FromIterator<S>,
 	{
-		self.validate_table()?;
-		let lock = gateway.guard.shared();
-		let res = unsafe { self.run_read_table_unchecked(gateway.backend()).await? };
-		drop(lock);
-		Ok(res)
-	}
-
-	/// Runs a [`ReadTableAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`] will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_read_table_unchecked<B: Backend, I>(
-		mut self,
-		backend: &B,
-	) -> Result<I, ActionRunError>
-	where
-		I: FromIterator<S>,
-	{
-		let table = self.inner.table.take().inner_unwrap();
-
-		self.check_metadata(backend, &table).await?;
-
-		let keys = backend
-			.get_keys::<Vec<_>>(&table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		let keys = keys
-			.iter()
-			.filter_map(|v| {
-				if is_metadata(v) {
-					None
-				} else {
-					Some(v.as_str())
-				}
-			})
-			.collect::<Vec<_>>();
-
-		let data = backend
-			.get_all::<S, I>(&table, &keys)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		Ok(data)
+		self.inner.read_table(gateway).await
 	}
 }
 
@@ -919,52 +888,7 @@ impl<S: Entry> DeleteTableAction<S> {
 		self,
 		gateway: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		self.validate_table()?;
-		let lock = gateway.guard.exclusive();
-		let res = unsafe { self.run_delete_table_unchecked(gateway.backend()).await? };
-		drop(lock);
-		Ok(res)
-	}
-
-	/// Runs a [`DeleteTableAction`], not checking for any validation issues beforehand.
-	///
-	/// # Errors
-	///
-	/// This will fail if any of the [`Backend`] methods fail.
-	///
-	/// # Safety
-	/// This does not check any variants beforehand. Calling this without calling [`Self::set_table`] will cause immediate `UB`.
-	///
-	/// Additionally, this does no atomic locking, so running this at the same time as a read or write will cause data races.
-	pub async unsafe fn run_delete_table_unchecked<B: Backend>(
-		self,
-		backend: &B,
-	) -> Result<bool, ActionRunError> {
-		let table = self.inner.table.inner_unwrap();
-
-		let exists = backend
-			.has_table(&table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-		backend
-			.delete_table(&table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-		let new_exists = backend
-			.has_table(&table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		Ok(exists != new_exists)
+		self.inner.delete_table(gateway).await
 	}
 }
 
