@@ -210,10 +210,6 @@ mod tests {
 
 		assert_eq!(backend.get::<u8>("table", "id").await?, Some(2));
 
-		backend.replace("table", "id", &3_u8).await?;
-
-		assert_eq!(backend.get::<u8>("table", "id").await?, Some(3));
-
 		Ok(())
 	}
 

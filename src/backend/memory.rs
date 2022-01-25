@@ -273,22 +273,6 @@ impl Backend for MemoryBackend {
 		})
 	}
 
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		Box::pin(async move {
-			self.update(table, id, value).await?;
-
-			Ok(())
-		})
-	}
-
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		Box::pin(async move {
 			let table_value = self.get_table(table)?;
@@ -503,25 +487,6 @@ mod tests {
 			Some(Settings {
 				option: false,
 				times: 43
-			})
-		);
-
-		cache_backend
-			.replace(
-				"test",
-				"foo",
-				&Settings {
-					option: true,
-					times: 44,
-				},
-			)
-			.await?;
-
-		assert_eq!(
-			cache_backend.get::<Settings>("test", "foo").await?,
-			Some(Settings {
-				option: true,
-				times: 44
 			})
 		);
 

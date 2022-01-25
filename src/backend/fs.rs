@@ -353,18 +353,6 @@ impl<RW: FsBackend> Backend for RW {
 		.boxed()
 	}
 
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		self.update(table, id, value)
-	}
-
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		async move {
 			let filename = util::filename(id.to_owned(), Self::EXTENSION);

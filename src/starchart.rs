@@ -188,19 +188,6 @@ mod tests {
 		}
 
 		#[cfg(not(tarpaulin_include))]
-		fn replace<'a, S>(
-			&'a self,
-			table: &'a str,
-			id: &'a str,
-			value: &'a S,
-		) -> ReplaceFuture<'a, Self::Error>
-		where
-			S: Entry,
-		{
-			Box::pin(async move { Ok(self.inner.replace(table, id, value).await?) })
-		}
-
-		#[cfg(not(tarpaulin_include))]
 		fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.delete(table, id).await?) })
 		}

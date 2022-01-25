@@ -180,16 +180,6 @@ pub trait Backend: Send + Sync {
 	where
 		S: Entry;
 
-	/// Replaces an existing entry in a table.
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
-	where
-		S: Entry;
-
 	/// Deletes an entry from a table.
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
 }

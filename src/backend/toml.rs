@@ -328,27 +328,6 @@ mod tests {
 			})
 		);
 
-		backend
-			.replace(
-				"table",
-				"id",
-				&Settings {
-					id: 0,
-					option: true,
-					value: 72,
-				},
-			)
-			.await?;
-
-		assert_eq!(
-			backend.get::<Settings>("table", "id").await?,
-			Some(Settings {
-				id: 0,
-				option: true,
-				value: 72
-			})
-		);
-
 		Ok(())
 	}
 
