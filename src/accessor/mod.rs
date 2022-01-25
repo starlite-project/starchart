@@ -143,7 +143,7 @@ impl<'a, B: Backend> Accessor<'a, B> {
 		table: &str,
 		entry: &S,
 	) -> Result<(), AccessorError> {
-		self.create_entry(table, entry.key().to_key().as_str(), entry)
+		self.create_entry(table, &entry.key().to_key(), entry)
 			.await
 	}
 
@@ -198,7 +198,7 @@ impl<'a, B: Backend> Accessor<'a, B> {
 		table: &str,
 		entry: &S,
 	) -> Result<(), AccessorError> {
-		self.update_entry(table, entry.key().to_key().as_str(), entry)
+		self.update_entry(table, &entry.key().to_key(), entry)
 			.await
 	}
 

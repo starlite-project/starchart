@@ -110,7 +110,7 @@ mod private {
 	impl Sealed for DeleteOperation {}
 	impl Sealed for TableTarget {}
 	impl Sealed for EntryTarget {}
-	impl<S: Entry, C: CrudOperation, T: OperationTarget> Sealed for Action<S, C, T> {}
+	impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Sealed for Action<'a, S, C, T> {}
 }
 
 #[cfg(test)]
