@@ -8,7 +8,7 @@ pub trait Key: Send + Sync {
 	fn to_key(&self) -> String;
 }
 
-impl<T: ToString + Send + Sync + ?Sized> Key for T {
+impl<T: ToString + Send + Sync> Key for T {
 	fn to_key(&self) -> String {
 		self.to_string()
 	}

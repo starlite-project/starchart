@@ -100,7 +100,7 @@ mod private {
 		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget,
 		ReadOperation, TableTarget, UpdateOperation,
 	};
-	use crate::{Action, Entry};
+	use crate::{Action, Entry, Key};
 
 	pub trait Sealed {}
 
@@ -110,7 +110,7 @@ mod private {
 	impl Sealed for DeleteOperation {}
 	impl Sealed for TableTarget {}
 	impl Sealed for EntryTarget {}
-	impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Sealed for Action<'a, S, C, T> {}
+	impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Sealed for Action<'a, K, S, C, T> {}
 }
 
 #[cfg(test)]
