@@ -78,6 +78,8 @@ pub mod testing {
 
 	use crate::atomics::Guard;
 
+	// allow bc some tests use it, some don't
+	#[allow(dead_code)]
 	pub static TEST_GUARD: Guard = Guard::new();
 
 	#[cfg(feature = "fs")]
