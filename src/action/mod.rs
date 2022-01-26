@@ -43,46 +43,46 @@ use crate::{
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type CreateEntryAction<'a, K, S> = Action<'a, K, S, CreateOperation, EntryTarget>;
+pub type CreateEntryAction<'a, S> = Action<'a, S, CreateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type ReadEntryAction<'a, K, S> = Action<'a, K, S, ReadOperation, EntryTarget>;
+pub type ReadEntryAction<'a, S> = Action<'a, S, ReadOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type UpdateEntryAction<'a, K, S> = Action<'a, K, S, UpdateOperation, EntryTarget>;
+pub type UpdateEntryAction<'a, S> = Action<'a, S, UpdateOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type DeleteEntryAction<'a, K, S> = Action<'a, K, S, DeleteOperation, EntryTarget>;
+pub type DeleteEntryAction<'a, S> = Action<'a, S, DeleteOperation, EntryTarget>;
 
 /// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type CreateTableAction<'a, K, S> = Action<'a, K, S, CreateOperation, TableTarget>;
+pub type CreateTableAction<'a, S> = Action<'a, S, CreateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type ReadTableAction<'a, K, S> = Action<'a, K, S, ReadOperation, TableTarget>;
+pub type ReadTableAction<'a, S> = Action<'a, S, ReadOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
 ///
 /// This action can never been ran.
 #[cfg(feature = "action")]
-pub type UpdateTableAction<'a, K, S> = Action<'a, K, S, UpdateOperation, TableTarget>;
+pub type UpdateTableAction<'a, S> = Action<'a, S, UpdateOperation, TableTarget>;
 
 /// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
 #[cfg(feature = "action")]
-pub type DeleteTableAction<'a, K, S> = Action<'a, K, S, DeleteOperation, TableTarget>;
+pub type DeleteTableAction<'a, S> = Action<'a, S, DeleteOperation, TableTarget>;
 
 #[derive(Debug, Clone)]
-pub(crate) struct InnerAction<'a, K, S> {
+pub(crate) struct InnerAction<'a, S> {
 	pub data: Option<&'a S>,
-	pub key: Option<&'a K>, /* TODO: figure out how to make this a borrow without breaking everything (or do, maybe another generic) */
+	pub key: Option<String>,
 	pub table: Option<&'a str>,
 }
 
-impl<'a, K, S> InnerAction<'a, K, S> {
+impl<'a, S> InnerAction<'a, S> {
 	const fn new() -> Self {
 		Self {
 			data: None,
@@ -90,9 +90,7 @@ impl<'a, K, S> InnerAction<'a, K, S> {
 			table: None,
 		}
 	}
-}
 
-impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 	fn validate_entry(&self) -> Result<(), ActionValidationError> {
 		self.validate_key()?;
 		self.validate_data()
@@ -128,9 +126,7 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 			});
 		}
 
-		let key = self.key.map(Key::to_key);
-
-		self.validate_metadata(key.as_deref())
+		self.validate_metadata(self.key.as_deref())
 	}
 
 	#[cfg(feature = "metadata")]
@@ -153,7 +149,7 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
+impl<'a, S: Entry> InnerAction<'a, S> {
 	#[cfg(feature = "metadata")]
 	async fn check_metadata<B: Backend>(
 		&self,
@@ -193,7 +189,7 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 		let (table, key, entry) = unsafe {
 			(
 				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap().to_key(),
+				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
 			)
 		};
@@ -226,16 +222,19 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 		let (table, key) = unsafe {
 			(
 				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap().to_key(),
+				self.key.take().inner_unwrap(),
 			)
 		};
 
 		self.check_metadata(backend, table).await?;
 
-		let res = backend.get(table, &key).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})?;
+		let res = backend
+			.get(table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})?;
 
 		drop(lock);
 
@@ -253,7 +252,7 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 		let (table, key, entry) = unsafe {
 			(
 				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap().to_key(),
+				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
 			)
 		};
@@ -283,16 +282,19 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 		let (table, key) = unsafe {
 			(
 				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap().to_key(),
+				self.key.take().inner_unwrap(),
 			)
 		};
 
 		self.check_metadata(backend, table).await?;
 
-		if !backend.has(table, &key).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})? {
+		if !backend
+			.has(table, &key)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})? {
 			drop(lock);
 			return Ok(false);
 		}
@@ -403,10 +405,13 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 
 		self.check_metadata(backend, table).await?;
 
-		if !backend.has_table(table).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})? {
+		if !backend
+			.has_table(table)
+			.await
+			.map_err(|e| ActionRunError {
+				source: Some(Box::new(e)),
+				kind: ActionRunErrorType::Backend,
+			})? {
 			drop(lock);
 			return Ok(false);
 		}
@@ -425,7 +430,7 @@ impl<'a, K: Key, S: Entry> InnerAction<'a, K, S> {
 	}
 }
 
-impl<'a, K, S> Default for InnerAction<'a, K, S> {
+impl<'a, S> Default for InnerAction<'a, S> {
 	fn default() -> Self {
 		Self::new()
 	}
@@ -438,13 +443,13 @@ impl<'a, K, S> Default for InnerAction<'a, K, S> {
 #[derive(Clone)]
 #[must_use = "an action alone has no side effects"]
 #[cfg(feature = "action")]
-pub struct Action<'a, K, S, C, T> {
-	pub(crate) inner: InnerAction<'a, K, S>,
+pub struct Action<'a, S, C, T> {
+	pub(crate) inner: InnerAction<'a, S>,
 	kind: PhantomData<C>,
 	target: PhantomData<T>,
 }
 
-impl<'a, K, S, C, T> Action<'a, K, S, C, T> {
+impl<'a, S, C, T> Action<'a, S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
 	pub const fn new() -> Self {
 		Self {
@@ -462,12 +467,12 @@ impl<'a, K, S, C, T> Action<'a, K, S, C, T> {
 
 	/// Get a reference to the currently set key.
 	#[must_use]
-	pub const fn key(&self) -> Option<&K> {
-		self.inner.key
+	pub fn key(&self) -> Option<&str> {
+		self.inner.key.as_deref()
 	}
 }
 
-impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, K, S, C, T> {
+impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
 	/// Get a reference to the currently set data.
 	#[must_use]
 	pub fn data(&self) -> Option<&S> {
@@ -481,6 +486,7 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, K, S
 	}
 
 	/// Returns the [`OperationTarget`] we will be performing with said action.
+	#[must_use]
 	#[allow(clippy::unused_self)]
 	pub fn target(&self) -> TargetKind {
 		T::target()
@@ -518,15 +524,15 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, K, S
 }
 
 // Entry helpers
-impl<'a, K: Key, S: Entry, C: CrudOperation> Action<'a, K, S, C, EntryTarget> {
+impl<'a, S: Entry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 	/// Sets the key for the action.
 	///
 	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
 	/// entry will automatically call this.
 	///
 	/// This is unused on [`TargetKind::Table`] actions.
-	pub fn set_key(&mut self, key: &'a K) -> &mut Self {
-		self.inner.key = Some(key);
+	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
+		self.inner.key = Some(key.to_key());
 
 		self // coverage:ignore-line
 	}
@@ -572,14 +578,14 @@ impl<'a, K: Key, S: Entry, C: CrudOperation> Action<'a, K, S, C, EntryTarget> {
 }
 
 // Combined helpers
-impl<'a, K: Key, S: Entry> CreateTableAction<'a, K, S> {
+impl<'a, S: Entry> CreateTableAction<'a, S> {
 	/// Creates a new [`CreateOperation`] based [`TableTarget`] operation.
 	pub fn create_table() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry> ReadTableAction<'a, K, S> {
+impl<'a, S: Entry> ReadTableAction<'a, S> {
 	/// Creates a new [`ReadOperation`] based [`TableTarget`] operation.
 	pub fn read_table() -> Self {
 		Self::new()
@@ -588,42 +594,53 @@ impl<'a, K: Key, S: Entry> ReadTableAction<'a, K, S> {
 
 // Update table is specifically omitted as it's unsupported
 
-impl<'a, K: Key, S: Entry> DeleteTableAction<'a, K, S> {
+impl<'a, S: Entry> DeleteTableAction<'a, S> {
 	/// Creates a new [`DeleteOperation`] based [`TableTarget`] operation.
 	pub fn delete_table() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry> CreateEntryAction<'a, K, S> {
+impl<'a, S: Entry> CreateEntryAction<'a, S> {
 	/// Creates a new [`CreateOperation`] based [`EntryTarget`] operation.
 	pub fn create_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry> ReadEntryAction<'a, K, S> {
+impl<'a, S: Entry> ReadEntryAction<'a, S> {
 	/// Creates a new [`ReadOperation`] based [`EntryTarget`] operation.
 	pub fn read_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry> UpdateEntryAction<'a, K, S> {
+impl<'a, S: Entry> UpdateEntryAction<'a, S> {
 	/// Creates a new [`UpdateOperation`] based [`EntryTarget`] operation.
 	pub fn update_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry> DeleteEntryAction<'a, K, S> {
+impl<'a, S: Entry> DeleteEntryAction<'a, S> {
 	/// Creates a new [`DeleteOperation`] based [`EntryTarget`] operation.
 	pub fn delete_entry() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<'a, K, S, C, T> {
+impl<'a, S: IndexEntry, C: CrudOperation> Action<'a, S, C, EntryTarget>
+where
+	<S as IndexEntry>::Key: 'a,
+{
+	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
+	pub fn set_entry(&mut self, entity: &'a S) -> &mut Self
+	{
+		self.set_key(&entity.key().to_key()).set_data(entity)
+	}
+}
+
+impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<'a, S, C, T> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		let mut state = f.debug_struct("Action");
 
@@ -632,7 +649,7 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Actio
 			.field("target", &self.target());
 
 		if let Some(key) = self.key() {
-			state.field("key", &key.to_key());
+			state.field("key", &key);
 		}
 
 		if let Some(table) = self.table() {
@@ -643,9 +660,7 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Actio
 	}
 }
 
-impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Default
-	for Action<'a, K, S, C, T>
-{
+impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Default for Action<'a, S, C, T> {
 	fn default() -> Self {
 		Self {
 			inner: InnerAction::default(),
@@ -655,24 +670,21 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Default
 	}
 }
 
-unsafe impl<'a, K: Key, S: Entry + Send, C: CrudOperation, T: OperationTarget> Send
-	for Action<'a, K, S, C, T>
+unsafe impl<'a, S: Entry + Send, C: CrudOperation, T: OperationTarget> Send
+	for Action<'a, S, C, T>
 {
 }
 
-unsafe impl<'a, K: Key, S: Entry + Sync, C: CrudOperation, T: OperationTarget> Sync
-	for Action<'a, K, S, C, T>
+unsafe impl<'a, S: Entry + Sync, C: CrudOperation, T: OperationTarget> Sync
+	for Action<'a, S, C, T>
 {
 }
 
-impl<'a, K: Key + Unpin, S: Entry + Unpin, C: CrudOperation, T: OperationTarget> Unpin
-	for Action<'a, K, S, C, T>
-{
-}
+impl<'a, S: Entry + Unpin, C: CrudOperation, T: OperationTarget> Unpin for Action<'a, S, C, T> {}
 
 // Action run impls
 
-impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, K, S, C, T> {
+impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
 	/// Runs an [`Action`] to completion.
 	///
 	/// This method will dispatch to whatever method is needed for the action, and shouldn't be used directly if it can be helped.
@@ -723,7 +735,7 @@ impl<'a, K: Key, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, K, S
 	}
 }
 
-impl<'a, K: Key, S: Entry> CreateEntryAction<'a, K, S> {
+impl<'a, S: Entry> CreateEntryAction<'a, S> {
 	/// Validates and runs a [`CreateEntryAction`].
 	///
 	/// # Errors
@@ -737,7 +749,7 @@ impl<'a, K: Key, S: Entry> CreateEntryAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> ReadEntryAction<'a, K, S> {
+impl<'a, S: Entry> ReadEntryAction<'a, S> {
 	/// Validates and runs a [`ReadEntryAction`].
 	///
 	/// # Errors
@@ -751,7 +763,7 @@ impl<'a, K: Key, S: Entry> ReadEntryAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> UpdateEntryAction<'a, K, S> {
+impl<'a, S: Entry> UpdateEntryAction<'a, S> {
 	/// Validates and runs a [`UpdateEntryAction`].
 	///
 	/// # Errors
@@ -765,7 +777,7 @@ impl<'a, K: Key, S: Entry> UpdateEntryAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> DeleteEntryAction<'a, K, S> {
+impl<'a, S: Entry> DeleteEntryAction<'a, S> {
 	/// Validates and runs a [`DeleteEntryAction`].
 	///
 	/// # Errors
@@ -779,7 +791,7 @@ impl<'a, K: Key, S: Entry> DeleteEntryAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> CreateTableAction<'a, K, S> {
+impl<'a, S: Entry> CreateTableAction<'a, S> {
 	/// Validates and runs a [`CreateTableAction`].
 	///
 	/// # Errors
@@ -793,7 +805,7 @@ impl<'a, K: Key, S: Entry> CreateTableAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> ReadTableAction<'a, K, S> {
+impl<'a, S: Entry> ReadTableAction<'a, S> {
 	/// Validates and runs a [`ReadTableAction`].
 	///
 	/// # Errors
@@ -810,7 +822,7 @@ impl<'a, K: Key, S: Entry> ReadTableAction<'a, K, S> {
 	}
 }
 
-impl<'a, K: Key, S: Entry> DeleteTableAction<'a, K, S> {
+impl<'a, S: Entry> DeleteTableAction<'a, S> {
 	/// Validates and runs a [`DeleteTableAction`].
 	///
 	/// # Errors
@@ -1045,7 +1057,9 @@ mod tests {
 		let mut create_action: CreateEntryAction<Settings> = Action::new();
 		let def = Settings::default();
 
-		create_action.set_table("table").set_entry(&def);
+		create_action
+			.set_table("table")
+			.set_entry(&def);
 
 		let double_create = create_action.clone();
 
@@ -1064,7 +1078,9 @@ mod tests {
 		{
 			let def = Settings::default();
 			let mut create_action: CreateEntryAction<Settings> = Action::new();
-			create_action.set_table("table").set_entry(&def);
+			create_action
+				.set_table("table")
+				.set_entry(&def);
 			// gateway.run(create_action).await??;
 			create_action.run(&gateway).await?.unwrap_create();
 		}
@@ -1111,7 +1127,9 @@ mod tests {
 			let mut create_action = CreateEntryAction::<Settings>::new();
 			let def = Settings::default();
 
-			create_action.set_table("table").set_entry(&def);
+			create_action
+				.set_table("table")
+				.set_entry(&def);
 
 			create_action.run(&gateway).await?.unwrap_create();
 		}

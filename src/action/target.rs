@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 /// The target of the [`CRUD`] operation.
 ///
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-#[must_use = "getting the information on what target will be performed on has no side effects"]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[cfg(feature = "action")]
 pub enum TargetKind {
