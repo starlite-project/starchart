@@ -36,8 +36,7 @@ async fn main() -> Result<()> {
 
 	create_table_action.set_table("foo");
 
-	// chart.run(create_table_action).await??;
-	create_table_action.run(&chart).await?.unwrap_create();
+	create_table_action.run_create_table(&chart).await?;
 
 	// Insert some entries into the table.
 	for (age, name) in vec![
@@ -50,8 +49,7 @@ async fn main() -> Result<()> {
 		action
 			.set_table("foo")
 			.set_entry(&value);
-		// chart.run(action).await??;
-		action.run(&chart).await?.unwrap_create();
+		action.run_create_entry(&chart).await?;
 	}
 
 	// Get a single entry.
@@ -62,9 +60,8 @@ async fn main() -> Result<()> {
 		action.set_key(&3_u64).set_table("foo");
 
 		action
-			.run(&chart)
+			.run_read_entry(&chart)
 			.await?
-			.unwrap_single_read()
 			.expect("the queen has fallen!")
 	};
 

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 /// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[cfg(feature = "action")]
+#[must_use = "action target information is useless if unused."]
 pub enum TargetKind {
 	/// The operation will be performed on a table.
 	Table,
