@@ -1,9 +1,15 @@
 use std::{
-	fmt::{Formatter, Result as FmtResult},
+	collections::VecDeque,
+	fmt::{Display, Formatter, Result as FmtResult, Write},
 	marker::PhantomData,
+	str::FromStr,
 };
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::{Error as DeError, MapAccess, SeqAccess, Visitor}, ser::{Error as SerError, SerializeStruct}};
+use serde::{
+	de::{Error as DeError, MapAccess, SeqAccess, Visitor},
+	ser::SerializeStruct,
+	Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use super::{
 	ActionError, ActionKind, ActionResult, ActionValidationError, ActionValidationErrorType,
@@ -12,7 +18,7 @@ use super::{
 };
 #[cfg(feature = "metadata")]
 use crate::METADATA_KEY;
-use crate::{backend::Backend, Action, Entry, IndexEntry, Key, Starchart};
+use crate::{backend::Backend, util::InnerUnwrap, Action, Entry, IndexEntry, Key, Starchart};
 
 /// A dynamic [`Action`] for when certain parameters aren't known until runtime.
 #[derive(Clone)]
@@ -290,21 +296,66 @@ impl<S: IndexEntry + ?Sized> DynamicAction<S> {
 	}
 }
 
+impl<E: ?Sized> Display for DynamicAction<E> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		Display::fmt(&self.kind, f)?;
+		f.write_char('.')?;
+		Display::fmt(&self.target, f)?;
+		if let Some(table) = &self.table {
+			f.write_char('.')?;
+			Display::fmt(&table, f)
+		} else {
+			Ok(())
+		}
+	}
+}
+
+impl<E: ?Sized> FromStr for DynamicAction<E> {
+	type Err = ActionValidationError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		let mut sections = s.split('.').collect::<VecDeque<_>>();
+		if !(2..4).contains(&sections.len()) {
+			return Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Parse,
+			});
+		}
+
+		let (kind, target, table) = unsafe {
+			(
+				sections.pop_front().inner_unwrap(),
+				sections.pop_front().inner_unwrap(),
+				sections.pop_front(),
+			)
+		};
+
+		Ok(Self {
+			key: None,
+			data: None,
+			table: table.map(ToOwned::to_owned),
+			kind: kind.parse()?,
+			target: target.parse()?,
+		})
+	}
+}
+
 impl<E: ?Sized> Serialize for DynamicAction<E> {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: Serializer,
 	{
-		if self.key.is_none() {
-			return Err(SerError::custom("cannot serialize action without table."));
+		if serializer.is_human_readable() {
+			self.to_string().serialize(serializer)
+		} else {
+			let mut state = serializer.serialize_struct("DynamicAction", 3)?;
+
+			state.serialize_field("type", &self.kind)?;
+			state.serialize_field("target", &self.target)?;
+			state.serialize_field("table", &self.table.as_ref())?;
+
+			state.end()
 		}
-		let mut state = serializer.serialize_struct("DynamicAction", 3)?;
-
-		state.serialize_field("type", &self.kind)?;
-		state.serialize_field("target", &self.target)?;
-		state.serialize_field("table", &self.table.as_ref().unwrap())?;
-
-		state.end()
 	}
 }
 
@@ -350,31 +401,59 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 			data: None,
 			kind,
 			target,
-			table: Some(table),
+			table,
 		})
 	}
 
 	fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
 	where
-			A: MapAccess<'de>, {
-                let mut kind = None;
-                let mut target = None;
-                let mut table = None;
+		A: MapAccess<'de>,
+	{
+		let mut kind = None;
+		let mut target = None;
+		let mut table = None;
 
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        ActionField::Table => {
-                            if table.is_some() {
-                                return Err(DeError::duplicate_field("table"))
-                            }
-                            table = Some(map.next_value()?);
-                        },
-                        ActionField::Target => {
-                            if target.is_some() {
-                            }
-                        }
-                    }
-                }
+		while let Some(key) = map.next_key()? {
+			match key {
+				ActionField::Table => {
+					if table.is_some() {
+						return Err(DeError::duplicate_field("table"));
+					}
+					table = Some(map.next_value()?);
+				}
+				ActionField::Target => {
+					if target.is_some() {
+						return Err(DeError::duplicate_field("target"));
+					}
+					target = Some(map.next_value()?);
+				}
+				ActionField::Type => {
+					if kind.is_some() {
+						return Err(DeError::duplicate_field("type"));
+					}
+					kind = Some(map.next_value()?);
+				}
+			}
+		}
+
+		let kind = kind.ok_or_else(|| DeError::missing_field("type"))?;
+		let target = target.ok_or_else(|| DeError::missing_field("target"))?;
+		let table = table.ok_or_else(|| DeError::missing_field("table"))?;
+
+		Ok(DynamicAction {
+			table,
+			kind,
+			target,
+			key: None,
+			data: None,
+		})
+	}
+
+	fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+	where
+		E: DeError,
+	{
+		v.parse().map_err(DeError::custom)
 	}
 }
 

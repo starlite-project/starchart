@@ -1,6 +1,11 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+	fmt::{Display, Formatter, Result as FmtResult},
+	str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
+
+use super::{ActionValidationError, ActionValidationErrorType};
 
 /// The target of the [`CRUD`] operation.
 ///
@@ -26,6 +31,21 @@ impl Display for TargetKind {
 		match self {
 			Self::Table => f.write_str("Table"),
 			Self::Entry => f.write_str("Entry"),
+		}
+	}
+}
+
+impl FromStr for TargetKind {
+	type Err = ActionValidationError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Table" => Ok(Self::Table),
+			"Entry" => Ok(Self::Entry),
+			_ => Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Parse,
+			}),
 		}
 	}
 }

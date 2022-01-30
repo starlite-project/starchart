@@ -1,6 +1,11 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+	fmt::{Display, Formatter, Result as FmtResult},
+	str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
+
+use super::{ActionValidationError, ActionValidationErrorType};
 
 /// The type of [`CRUD`] action to perform
 ///
@@ -34,6 +39,23 @@ impl Display for ActionKind {
 			Self::Read => f.write_str("Read"),
 			Self::Update => f.write_str("Update"),
 			Self::Delete => f.write_str("Delete"),
+		}
+	}
+}
+
+impl FromStr for ActionKind {
+	type Err = ActionValidationError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"Create" => Ok(Self::Create),
+			"Read" => Ok(Self::Read),
+			"Update" => Ok(Self::Update),
+			"Delete" => Ok(Self::Delete),
+			_ => Err(ActionValidationError {
+				source: None,
+				kind: ActionValidationErrorType::Parse,
+			}),
 		}
 	}
 }
