@@ -6,10 +6,10 @@ use std::{
 
 use crate::Entry;
 
-/// A custom [`Result`] type that allows the [`Action::run`] method to
+/// A custom [`Result`] type that allows the [`run`] method to
 /// return multiple different types.
 ///
-/// [`Action::run`]: crate::Action::run
+/// [`run`]: crate::action::DynamicAction::run
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[must_use = "an ActionResult should be asserted"]
 pub enum ActionResult<R> {

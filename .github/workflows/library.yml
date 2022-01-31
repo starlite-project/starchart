@@ -233,7 +233,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          args: check --each-feature
+          # group all of the backends together
+          args: check --feature-powerset --group-features json,yaml,toml,bincode,fs
 
   miri:
     name: Miri UB tests
