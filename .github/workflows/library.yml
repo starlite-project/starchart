@@ -233,7 +233,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          args: check --feature-powerset
+          args: check --each-feature
 
   miri:
     name: Miri UB tests
