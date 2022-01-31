@@ -5,6 +5,10 @@ use std::{
 };
 
 use dashmap::{mapref::one::Ref, DashMap};
+use futures_util::{
+	future::{err, ok, ready},
+	FutureExt,
+};
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
 
 use super::{
@@ -49,14 +53,8 @@ impl Display for MemoryError {
 		match &self.kind {
 			MemoryErrorType::Serialization => f.write_str("a serialization error occurred"),
 			MemoryErrorType::Deserialization => f.write_str("a deserialization error occurred"),
-			MemoryErrorType::TableDoesntExist { table } => {
-				f.write_str("the table ")?;
-				Display::fmt(table, f)?;
-				f.write_str(" does not exist")
-			}
-			MemoryErrorType::ValueAlreadyExists { key } => {
-				f.write_str("a value already exists for key ")?;
-				Display::fmt(key, f)
+			MemoryErrorType::TableDoesntExist => {
+				f.write_str("a table that a value was being added to doesn't exist")
 			}
 		}
 	}
@@ -90,6 +88,7 @@ impl From<DeserializerError> for MemoryError {
 
 /// The type of [`MemoryError`] that occurred.
 #[cfg(feature = "memory")]
+#[allow(missing_copy_implementations)]
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum MemoryErrorType {
@@ -97,16 +96,8 @@ pub enum MemoryErrorType {
 	Serialization,
 	/// A deserialization error occurred.
 	Deserialization,
-	/// The specified table doesn't exist
-	TableDoesntExist {
-		/// The table that doesn't exist.
-		table: String,
-	},
-	/// The specified value already exists
-	ValueAlreadyExists {
-		/// The existing value's key.
-		key: String,
-	},
+	/// The table that a value was trying to be created for doesn't exist.
+	TableDoesntExist,
 }
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
@@ -123,54 +114,38 @@ impl MemoryBackend {
 	pub fn new() -> Self {
 		Self::default()
 	}
-
-	fn get_table<'a>(
-		&'a self,
-		table: &'a str,
-	) -> Result<Ref<'a, String, DashMap<String, Value>>, MemoryError> {
-		self.tables.get(table).ok_or(MemoryError {
-			source: None,
-			kind: MemoryErrorType::TableDoesntExist {
-				table: table.to_owned(),
-			},
-		})
-	}
 }
 
 impl Backend for MemoryBackend {
 	type Error = MemoryError;
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
-		Box::pin(async move { Ok(self.tables.contains_key(table)) })
+		ok(self.tables.contains_key(table)).boxed()
 	}
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
-		Box::pin(async move {
-			self.tables.insert(table.to_owned(), DashMap::new());
+		self.tables.insert(table.to_owned(), DashMap::new());
 
-			Ok(())
-		})
+		ok(()).boxed()
 	}
 
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-		Box::pin(async move {
-			self.tables.remove(table);
+		self.tables.remove(table);
 
-			Ok(())
-		})
+		ok(()).boxed()
 	}
 
 	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
 	where
 		I: FromIterator<String>,
 	{
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
-
-			let keys = table_value.clone().into_iter().map(|(key, _)| key);
-
-			Ok(keys.collect())
-		})
+		async move {
+			self.tables.get(table).map_or_else(
+				|| Ok(None.into_iter().collect()),
+				|table| Ok(table.clone().into_iter().map(|(key, _)| key).collect()),
+			)
+		}
+		.boxed()
 	}
 
 	fn get_all<'a, D, I>(
@@ -182,50 +157,52 @@ impl Backend for MemoryBackend {
 		D: Entry,
 		I: FromIterator<D>,
 	{
-		Box::pin(async move {
-			let table_value = self.tables.get(table).ok_or(MemoryError {
-				kind: MemoryErrorType::TableDoesntExist {
-					table: table.to_owned(),
+		async move {
+			self.tables.get(table).map_or_else(
+				|| Ok(None.into_iter().collect::<I>()),
+				|table| {
+					table
+						.clone()
+						.into_iter()
+						.filter_map(|(key, value)| {
+							if entries.contains(&key.as_str()) {
+								Some(value.deserialize_into().map_err(MemoryError::from))
+							} else {
+								None
+							}
+						})
+						.collect::<Result<I, Self::Error>>()
 				},
-				source: None,
-			})?;
-
-			table_value
-				.clone()
-				.into_iter()
-				.filter_map(|(key, value)| {
-					if entries.contains(&key.as_str()) {
-						Some(value.deserialize_into().map_err(MemoryError::from))
-					} else {
-						None
-					}
-				})
-				.collect::<Result<I, Self::Error>>()
-		})
+			)
+		}
+		.boxed()
 	}
 
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
 	where
 		D: Entry,
 	{
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
+		async move {
+			if let Some(table) = self.tables.get(table) {
+				let value = match table.get(id) {
+					None => return Ok(None),
+					Some(json) => json.value().clone(),
+				};
 
-			let value = match table_value.get(id) {
-				None => return Ok(None),
-				Some(json) => json.value().clone(),
-			};
-
-			Ok(value.deserialize_into()?)
-		})
+				Ok(Some(value.deserialize_into()?))
+			} else {
+				Ok(None)
+			}
+		}
+		.boxed()
 	}
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
-
-			Ok(table_value.value().contains_key(id))
-		})
+		ok(self
+			.tables
+			.get(table)
+			.map_or(false, |table| table.contains_key(id)))
+		.boxed()
 	}
 
 	fn create<'a, S>(
@@ -237,22 +214,22 @@ impl Backend for MemoryBackend {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
+		if let Some(table) = self.tables.get(table) {
+			let serialized = match to_value(value) {
+				Ok(v) => v,
+				Err(e) => return err(e.into()).boxed(),
+			};
 
-			if table_value.contains_key(id) {
-				return Err(MemoryError {
-					kind: MemoryErrorType::ValueAlreadyExists { key: id.to_owned() },
-					source: None,
-				});
-			}
+			table.insert(id.to_owned(), serialized);
 
-			let serialized = to_value(value)?;
-
-			table_value.insert(id.to_owned(), serialized);
-
-			Ok(())
-		})
+			ok(()).boxed()
+		} else {
+			err(MemoryError {
+				source: None,
+				kind: MemoryErrorType::TableDoesntExist,
+			})
+			.boxed()
+		}
 	}
 
 	fn update<'a, S>(
@@ -264,23 +241,35 @@ impl Backend for MemoryBackend {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
+		if let Some(table) = self.tables.get(table) {
+			let to_replace = match to_value(value) {
+				Ok(v) => v,
+				Err(e) => return err(e.into()).boxed(),
+			};
+			table.insert(id.to_owned(), to_replace);
 
-			table_value.insert(id.to_owned(), to_value(value)?);
-
-			Ok(())
-		})
+			ok(()).boxed()
+		} else {
+			err(MemoryError {
+				source: None,
+				kind: MemoryErrorType::TableDoesntExist,
+			})
+			.boxed()
+		}
 	}
 
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
-		Box::pin(async move {
-			let table_value = self.get_table(table)?;
+		if let Some(table) = self.tables.get(table) {
+			table.remove(id);
 
-			table_value.remove(id);
-
-			Ok(())
-		})
+			ok(()).boxed()
+		} else {
+			err(MemoryError {
+				source: None,
+				kind: MemoryErrorType::TableDoesntExist,
+			})
+			.boxed()
+		}
 	}
 }
 
@@ -313,23 +302,6 @@ mod tests {
 		let cache_backend = MemoryBackend::new();
 
 		assert_eq!(cache_backend.tables.len(), 0);
-	}
-
-	#[test]
-	fn get_table() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend
-			.tables
-			.insert("test".to_owned(), DashMap::new());
-
-		let table = cache_backend.get_table("test")?;
-
-		assert_eq!(table.key(), "test");
-
-		assert!(cache_backend.get_table("test2").is_err());
-
-		Ok(())
 	}
 
 	#[tokio::test]
