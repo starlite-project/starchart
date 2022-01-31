@@ -122,6 +122,7 @@ mod tests {
 	assert_impl_all!(JsonBackend: Backend, Clone, Debug, Default, Send, Sync);
 
 	#[test]
+	#[cfg_attr(miri, ignore)]
 	fn new() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.exclusive();
 		let path = Cleanup::new("new", "json", true)?;
