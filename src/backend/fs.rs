@@ -19,7 +19,7 @@ use super::{
 	},
 	Backend,
 };
-use crate::{util::InnerUnwrap, Entry};
+use crate::Entry;
 
 /// An error occurred from an [`FsBackend`].
 #[cfg(feature = "fs")]
