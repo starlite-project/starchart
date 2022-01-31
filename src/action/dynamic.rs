@@ -430,7 +430,7 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 			)
 		};
 
-		let kind = match kind {
+		let kind = match *kind {
 			"Create" => ActionKind::Create,
 			"Read" => ActionKind::Read,
 			"Update" => ActionKind::Update,
@@ -438,7 +438,7 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 			_ => return Err(DeError::custom("failed to parse ActionKind")),
 		};
 
-		let target = match target {
+		let target = match *target {
 			"Entry" => TargetKind::Entry,
 			"Table" => TargetKind::Table,
 			_ => return Err(DeError::custom("failed to parse TargetKind")),
@@ -447,7 +447,7 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 		Ok(DynamicAction {
 			key: None,
 			data: None,
-			table: table.map(ToOwned::to_owned),
+			table: table.map(|s| (*s).to_owned()),
 			kind,
 			target,
 		})
