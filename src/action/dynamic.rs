@@ -417,16 +417,16 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 	where
 		E: DeError,
 	{
-		let mut sections = v.split('.').collect::<VecDeque<_>>();
+		let mut sections = v.split('.').collect::<Vec<_>>();
 		if !(2..4).contains(&sections.len()) {
 			return Err(DeError::custom("failed to parse DynamicAction"));
 		}
 
 		let (kind, target, table) = unsafe {
 			(
-				sections.pop_front().inner_unwrap(),
-				sections.pop_front().inner_unwrap(),
-				sections.pop_front(),
+				sections.get(0).inner_unwrap(),
+				sections.get(1).inner_unwrap(),
+				sections.get(2),
 			)
 		};
 
