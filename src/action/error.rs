@@ -126,6 +126,9 @@ impl Display for ActionValidationError {
 			ActionValidationErrorType::Table => f.write_str("no table was provided"),
 			#[cfg(feature = "metadata")]
 			ActionValidationErrorType::Metadata => f.write_str("the `__metadata__` key is restricted"),
+			ActionValidationErrorType::Conversion => {
+				f.write_str("an error occurred converting between dynamic and static actions")
+			}
 		}
 	}
 }
@@ -152,6 +155,8 @@ pub enum ActionValidationErrorType {
 	/// The table or key name matched the private metadata key.
 	#[cfg(feature = "metadata")]
 	Metadata,
+	/// An invalid generic was passed during conversion.
+	Conversion,
 }
 
 /// An error that occurred from running an [`Action`].

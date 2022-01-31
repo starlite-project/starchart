@@ -45,9 +45,6 @@ pub type EnsureFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 /// The future returned from [`Backend::update`].
 pub type UpdateFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 
-/// The future returned from [`Backend::replace`].
-pub type ReplaceFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
-
 /// The future returned from [`Backend::delete`].
 pub type DeleteFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 

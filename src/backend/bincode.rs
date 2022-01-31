@@ -92,7 +92,7 @@ impl<O: Options + Send + Sync + Copy> FsBackend for BincodeBackend<O> {
 		Ok(self.1.deserialize_from(rdr)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -255,10 +255,6 @@ mod tests {
 		backend.update("table", "id", &2_u8).await?;
 
 		assert_eq!(backend.get::<u8>("table", "id").await?, Some(2));
-
-		backend.replace("table", "id", &3_u8).await?;
-
-		assert_eq!(backend.get::<u8>("table", "id").await?, Some(3));
 
 		Ok(())
 	}

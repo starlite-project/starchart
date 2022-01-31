@@ -4,12 +4,17 @@
 
 use std::{error::Error as StdError, iter::FromIterator};
 
+use futures_util::{
+	future::{join_all, ok, ready},
+	FutureExt,
+};
+
 use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
 	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
-	InitFuture, ReplaceFuture, ShutdownFuture, UpdateFuture,
+	InitFuture, ShutdownFuture, UpdateFuture,
 };
-use crate::{util::InnerUnwrap, Entry};
+use crate::Entry;
 
 pub mod futures;
 
@@ -58,7 +63,7 @@ pub trait Backend: Send + Sync {
 	///
 	/// The default impl does nothing
 	fn init(&self) -> InitFuture<'_, Self::Error> {
-		Box::pin(async { Ok(()) })
+		ok(()).boxed()
 	}
 
 	/// An optional shutdown function, useful for disconnecting from databases gracefully.
@@ -73,7 +78,7 @@ pub trait Backend: Send + Sync {
 	///
 	/// [`Starchart`]: crate::Starchart
 	unsafe fn shutdown(&self) -> ShutdownFuture {
-		Box::pin(async {})
+		ready(()).boxed()
 	}
 
 	/// Check if a table exists.
@@ -88,13 +93,14 @@ pub trait Backend: Send + Sync {
 	/// Ensures a table exists.
 	/// Uses [`Self::has_table`] first, then [`Self::create_table`] if it returns false.
 	fn ensure_table<'a>(&'a self, table: &'a str) -> EnsureTableFuture<'a, Self::Error> {
-		Box::pin(async move {
+		async move {
 			if !self.has_table(table).await? {
 				self.create_table(table).await?;
 			}
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	/// Gets all entries that match a predicate, to get all entries, use [`get_keys`] first.
@@ -103,25 +109,22 @@ pub trait Backend: Send + Sync {
 	fn get_all<'a, D, I>(
 		&'a self,
 		table: &'a str,
-		entries: &'a [&str],
+		entries: &'a [&'a str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
 		I: FromIterator<D>,
 	{
-		Box::pin(async move {
-			let mut output = Vec::with_capacity(entries.len());
+		async move {
+			let gets = entries.iter().copied().map(|v| self.get::<D>(table, v));
 
-			for key in entries.iter().copied() {
-				let value: Option<D> = self.get(table, key).await?;
-				if value.is_none() {
-					continue; // coverage:ignore-line
-				}
-				output.push(unsafe { value.inner_unwrap() });
-			}
-
-			Ok(output.into_iter().collect())
-		})
+			join_all(gets)
+				.await
+				.into_iter()
+				.filter_map(Result::transpose)
+				.collect::<Result<I, Self::Error>>()
+		}
+		.boxed()
 	}
 
 	/// Gets all the keys in the table.
@@ -157,13 +160,14 @@ pub trait Backend: Send + Sync {
 	where
 		S: Entry,
 	{
-		Box::pin(async move {
+		async move {
 			if !self.has(table, id).await? {
 				self.create(table, id, value).await?;
 			}
 
 			Ok(())
-		})
+		}
+		.boxed()
 	}
 
 	/// Updates an existing entry in a table.
@@ -173,16 +177,6 @@ pub trait Backend: Send + Sync {
 		id: &'a str,
 		value: &'a S,
 	) -> UpdateFuture<'a, Self::Error>
-	where
-		S: Entry;
-
-	/// Replaces an existing entry in a table.
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
 	where
 		S: Entry;
 

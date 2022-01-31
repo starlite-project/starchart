@@ -10,7 +10,7 @@ use serde_value::{to_value, DeserializerError, SerializerError, Value};
 use super::{
 	futures::{
 		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
-		GetKeysFuture, HasFuture, HasTableFuture, ReplaceFuture, UpdateFuture,
+		GetKeysFuture, HasFuture, HasTableFuture, UpdateFuture,
 	},
 	Backend,
 };
@@ -193,8 +193,13 @@ impl Backend for MemoryBackend {
 			table_value
 				.clone()
 				.into_iter()
-				.filter(|(key, _)| entries.contains(&key.as_str()))
-				.map(|(_, value)| value.deserialize_into().map_err(MemoryError::from))
+				.filter_map(|(key, value)| {
+					if entries.contains(&key.as_str()) {
+						Some(value.deserialize_into().map_err(MemoryError::from))
+					} else {
+						None
+					}
+				})
 				.collect::<Result<I, Self::Error>>()
 		})
 	}
@@ -263,22 +268,6 @@ impl Backend for MemoryBackend {
 			let table_value = self.get_table(table)?;
 
 			table_value.insert(id.to_owned(), to_value(value)?);
-
-			Ok(())
-		})
-	}
-
-	fn replace<'a, S>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-		value: &'a S,
-	) -> ReplaceFuture<'a, Self::Error>
-	where
-		S: Entry,
-	{
-		Box::pin(async move {
-			self.update(table, id, value).await?;
 
 			Ok(())
 		})
@@ -498,25 +487,6 @@ mod tests {
 			Some(Settings {
 				option: false,
 				times: 43
-			})
-		);
-
-		cache_backend
-			.replace(
-				"test",
-				"foo",
-				&Settings {
-					option: true,
-					times: 44,
-				},
-			)
-			.await?;
-
-		assert_eq!(
-			cache_backend.get::<Settings>("test", "foo").await?,
-			Some(Settings {
-				option: true,
-				times: 44
 			})
 		);
 

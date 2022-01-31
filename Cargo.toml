@@ -62,12 +62,6 @@ features = ["fs"]
 optional = true
 version = "1"
 
-[dependencies.tokio-stream]
-default-features = false
-features = ["fs"]
-optional = true
-version = "0.1"
-
 [dev-dependencies]
 static_assertions = "1.0.0"
 thiserror = "1.0.30"
@@ -91,7 +85,7 @@ required-features = ["json", "derive"]
 bincode = ["serde_bincode", "fs"]
 default = []
 derive = ["starchart-derive"]
-fs = ["tokio", "tokio-stream"]
+fs = ["tokio"]
 json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap"]
 metadata = []

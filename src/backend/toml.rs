@@ -48,7 +48,7 @@ impl FsBackend for TomlBackend {
 		Ok(serde_toml::from_str(&output)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -100,7 +100,7 @@ impl FsBackend for TomlPrettyBackend {
 		Ok(serde_toml::from_str(&output)?)
 	}
 
-	fn to_bytes<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
+	fn write_serial<T>(&self, value: &T) -> Result<Vec<u8>, FsError>
 	where
 		T: Entry,
 	{
@@ -324,27 +324,6 @@ mod tests {
 				id: 0,
 				option: false,
 				value: 24,
-			})
-		);
-
-		backend
-			.replace(
-				"table",
-				"id",
-				&Settings {
-					id: 0,
-					option: true,
-					value: 72,
-				},
-			)
-			.await?;
-
-		assert_eq!(
-			backend.get::<Settings>("table", "id").await?,
-			Some(Settings {
-				id: 0,
-				option: true,
-				value: 72
 			})
 		);
 
