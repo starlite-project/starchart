@@ -1,5 +1,4 @@
 use std::{
-	collections::VecDeque,
 	fmt::{Formatter, Result as FmtResult},
 	marker::PhantomData,
 };
@@ -417,8 +416,8 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 	where
 		E: DeError,
 	{
-		let mut sections = v.split('.').collect::<Vec<_>>();
-		if !(2..4).contains(&sections.len()) {
+		let sections = v.split('.').collect::<Vec<_>>();
+		if !(2..=3).contains(&sections.len()) {
 			return Err(DeError::custom("failed to parse DynamicAction"));
 		}
 
