@@ -210,6 +210,31 @@ jobs:
           command: test
           args: --all-features
 
+  feature-combinator:
+    name: Feature Combinator
+    runs-on: ubuntu-latest
+    needs: MSRV
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install cargo-hack
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-hack
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1
+
+      - name: Add problem matchers
+        run: echo "::add-matcher::.github/problemMatchers/rust.json"
+
+      - name: Check feature combinations
+        uses: actions-rs/cargo@v1
+        with:
+          command: hack
+          args: check --feature-powerset
+
   miri:
     name: Miri UB tests
     runs-on: ubuntu-latest
