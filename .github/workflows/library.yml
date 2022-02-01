@@ -211,7 +211,7 @@ jobs:
           args: --all-features
 
   feature-combinator:
-    name: Feature Combinator Tests
+    name: Feature Combinations
     runs-on: ubuntu-latest
     needs: [MSRV, test]
     steps:
