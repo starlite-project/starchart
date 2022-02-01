@@ -74,7 +74,7 @@ impl From<ActionValidationError> for ActionError {
 pub enum ActionErrorType {
 	/// A [`run`] error occurred.
 	///
-	/// [`run`]: super::Action::run
+	/// [`run`]: super::DynamicAction::run
 	Run,
 	/// A validation error has occurred.
 	Validation,
@@ -126,6 +126,9 @@ impl Display for ActionValidationError {
 			ActionValidationErrorType::Table => f.write_str("no table was provided"),
 			#[cfg(feature = "metadata")]
 			ActionValidationErrorType::Metadata => f.write_str("the `__metadata__` key is restricted"),
+			ActionValidationErrorType::Conversion => {
+				f.write_str("an error occurred converting between dynamic and static actions")
+			}
 		}
 	}
 }
@@ -152,6 +155,8 @@ pub enum ActionValidationErrorType {
 	/// The table or key name matched the private metadata key.
 	#[cfg(feature = "metadata")]
 	Metadata,
+	/// An invalid generic was passed during conversion.
+	Conversion,
 }
 
 /// An error that occurred from running an [`Action`].
@@ -187,6 +192,9 @@ impl Display for ActionRunError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
 			ActionRunErrorType::Backend => f.write_str("an error occurred within the backend"),
+			ActionRunErrorType::MissingTable => {
+				f.write_str("an operation was ran on a missing table")
+			}
 			#[cfg(feature = "metadata")]
 			ActionRunErrorType::Metadata {
 				type_name,
@@ -218,6 +226,8 @@ pub enum ActionRunErrorType {
 	///
 	/// [`Backend`]: crate::backend::Backend
 	Backend,
+	/// An operation was ran on a missing table.
+	MissingTable,
 	/// A value did not match the table's metadata.
 	#[cfg(feature = "metadata")]
 	Metadata {

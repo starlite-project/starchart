@@ -45,10 +45,10 @@ async fn main() -> Result<()> {
 
 	{
 		let mut action: CreateTableAction<Settings> = Action::new();
-		action.set_table("foo".to_owned());
+		action.set_table("foo");
 
 		// chart.run(action).await??;
-		action.run(&chart).await?.unwrap_create();
+		action.run_create_table(&chart).await?;
 	}
 
 	// Insert some entries into the table.
@@ -57,22 +57,17 @@ async fn main() -> Result<()> {
 		(42, "Ferris".to_owned()),
 		(73, "The Queen".to_owned()),
 	] {
+		let settings = Settings::new(name, age);
 		let mut action: CreateEntryAction<Settings> = Action::new();
-		action
-			.set_table("foo".to_owned())
-			.set_entry(&Settings::new(name, age));
-		// chart.run(action).await??;
-		action.run(&chart).await?.unwrap_create();
+		action.set_table("foo").set_entry(&settings);
+		action.run_create_entry(&chart).await?;
 	}
 
 	let mut read_all_action: ReadTableAction<Settings> = Action::new();
-	read_all_action.set_table("foo".to_owned());
+	read_all_action.set_table("foo");
 
 	// let mut values: Vec<Settings> = chart.run(read_all_action).await??;
-	let mut values = read_all_action
-		.run(&chart)
-		.await?
-		.unwrap_multi_read::<Vec<_>>();
+	let mut values: Vec<Settings> = read_all_action.run_read_table(&chart).await?;
 
 	values.sort();
 

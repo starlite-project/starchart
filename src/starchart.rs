@@ -1,6 +1,6 @@
 //! The base structure to use for starchart.
 
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use futures_executor::block_on;
 
@@ -17,18 +17,6 @@ pub struct Starchart<B: Backend> {
 }
 
 impl<B: Backend> Starchart<B> {
-	/// Gives access to the raw [`Backend`] instance.
-	///
-	/// # Safety
-	///
-	/// Accessing the backend functions directly isn't inheritly unsafe, however
-	/// care must be taken to ensure the data isn't modified directly, and
-	/// that [`Backend::shutdown`] isn't directly called.
-	#[must_use]
-	pub unsafe fn backend(&self) -> &B {
-		&*self.backend
-	}
-
 	/// Creates a new [`Starchart`], and initializes the [`Backend`].
 	///
 	/// # Errors
@@ -49,6 +37,14 @@ impl<B: Backend> Clone for Starchart<B> {
 			backend: self.backend.clone(),
 			guard: self.guard.clone(),
 		}
+	}
+}
+
+impl<B: Backend> Deref for Starchart<B> {
+	type Target = B;
+
+	fn deref(&self) -> &Self::Target {
+		&*self.backend
 	}
 }
 
@@ -76,7 +72,7 @@ mod tests {
 		backend::{
 			futures::{
 				CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
-				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, ReplaceFuture, UpdateFuture,
+				GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 			},
 			Backend, MemoryBackend,
 		},
@@ -180,19 +176,6 @@ mod tests {
 		}
 
 		#[cfg(not(tarpaulin_include))]
-		fn replace<'a, S>(
-			&'a self,
-			table: &'a str,
-			id: &'a str,
-			value: &'a S,
-		) -> ReplaceFuture<'a, Self::Error>
-		where
-			S: Entry,
-		{
-			Box::pin(async move { Ok(self.inner.replace(table, id, value).await?) })
-		}
-
-		#[cfg(not(tarpaulin_include))]
 		fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 			Box::pin(async move { Ok(self.inner.delete(table, id).await?) })
 		}
@@ -207,7 +190,7 @@ mod tests {
 		let starchart = Starchart::new(backend).await?;
 
 		// SAFETY: this is a test
-		let backend = unsafe { starchart.backend() };
+		let backend = &*starchart;
 
 		assert!(backend.is_initialized());
 

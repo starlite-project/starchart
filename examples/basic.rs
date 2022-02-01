@@ -34,10 +34,10 @@ async fn main() -> Result<()> {
 	// Create and run an action to create the "foo" table with the Settings struct.
 	let mut create_table_action: CreateTableAction<Settings> = Action::new();
 
-	create_table_action.set_table("foo".to_owned());
+	create_table_action.set_table("foo");
 
 	// chart.run(create_table_action).await??;
-	create_table_action.run(&chart).await?.unwrap_create();
+	create_table_action.run_create_table(&chart).await?;
 
 	// Insert some entries into the table.
 	for (age, name) in vec![
@@ -45,12 +45,10 @@ async fn main() -> Result<()> {
 		(42, "Ferris".to_owned()),
 		(73, "The Queen".to_owned()),
 	] {
+		let settings = Settings::new(name, age);
 		let mut action: CreateEntryAction<Settings> = Action::new();
-		action
-			.set_table("foo".to_owned())
-			.set_entry(&Settings::new(name, age));
-		// chart.run(action).await??;
-		action.run(&chart).await?.unwrap_create();
+		action.set_table("foo").set_entry(&settings);
+		action.run_create_entry(&chart).await?;
 	}
 
 	// Get a single entry.
@@ -58,12 +56,11 @@ async fn main() -> Result<()> {
 	let the_queen = {
 		// Action type helpers are named after their CRUD counterparts; Create, Read, Update, and Delete.
 		let mut action: ReadEntryAction<Settings> = Action::new();
-		action.set_key(&3_u64).set_table("foo".to_owned());
+		action.set_key(&3_u64).set_table("foo");
 
 		action
-			.run(&chart)
+			.run_read_entry(&chart)
 			.await?
-			.unwrap_single_read()
 			.expect("the queen has fallen!")
 	};
 
