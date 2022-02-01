@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["starchart"] = [{"text":"impl&lt;B:&nbsp;<a class=\"trait\" href=\"starchart/backend/trait.Backend.html\" title=\"trait starchart::backend::Backend\">Backend</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"starchart/struct.Starchart.html\" title=\"struct starchart::Starchart\">Starchart</a>&lt;B&gt;","synthetic":false,"types":["starchart::starchart::Starchart"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
