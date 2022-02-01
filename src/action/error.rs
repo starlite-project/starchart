@@ -192,6 +192,9 @@ impl Display for ActionRunError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
 			ActionRunErrorType::Backend => f.write_str("an error occurred within the backend"),
+			ActionRunErrorType::MissingTable => {
+				f.write_str("an operation was ran on a missing table")
+			}
 			#[cfg(feature = "metadata")]
 			ActionRunErrorType::Metadata {
 				type_name,
@@ -223,6 +226,8 @@ pub enum ActionRunErrorType {
 	///
 	/// [`Backend`]: crate::backend::Backend
 	Backend,
+	/// An operation was ran on a missing table.
+	MissingTable,
 	/// A value did not match the table's metadata.
 	#[cfg(feature = "metadata")]
 	Metadata {

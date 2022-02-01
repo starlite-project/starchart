@@ -4,9 +4,9 @@ use std::{
 	iter::FromIterator,
 };
 
-use dashmap::{mapref::one::Ref, DashMap};
+use dashmap::DashMap;
 use futures_util::{
-	future::{err, ok, ready},
+	future::{err, ok},
 	FutureExt,
 };
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
@@ -53,9 +53,6 @@ impl Display for MemoryError {
 		match &self.kind {
 			MemoryErrorType::Serialization => f.write_str("a serialization error occurred"),
 			MemoryErrorType::Deserialization => f.write_str("a deserialization error occurred"),
-			MemoryErrorType::TableDoesntExist => {
-				f.write_str("a table that a value was being added to doesn't exist")
-			}
 		}
 	}
 }
@@ -96,8 +93,6 @@ pub enum MemoryErrorType {
 	Serialization,
 	/// A deserialization error occurred.
 	Deserialization,
-	/// The table that a value was trying to be created for doesn't exist.
-	TableDoesntExist,
 }
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
@@ -221,15 +216,9 @@ impl Backend for MemoryBackend {
 			};
 
 			table.insert(id.to_owned(), serialized);
-
-			ok(()).boxed()
-		} else {
-			err(MemoryError {
-				source: None,
-				kind: MemoryErrorType::TableDoesntExist,
-			})
-			.boxed()
 		}
+
+		ok(()).boxed()
 	}
 
 	fn update<'a, S>(
@@ -247,29 +236,17 @@ impl Backend for MemoryBackend {
 				Err(e) => return err(e.into()).boxed(),
 			};
 			table.insert(id.to_owned(), to_replace);
-
-			ok(()).boxed()
-		} else {
-			err(MemoryError {
-				source: None,
-				kind: MemoryErrorType::TableDoesntExist,
-			})
-			.boxed()
 		}
+
+		ok(()).boxed()
 	}
 
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		if let Some(table) = self.tables.get(table) {
 			table.remove(id);
-
-			ok(()).boxed()
-		} else {
-			err(MemoryError {
-				source: None,
-				kind: MemoryErrorType::TableDoesntExist,
-			})
-			.boxed()
 		}
+
+		ok(()).boxed()
 	}
 }
 
@@ -277,7 +254,6 @@ impl Backend for MemoryBackend {
 mod tests {
 	use std::fmt::Debug;
 
-	use dashmap::DashMap;
 	use serde::{Deserialize, Serialize};
 	use serde_value::to_value;
 	use static_assertions::assert_impl_all;
@@ -392,10 +368,7 @@ mod tests {
 
 		assert_eq!(not_existing, None);
 
-		assert!(cache_backend
-			.create("test", "foo", &settings)
-			.await
-			.is_err());
+		assert!(cache_backend.create("test", "foo", &settings).await.is_ok());
 
 		Ok(())
 	}

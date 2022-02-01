@@ -61,9 +61,9 @@ unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 	}
 }
 
-#[cfg(test)]
+// #[cfg(test)]
+#[cfg(all(test, feature = "fs"))]
 pub mod testing {
-	#[cfg(feature = "fs")]
 	use std::{
 		ffi::OsStr,
 		fs,
@@ -75,12 +75,10 @@ pub mod testing {
 
 	pub static TEST_GUARD: Guard = Guard::new();
 
-	#[cfg(feature = "fs")]
 	#[derive(Debug, Clone)]
 	#[repr(transparent)]
 	pub struct FsCleanup(PathBuf);
 
-	#[cfg(feature = "fs")]
 	impl FsCleanup {
 		pub fn new(test_name: &str, module: &str, should_create: bool) -> IoResult<Self> {
 			let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -97,21 +95,18 @@ pub mod testing {
 		}
 	}
 
-	#[cfg(feature = "fs")]
 	impl AsRef<Path> for FsCleanup {
 		fn as_ref(&self) -> &Path {
 			self.0.as_ref()
 		}
 	}
 
-	#[cfg(feature = "fs")]
 	impl AsRef<OsStr> for FsCleanup {
 		fn as_ref(&self) -> &OsStr {
 			self.0.as_ref()
 		}
 	}
 
-	#[cfg(feature = "fs")]
 	impl Drop for FsCleanup {
 		#[allow(clippy::let_underscore_drop)]
 		fn drop(&mut self) {

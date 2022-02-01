@@ -173,6 +173,24 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		ok(())
 	}
 
+	async fn check_table<B: Backend>(
+		&self,
+		backend: &B,
+		table: &str,
+	) -> Result<(), ActionRunError> {
+		if backend.has_table(table).await.map_err(|e| ActionRunError {
+			source: Some(Box::new(e)),
+			kind: ActionRunErrorType::Backend,
+		})? {
+			Ok(())
+		} else {
+			Err(ActionRunError {
+				source: None,
+				kind: ActionRunErrorType::MissingTable,
+			})
+		}
+	}
+
 	async fn create_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		self.validate_entry()?;
 		self.validate_table()?;
@@ -189,6 +207,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 			)
 		};
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		backend
@@ -221,6 +240,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 			)
 		};
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		let res = backend.get(table, &key).await.map_err(|e| ActionRunError {
@@ -249,6 +269,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 			)
 		};
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		backend
@@ -278,6 +299,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 			)
 		};
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		if !backend.has(table, &key).await.map_err(|e| ActionRunError {
@@ -349,6 +371,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let table = unsafe { self.table.take().inner_unwrap() };
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		let keys = backend
@@ -392,6 +415,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let table = unsafe { self.table.take().inner_unwrap() };
 
+		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
 
 		if !backend.has_table(table).await.map_err(|e| ActionRunError {

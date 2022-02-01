@@ -9,7 +9,7 @@ use std::{
 	path::PathBuf,
 };
 
-use futures_util::FutureExt;
+use futures_util::{future::err, FutureExt};
 use tokio::fs;
 
 use super::{
@@ -210,7 +210,13 @@ impl<RW: FsBackend> Backend for RW {
 	fn init(&self) -> InitFuture<'_, FsError> {
 		async move {
 			let path = self.base_directory();
-			if fs::read_dir(&path).await.is_err() {
+			let exists = match fs::read_dir(&path).await {
+				Ok(_) => true,
+				Err(e) if e.kind() == ErrorKind::NotFound => false,
+				Err(e) => return Err(e.into()),
+			};
+
+			if !exists {
 				fs::create_dir_all(&path).await?;
 			}
 
@@ -240,15 +246,14 @@ impl<RW: FsBackend> Backend for RW {
 	}
 
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-		async move {
-			let mut path = self.base_directory();
-			path.push(table);
-			match fs::remove_dir(path).await {
+		let mut path = self.base_directory();
+		path.push(table);
+		fs::remove_dir(path)
+			.map(|res| match res {
 				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
 				_ => Ok(()),
-			}
-		}
-		.boxed()
+			})
+			.boxed()
 	}
 
 	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
@@ -294,17 +299,16 @@ impl<RW: FsBackend> Backend for RW {
 	}
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
-		async move {
-			let filename = [id, Self::EXTENSION].join(".");
-			let mut path = self.base_directory();
-			path.extend(&[table, filename.as_str()]);
-			match fs::metadata(path).await {
-				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
+		let filename = [id, Self::EXTENSION].join(".");
+		let mut path = self.base_directory();
+		path.extend(&[table, filename.as_str()]);
+		fs::metadata(path)
+			.map(|res| match res {
+				Err(e) if e.kind() != ErrorKind::NotFound => Ok(false),
 				Err(e) => Err(e.into()),
 				Ok(_) => Ok(true),
-			}
-		}
-		.boxed()
+			})
+			.boxed()
 	}
 
 	fn create<'a, S>(
@@ -316,18 +320,18 @@ impl<RW: FsBackend> Backend for RW {
 	where
 		S: Entry,
 	{
-		async move {
-			let filename = [id, Self::EXTENSION].join(".");
-			let mut path = self.base_directory();
-			path.extend(&[table, filename.as_str()]);
+		let filename = [id, Self::EXTENSION].join(".");
+		let mut path = self.base_directory();
+		path.extend(&[table, filename.as_str()]);
 
-			let serialized = self.write_serial(value)?;
+		let serialized = match self.write_serial(value) {
+			Ok(v) => v,
+			Err(e) => return err(e).boxed(),
+		};
 
-			fs::write(path, serialized).await?;
-
-			Ok(())
-		}
-		.boxed()
+		fs::write(path, serialized)
+			.map(|res| res.map_err(Into::into))
+			.boxed()
 	}
 
 	fn update<'a, S>(
@@ -339,32 +343,31 @@ impl<RW: FsBackend> Backend for RW {
 	where
 		S: Entry,
 	{
-		async move {
-			let serialized = self.write_serial(value)?;
-			let filepath = [id, Self::EXTENSION].join(".");
-			let mut path = self.base_directory();
-			path.extend(&[table, filepath.as_str()]);
+		let serialized = match self.write_serial(value) {
+			Ok(v) => v,
+			Err(e) => return err(e).boxed(),
+		};
+		let filepath = [id, Self::EXTENSION].join(".");
+		let mut path = self.base_directory();
+		path.extend(&[table, filepath.as_str()]);
 
-			fs::write(path, serialized).await?;
-
-			Ok(())
-		}
-		.boxed()
+		fs::write(path, serialized)
+			.map(|res| res.map_err(Into::into))
+			.boxed()
 	}
 
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
-		async move {
-			let filename = [id, Self::EXTENSION].join(".");
+		let filename = [id, Self::EXTENSION].join(".");
 
-			let mut path = self.base_directory();
-			path.extend(&[table, filename.as_str()]);
+		let mut path = self.base_directory();
+		path.extend(&[table, filename.as_str()]);
 
-			match fs::remove_file(path).await {
+		fs::remove_file(path)
+			.map(|res| match res {
 				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
 				_ => Ok(()),
-			}
-		}
-		.boxed()
+			})
+			.boxed()
 	}
 }
 

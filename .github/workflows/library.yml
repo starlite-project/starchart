@@ -211,9 +211,9 @@ jobs:
           args: --all-features
 
   feature-combinator:
-    name: Feature Combinator
+    name: Feature Combinator Tests
     runs-on: ubuntu-latest
-    needs: MSRV
+    needs: [MSRV, test]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -233,8 +233,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          # group all of the backends together
-          args: check --feature-powerset --group-features json,yaml,toml,bincode,fs
+          # group all of the fs backends together, skip default and derive as there's no tests for them
+          args: check --feature-powerset --group-features json,yaml,toml,bincode,fs --exclude-features default,derive
 
   miri:
     name: Miri UB tests
