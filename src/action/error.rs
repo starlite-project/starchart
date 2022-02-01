@@ -74,7 +74,7 @@ impl From<ActionValidationError> for ActionError {
 pub enum ActionErrorType {
 	/// A [`run`] error occurred.
 	///
-	/// [`run`]: super::Action::run
+	/// [`run`]: super::DynamicAction::run
 	Run,
 	/// A validation error has occurred.
 	Validation,
