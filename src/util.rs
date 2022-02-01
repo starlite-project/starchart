@@ -61,7 +61,6 @@ unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 	}
 }
 
-// #[cfg(test)]
 #[cfg(all(test, feature = "fs"))]
 pub mod testing {
 	use std::{
