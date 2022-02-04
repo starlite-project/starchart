@@ -202,7 +202,7 @@ impl Display for ActionRunError {
 			} => {
 				f.write_str("invalid entry was provided, ")?;
 				Display::fmt(type_name, f)?;
-				f.write_str("does not match the metadata for table ")?;
+				f.write_str(" does not match the metadata for table ")?;
 				Display::fmt(&table_name, f)
 			}
 		}

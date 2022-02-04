@@ -304,7 +304,7 @@ impl<RW: FsBackend> Backend for RW {
 		path.extend(&[table, filename.as_str()]);
 		fs::metadata(path)
 			.map(|res| match res {
-				Err(e) if e.kind() != ErrorKind::NotFound => Ok(false),
+				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
 				Err(e) => Err(e.into()),
 				Ok(_) => Ok(true),
 			})
