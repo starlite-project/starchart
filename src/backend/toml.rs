@@ -140,8 +140,8 @@ mod tests {
 	impl IndexEntry for Settings {
 		type Key = u64;
 
-		fn key(&self) -> Self::Key {
-			self.id
+		fn key(&self) -> &Self::Key {
+			&self.id
 		}
 	}
 

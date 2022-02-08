@@ -29,7 +29,7 @@ pub trait IndexEntry: Entry {
 	type Key: Key;
 
 	/// Returns the valid key for the database to index from.
-	fn key(&self) -> Self::Key;
+	fn key(&self) -> &Self::Key;
 }
 
 #[cfg(test)]

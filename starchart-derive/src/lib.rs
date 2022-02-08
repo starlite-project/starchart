@@ -73,8 +73,8 @@ fn parse(input: &DeriveInput) -> Result<TokenStream> {
 		impl ::starchart::IndexEntry for #ident {
 			type Key = #id_type;
 
-			fn key(&self) -> Self::Key {
-				self.#id_ident
+			fn key(&self) -> &Self::Key {
+				&self.#id_ident
 			}
 		}
 	};
