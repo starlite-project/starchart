@@ -612,7 +612,7 @@ impl<'a, S: Entry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 impl<'a, S: IndexEntry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
 	pub fn set_entry(&mut self, entity: &'a S) -> &mut Self {
-		self.set_key(&entity.key()).set_data(entity)
+		self.set_key(entity.key()).set_data(entity)
 	}
 }
 
@@ -784,8 +784,8 @@ mod tests {
 	impl IndexEntry for Settings {
 		type Key = u64;
 
-		fn key(&self) -> Self::Key {
-			self.id
+		fn key(&self) -> &Self::Key {
+			&self.id
 		}
 	}
 

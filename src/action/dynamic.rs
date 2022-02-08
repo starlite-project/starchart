@@ -294,7 +294,7 @@ impl<S: Entry + ?Sized> DynamicAction<S> {
 impl<S: IndexEntry + ?Sized> DynamicAction<S> {
 	/// Sets both a key and a value to run the action with.
 	pub fn set_entry(&mut self, entry: S) -> &mut Self {
-		self.set_key(&entry.key()).set_entry(entry)
+		self.set_key(entry.key()).set_entry(entry)
 	}
 }
 
