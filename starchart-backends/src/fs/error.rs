@@ -1,13 +1,15 @@
 use std::{
 	error::Error,
 	fmt::{Display, Formatter, Result as FmtResult},
+	io::Error as IoError,
 	path::PathBuf,
 };
 
 #[derive(Debug)]
+#[cfg(feature = "fs")]
 pub struct FsError {
-	source: Option<Box<dyn Error + Send + Sync>>,
-	kind: FsErrorType,
+	pub(super) source: Option<Box<dyn Error + Send + Sync>>,
+	pub(super) kind: FsErrorType,
 }
 
 impl FsError {
@@ -64,7 +66,24 @@ impl Error for FsError {
 	}
 }
 
+impl From<IoError> for FsError {
+	fn from(e: IoError) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: FsErrorType::Io,
+		}
+	}
+}
+
+#[cfg(feature = "json")]
+impl From<serde_json::Error> for FsError {
+	fn from(e: serde_json::Error) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
 #[derive(Debug)]
+#[cfg(feature = "fs")]
 #[non_exhaustive]
 pub enum FsErrorType {
 	Io,

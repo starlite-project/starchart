@@ -1,19 +1,37 @@
 [package]
+edition = "2021"
 name = "starchart-backends"
 version = "0.1.0"
-edition = "2021"
 
 [dependencies.futures-util]
-version = "0.3"
 default-features = false
 features = ["std"]
+version = "0.3"
+
+[dependencies.serde_json]
+optional = true
+version = "1"
+
+[dependencies.serde_toml]
+optional = true
+package = "toml"
+version = "0.5"
 
 [dependencies.starchart]
-version = "0.18"
 path = "../"
+version = "0.18"
 
 [dependencies.tokio]
-version = "1.0"
 default-features = false
 features = ["fs"]
 optional = true
+version = "1.0"
+
+[build-dependencies]
+rustc_version = "0.4"
+
+[features]
+default = []
+fs = ["tokio"]
+json = ["serde_json", "fs"]
+toml = ["serde_toml", "fs"]
