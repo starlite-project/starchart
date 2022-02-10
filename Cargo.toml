@@ -11,14 +11,12 @@ repository = "https://github.com/starlite-project/starchart"
 version = "0.18.1"
 
 [dependencies]
+futures-executor = "0.3"
 parking_lot = "0.11.2"
 
 [dependencies.dashmap]
 optional = true
 version = "4.0"
-
-[dependencies.futures-executor]
-version = "0.3"
 
 [dependencies.futures-util]
 default-features = false
@@ -94,6 +92,7 @@ yaml = ["serde_yaml", "fs"]
 
 [workspace]
 members = [
+  "./starchart-backends",
   "./starchart-derive",
 ]
 

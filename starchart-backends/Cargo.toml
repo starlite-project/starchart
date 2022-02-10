@@ -1,0 +1,19 @@
+[package]
+name = "starchart-backends"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.futures-util]
+version = "0.3"
+default-features = false
+features = ["std"]
+
+[dependencies.starchart]
+version = "0.18"
+path = "../"
+
+[dependencies.tokio]
+version = "1.0"
+default-features = false
+features = ["fs"]
+optional = true
