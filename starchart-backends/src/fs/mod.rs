@@ -6,6 +6,7 @@ use std::{
 	fs::File as StdFile,
 	io::{ErrorKind, Read},
 	path::{Path, PathBuf},
+	iter::FromIterator,
 };
 
 use futures_util::future::{err, FutureExt};
