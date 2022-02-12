@@ -17,6 +17,10 @@ optional = true
 package = "toml"
 version = "0.5"
 
+[dependencies.serde_yaml]
+optional = true
+version = "0.8"
+
 [dependencies.starchart]
 path = "../"
 version = "0.18"
@@ -35,3 +39,4 @@ default = []
 fs = ["tokio"]
 json = ["serde_json", "fs"]
 toml = ["serde_toml", "fs"]
+yaml = ["serde_yaml", "fs"]

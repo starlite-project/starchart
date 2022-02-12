@@ -82,6 +82,27 @@ impl From<serde_json::Error> for FsError {
 	}
 }
 
+#[cfg(feature = "toml")]
+impl From<serde_toml::de::Error> for FsError {
+	fn from(e: serde_toml::de::Error) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
+#[cfg(feature = "toml")]
+impl From<serde_toml::ser::Error> for FsError {
+	fn from(e: serde_toml::ser::Error) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
+#[cfg(feature = "yaml")]
+impl From<serde_yaml::Error> for FsError {
+	fn from(e: serde_yaml::Error) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
 #[derive(Debug)]
 #[cfg(feature = "fs")]
 #[non_exhaustive]

@@ -1,12 +1,16 @@
 mod error;
+#[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "toml")]
 mod toml;
+#[cfg(feature = "yaml")]
+mod yaml;
 
 use std::{
 	fs::File as StdFile,
 	io::{ErrorKind, Read},
-	path::{Path, PathBuf},
 	iter::FromIterator,
+	path::{Path, PathBuf},
 };
 
 use futures_util::future::{err, FutureExt};
@@ -239,6 +243,10 @@ pub trait Transcoder: Send + Sync {
 pub mod transcoders {
 	#[cfg(feature = "json")]
 	pub use super::json::JsonTranscoder;
+	#[cfg(feature = "toml")]
+	pub use super::toml::TomlTranscoder;
+	#[cfg(feature = "yaml")]
+	pub use super::yaml::YamlTranscoder;
 }
 
 mod util {
