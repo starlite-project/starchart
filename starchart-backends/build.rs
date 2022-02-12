@@ -24,7 +24,9 @@ fn main() -> Result<(), Error> {
 	let version_data = version_meta()?;
 	let minor = version_data.semver.minor;
 	if let Channel::Nightly = version_data.channel {
-		println!("cargo:rustc-cfg={}", CfgKeys::Docsrs);
+		if minor >= 57 {
+			println!("cargo:rustc-cfg={}", CfgKeys::Docsrs);
+		}
 	}
 
 	if minor < 58 {
