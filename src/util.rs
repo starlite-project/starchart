@@ -61,7 +61,7 @@ unsafe impl<T, E> InnerUnwrap<T> for Result<T, E> {
 	}
 }
 
-#[cfg(all(test, feature = "fs"))]
+#[cfg(test)]
 pub mod testing {
 	use std::{
 		ffi::OsStr,
