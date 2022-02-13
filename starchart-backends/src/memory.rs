@@ -1,3 +1,6 @@
+//! A memory based backend. Useful for debugging or applications
+//! who only need to store data at runtime.
+
 use std::{
 	collections::hash_map::RandomState,
 	error::Error,
@@ -98,26 +101,33 @@ pub enum MemoryErrorType {
 	Deserialization,
 }
 
+/// A memory-based backend, uses a [`DashMap`] of [`Value`]s
+/// to represent data.
 #[cfg(feature = "memory")]
+#[must_use = "a memory backend does nothing on it's own"]
 pub struct MemoryBackend<S = RandomState> {
 	tables: DashMap<String, DashMap<String, Value, S>, S>,
 }
 
 impl MemoryBackend<RandomState> {
+	/// Creates a new [`MemoryBackend`].
 	pub fn new() -> Self {
 		Self::with_capacity_and_hasher(0, RandomState::default())
 	}
 
+	/// Creates a new [`MemoryBackend`] with the specified capacity.
 	pub fn with_capacity(cap: usize) -> Self {
 		Self::with_capacity_and_hasher(cap, RandomState::default())
 	}
 }
 
 impl<S: BuildHasher + Clone> MemoryBackend<S> {
+	/// Creates a new [`MemoryBackend`] with the specified hasher.
 	pub fn with_hasher(hasher: S) -> Self {
 		Self::with_capacity_and_hasher(0, hasher)
 	}
 
+	/// Creates a new [`MemoryBackend`] with the specified capacity and hasher.
 	pub fn with_capacity_and_hasher(cap: usize, hasher: S) -> Self {
 		Self {
 			tables: DashMap::with_capacity_and_hasher(cap, hasher),

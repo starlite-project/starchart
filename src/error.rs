@@ -10,8 +10,6 @@ pub use crate::action::{
 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
 	ActionValidationErrorType,
 };
-#[cfg(feature = "memory")]
-pub use crate::backend::{MemoryError, MemoryErrorType};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
