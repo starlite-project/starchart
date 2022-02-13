@@ -14,10 +14,6 @@ version = "0.18.2"
 futures-executor = "0.3"
 parking_lot = "0.11.2"
 
-[dependencies.dashmap]
-optional = true
-version = "4.0"
-
 [dependencies.futures-util]
 default-features = false
 features = ["std"]
@@ -26,10 +22,6 @@ version = "0.3"
 [dependencies.serde]
 features = ["derive"]
 version = "1"
-
-[dependencies.serde-value]
-optional = true
-version = "0.7"
 
 [dependencies.starchart-derive]
 optional = true
@@ -50,7 +42,6 @@ rustc_version = "0.4"
 [features]
 default = []
 derive = ["starchart-derive"]
-memory = ["serde-value", "dashmap"]
 metadata = []
 
 [workspace]
