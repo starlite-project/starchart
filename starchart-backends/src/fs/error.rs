@@ -5,6 +5,10 @@ use std::{
 	path::PathBuf,
 };
 
+/// An error occurred from the [`FsBackend`] or one of it's [`Transcoders`].
+///
+/// [`FsBackend`]: super::FsBackend
+/// [`Transcoders`]: super::Transcoder
 #[derive(Debug)]
 #[cfg(feature = "fs")]
 pub struct FsError {
@@ -13,6 +17,10 @@ pub struct FsError {
 }
 
 impl FsError {
+	/// Creates an error from a [`Transcoder`].
+	///
+	/// [`Transcoder`]: super::Transcoder
+	#[must_use]
 	pub fn serde(err: Option<Box<dyn Error + Send + Sync>>) -> Self {
 		Self {
 			source: err,
@@ -75,6 +83,33 @@ impl From<IoError> for FsError {
 	}
 }
 
+impl From<FsError> for starchart::Error {
+	fn from(e: FsError) -> Self {
+		Self::backend(Some(Box::new(e)))
+	}
+}
+
+#[cfg(feature = "binary")]
+impl From<serde_bincode::Error> for FsError {
+	fn from(e: serde_bincode::Error) -> Self {
+		Self::serde(Some(e))
+	}
+}
+
+#[cfg(feature = "binary")]
+impl From<serde_bincode::ErrorKind> for FsError {
+	fn from(e: serde_bincode::ErrorKind) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
+#[cfg(feature = "binary")]
+impl From<serde_cbor::Error> for FsError {
+	fn from(e: serde_cbor::Error) -> Self {
+		Self::serde(Some(Box::new(e)))
+	}
+}
+
 #[cfg(feature = "json")]
 impl From<serde_json::Error> for FsError {
 	fn from(e: serde_json::Error) -> Self {
@@ -103,12 +138,17 @@ impl From<serde_yaml::Error> for FsError {
 	}
 }
 
+/// The type of [`FsError`] that occurred.
 #[derive(Debug)]
 #[cfg(feature = "fs")]
 #[non_exhaustive]
 pub enum FsErrorType {
+	/// An IO error occurred.
 	Io,
+	/// The path provided was not a directory.
 	PathNotDirectory(PathBuf),
+	/// An error occurred during (de)serialization.
 	Serde,
+	/// The given file was invalid in some way.
 	InvalidFile(PathBuf),
 }

@@ -1,3 +1,7 @@
+//! The file-system based backends for the starchart crate.
+
+#[cfg(feature = "binary")]
+mod binary;
 mod error;
 #[cfg(feature = "json")]
 mod json;
@@ -7,7 +11,6 @@ mod toml;
 mod yaml;
 
 use std::{
-	fs::File as StdFile,
 	io::{ErrorKind, Read},
 	iter::FromIterator,
 	path::{Path, PathBuf},
@@ -28,6 +31,7 @@ use tokio::fs;
 
 pub use self::error::{FsError, FsErrorType};
 
+/// An fs-based backend for the starchart crate.
 #[derive(Debug, Clone)]
 #[cfg(feature = "fs")]
 pub struct FsBackend<T> {
@@ -37,6 +41,11 @@ pub struct FsBackend<T> {
 }
 
 impl<T: Transcoder> FsBackend<T> {
+	/// Creates a new [`FsBackend`].
+	///
+	/// # Errors
+	///
+	/// Returns an error if the provided path is not a directory.
 	pub fn new<P: AsRef<Path>>(
 		transcoder: T,
 		extension: String,
@@ -58,14 +67,17 @@ impl<T: Transcoder> FsBackend<T> {
 		}
 	}
 
+	/// Returns the base directory for the [`FsBackend`].
 	pub fn base_directory(&self) -> &Path {
 		&self.base_directory
 	}
 
+	/// Returns the currently used extension for the [`FsBackend`].
 	pub fn extension(&self) -> &str {
 		&self.extension
 	}
 
+	/// Returns a reference to the current [`Transcoder`].
 	pub fn transcoder(&self) -> &T {
 		&self.transcoder
 	}
@@ -233,14 +245,28 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	}
 }
 
+/// The transcoder trait for transforming data for the [`FsBackend`].
 #[cfg(feature = "fs")]
 pub trait Transcoder: Send + Sync {
+	/// Serializes a value into a [`Vec<u8>`] for writing to a file.
+	///
+	/// # Errors
+	///
+	/// Any errors from the transcoder should use [`FsError::serde`] to return properly.
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError>;
 
+	/// Deserializes data into the provided type.
+	///
+	/// # Errors
+	///
+	/// Any errors from the transcoder should use [`FsError::serde`] to return properly.
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError>;
 }
 
+/// The transcoders for the [`FsBackend`].
 pub mod transcoders {
+	#[cfg(feature = "binary")]
+	pub use super::binary::{BinaryFormat, BinaryTranscoder};
 	#[cfg(feature = "json")]
 	pub use super::json::JsonTranscoder;
 	#[cfg(feature = "toml")]

@@ -4,11 +4,15 @@ use starchart::Entry;
 
 use super::{FsError, Transcoder};
 
+/// A transcoder for the YAML format.
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg(feature = "yaml")]
+#[non_exhaustive]
+#[must_use = "transcoders do nothing by themselves"]
 pub struct YamlTranscoder;
 
 impl YamlTranscoder {
+	/// Creates a new [`YamlTranscoder`].
 	pub const fn new() -> Self {
 		Self
 	}

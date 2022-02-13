@@ -18,39 +18,14 @@ use crate::Entry;
 
 pub mod futures;
 
-#[cfg(feature = "bincode")]
-mod bincode;
-#[cfg(feature = "fs")]
-pub mod fs;
-#[cfg(feature = "json")]
-mod json;
 #[cfg(feature = "memory")]
 mod memory;
-#[cfg(feature = "toml")]
-mod toml;
-#[cfg(feature = "yaml")]
-mod yaml;
 
-#[cfg(feature = "bincode")]
-pub use self::bincode::BincodeBackend;
-#[cfg(feature = "fs")]
-#[doc(hidden)]
-pub use self::fs::{FsError, FsErrorType};
-#[cfg(feature = "json")]
-pub use self::json::JsonBackend;
-#[cfg(all(feature = "json", feature = "pretty"))]
-pub use self::json::JsonPrettyBackend;
 #[cfg(feature = "memory")]
 pub use self::memory::MemoryBackend;
 #[cfg(feature = "memory")]
 #[doc(hidden)]
 pub use self::memory::{MemoryError, MemoryErrorType};
-#[cfg(feature = "toml")]
-pub use self::toml::TomlBackend;
-#[cfg(all(feature = "toml", feature = "pretty"))]
-pub use self::toml::TomlPrettyBackend;
-#[cfg(feature = "yaml")]
-pub use self::yaml::YamlBackend;
 
 /// The backend to be used to manage data.
 pub trait Backend: Send + Sync {

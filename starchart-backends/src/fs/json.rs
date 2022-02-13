@@ -4,15 +4,20 @@ use starchart::Entry;
 
 use super::{FsError, Transcoder};
 
+/// A transcoder for the JSON format.
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg(feature = "json")]
+#[must_use = "transcoders do nothing by themselves"]
 pub struct JsonTranscoder(bool);
 
 impl JsonTranscoder {
+	/// Creates a new [`JsonTranscoder`], optionally using pretty printing.
 	pub const fn new(is_pretty: bool) -> Self {
 		Self(is_pretty)
 	}
 
+	/// Returns whether or not this transcoder uses pretty formatting.
+	#[must_use]
 	pub const fn is_pretty(self) -> bool {
 		self.0
 	}

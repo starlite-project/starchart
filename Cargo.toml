@@ -27,37 +27,14 @@ version = "0.3"
 features = ["derive"]
 version = "1"
 
-[dependencies.serde_bincode]
-optional = true
-package = "bincode"
-version = "1.3"
-
-[dependencies.serde_json]
-optional = true
-version = "1"
-
-[dependencies.serde_toml]
-optional = true
-package = "toml"
-version = "0.5"
-
 [dependencies.serde-value]
 optional = true
 version = "0.7"
-
-[dependencies.serde_yaml]
-optional = true
-version = "0.8"
 
 [dependencies.starchart-derive]
 optional = true
 path = "./starchart-derive"
 version = "^0.18"
-
-[dependencies.tokio]
-default-features = false
-optional = true
-version = "1"
 
 [dev-dependencies]
 static_assertions = "1.0.0"
@@ -70,25 +47,11 @@ version = "1"
 [build-dependencies]
 rustc_version = "0.4"
 
-[[example]]
-name = "basic"
-required-features = ["memory", "derive"]
-
-[[example]]
-name = "get_all"
-required-features = ["json", "derive"]
-
 [features]
-bincode = ["serde_bincode", "fs"]
 default = []
 derive = ["starchart-derive"]
-fs = ["tokio/fs"]
-json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap"]
 metadata = []
-pretty = []
-toml = ["serde_toml", "fs"]
-yaml = ["serde_yaml", "fs"]
 
 [workspace]
 members = [

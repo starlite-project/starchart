@@ -2,17 +2,22 @@ use std::io::Read;
 
 use starchart::Entry;
 
-use super::{Transcoder, FsError};
+use super::{FsError, Transcoder};
 
-#[derive(Debug, Default, Clone,Copy)]
+/// A transcoder for the TOML format.
+#[derive(Debug, Default, Clone, Copy)]
 #[cfg(feature = "toml")]
+#[must_use = "transcoders do nothing by themselves"]
 pub struct TomlTranscoder(bool);
 
 impl TomlTranscoder {
+	/// Creates a new [`TomlTranscoder`], optionally using pretty printing.
 	pub const fn new(is_pretty: bool) -> Self {
 		Self(is_pretty)
 	}
 
+	/// Returns whether or not this transcoder uses pretty formatting.
+	#[must_use]
 	pub const fn is_pretty(self) -> bool {
 		self.0
 	}

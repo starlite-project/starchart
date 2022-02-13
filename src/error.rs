@@ -10,9 +10,6 @@ pub use crate::action::{
 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
 	ActionValidationErrorType,
 };
-#[cfg(feature = "fs")]
-#[doc(inline)]
-pub use crate::backend::{FsError, FsErrorType};
 #[cfg(feature = "memory")]
 pub use crate::backend::{MemoryError, MemoryErrorType};
 
@@ -44,15 +41,21 @@ impl Error {
 	pub fn into_parts(self) -> (ErrorType, Option<Box<dyn StdError + Send + Sync>>) {
 		(self.kind, self.source)
 	}
+
+	/// Creates a new error from a backend.
+	#[must_use]
+	pub fn backend(e: Option<Box<dyn StdError + Send + Sync>>) -> Self {
+		Self {
+			source: e,
+			kind: ErrorType::Backend,
+		}
+	}
 }
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
-			#[cfg(feature = "memory")]
-			ErrorType::Memory => f.write_str("an error occurred with the memory backend"),
-			#[cfg(feature = "fs")]
-			ErrorType::Fs => f.write_str("an error occurred with a file-system backend"),
+			ErrorType::Backend => f.write_str("an error occurred within a backend"),
 			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
 			ErrorType::ActionValidation => f.write_str("an action is invalid"),
 		}
@@ -64,26 +67,6 @@ impl StdError for Error {
 		self.source
 			.as_ref()
 			.map(|source| &**source as &(dyn StdError + 'static))
-	}
-}
-
-#[cfg(feature = "memory")]
-impl From<MemoryError> for Error {
-	fn from(e: MemoryError) -> Self {
-		Self {
-			source: Some(Box::new(e)),
-			kind: ErrorType::Memory,
-		}
-	}
-}
-
-#[cfg(feature = "fs")]
-impl From<FsError> for Error {
-	fn from(e: FsError) -> Self {
-		Self {
-			source: Some(Box::new(e)),
-			kind: ErrorType::Fs,
-		}
 	}
 }
 
@@ -124,16 +107,8 @@ impl From<ActionRunError> for Error {
 #[allow(missing_copy_implementations)]
 #[non_exhaustive]
 pub enum ErrorType {
-	/// An error occurred in the [`MemoryBackend`].
-	///
-	/// [`MemoryBackend`]: crate::backend::MemoryBackend
-	#[cfg(feature = "memory")]
-	Memory,
-	/// An error occurred with a [`FsBackend`].
-	///
-	/// [`FsBackend`]: crate::backend::fs::FsBackend
-	#[cfg(feature = "fs")]
-	Fs,
+	/// An error occurred within a backend.
+	Backend,
 	/// An [`ActionValidationError`] occurred.
 	ActionValidation,
 	/// An [`ActionRunError`] occurred.
