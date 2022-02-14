@@ -12,8 +12,8 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
 		}
 	}
 
-	if ac.probe_expression("std::result::Result::unwrap_unchecked")
-		&& ac.probe_expression("std::option::Option::unwrap_unchecked")
+	if ac.probe_expression("std::result::Result::<(), ()>::unwrap_unchecked")
+		&& ac.probe_expression("std::option::Option::<()>::unwrap_unchecked")
 	{
 		emit("has_unwrap_unchecked");
 	}

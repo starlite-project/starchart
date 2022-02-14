@@ -29,7 +29,9 @@ pub mod testing {
 		io::Result as IoResult,
 		path::{Path, PathBuf},
 	};
+	use serde::{Serialize, Deserialize};
 
+	use starchart::IndexEntry;
 	use tokio::sync::RwLock;
 
 	pub static TEST_GUARD: RwLock<()> = RwLock::const_new(());
@@ -40,7 +42,7 @@ pub mod testing {
 
 	impl FsCleanup {
 		pub fn new(test_name: &str, module_name: &str, should_create: bool) -> IoResult<Self> {
-			let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+			let mut path = PathBuf::from(env!("OUT_DIR"));
 			path.extend(&["target", "tests", module_name, test_name]);
 
 			if should_create {
@@ -65,7 +67,34 @@ pub mod testing {
 
 	impl Drop for FsCleanup {
 		fn drop(&mut self) {
-			let _res = fs::remove_dir_all(&self.0);
+			let _res = fs::remove_dir_all(&self);
+		}
+	}
+
+	#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+	pub struct MockSettings {
+		pub id: u32,
+		pub value: String,
+		pub array: Vec<u8>,
+		pub opt: Option<f64>,
+	}
+
+	impl MockSettings {
+		pub fn new() -> Self {
+			Self {
+				id: 1,
+				value: "hello, world!".to_owned(),
+				array: vec![1, 2, 3, 4, 5],
+				opt: Some(4.2),
+			}
+		}
+	}
+
+	impl IndexEntry for MockSettings {
+		type Key = u32;
+
+		fn key(&self) -> &Self::Key {
+			&self.id
 		}
 	}
 }

@@ -69,3 +69,19 @@ impl Transcoder for BinaryTranscoder {
 		}
 	}
 }
+
+#[cfg(all(test, feature = "binary"))]
+mod tests {
+	use std::{fmt::Debug, fs};
+
+	use starchart::backend::Backend;
+	use static_assertions::assert_impl_all;
+
+	use crate::fs::{
+		transcoders::{BinaryFormat, BinaryTranscoder},
+		util::testing::{FsCleanup, TEST_GUARD},
+		FsBackend, FsError,
+	};
+
+	assert_impl_all!(BinaryTranscoder: Clone, Copy, Debug, Send, Sync);
+}

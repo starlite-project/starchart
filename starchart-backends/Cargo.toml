@@ -51,6 +51,10 @@ version = "1.0"
 [dev-dependencies]
 static_assertions = "1.0"
 
+[dev-dependencies.serde]
+version = "1"
+features = ["derive"]
+
 [dev-dependencies.tokio]
 version = "1.0"
 features = ["sync", "parking_lot", "test-util", "macros"]
