@@ -45,9 +45,12 @@ version = "0.18"
 
 [dependencies.tokio]
 default-features = false
-features = ["fs"]
 optional = true
 version = "1.0"
+
+[dev-dependencies.tokio]
+version = "1.0"
+features = ["sync", "parking_lot"]
 
 [build-dependencies]
 rustc_version = "0.4"
@@ -55,7 +58,7 @@ rustc_version = "0.4"
 [features]
 binary = ["serde_bincode", "serde_cbor", "fs"]
 default = []
-fs = ["tokio", "futures-util"]
+fs = ["tokio/fs", "futures-util"]
 json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap", "futures-util"]
 toml = ["serde_toml", "fs"]

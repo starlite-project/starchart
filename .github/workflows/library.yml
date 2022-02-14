@@ -10,7 +10,7 @@ jobs:
     name: Minimum supported Rust version
     runs-on: ubuntu-latest
     env:
-      minrust: 1.46
+      minrust: 1.51
 
     steps:
       - name: Checkout sources

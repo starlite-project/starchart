@@ -51,7 +51,7 @@ members = [
 ]
 
 [package.metadata]
-msrv = "1.46.0"
+msrv = "1.51.0"
 
 [package.metadata.docs.rs]
 all-features = true
