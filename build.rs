@@ -1,40 +1,21 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::error::Error;
 
-use rustc_version::{version_meta, Channel, Error};
+use autocfg::{emit, AutoCfg};
+use rustc_version::{version_meta, Channel};
 
-// this is wholley unneeded but it makes things easier.
-#[derive(Debug, Clone, Copy)]
-enum CfgKeys {
-	Docsrs,
-	NoUnwrapUnchecked,
-	NoDebugNonExhaustive,
-}
-
-impl Display for CfgKeys {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		match self {
-			Self::Docsrs => f.write_str("docsrs"),
-			Self::NoUnwrapUnchecked => f.write_str("no_unwrap_unchecked"),
-			Self::NoDebugNonExhaustive => f.write_str("no_debug_non_exhaustive"),
-		}
-	}
-}
-
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn Error + 'static>> {
+	let ac = AutoCfg::new()?;
 	let version_data = version_meta()?;
-	let minor = version_data.semver.minor;
 	if let Channel::Nightly = version_data.channel {
-		if minor >= 57 {
-			println!("cargo:rustc-cfg={}", CfgKeys::Docsrs);
+		if ac.probe_rustc_version(1, 57) {
+			emit("docsrs");
 		}
 	}
 
-	if minor < 58 {
-		println!("cargo:rustc-cfg={}", CfgKeys::NoUnwrapUnchecked);
-	}
-
-	if minor < 53 {
-		println!("cargo:rustc-cfg={}", CfgKeys::NoDebugNonExhaustive);
+	if ac.probe_expression("std::result::Result::unwrap_unchecked")
+		&& ac.probe_expression("std::option::Option::unwrap_unchecked")
+	{
+		emit("has_unwrap_unchecked");
 	}
 
 	Ok(())

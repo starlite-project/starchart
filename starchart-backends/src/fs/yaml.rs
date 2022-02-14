@@ -27,3 +27,51 @@ impl Transcoder for YamlTranscoder {
 		Ok(serde_yaml::from_reader(rdr)?)
 	}
 }
+
+#[cfg(all(test, feature = "yaml"))]
+mod tests {
+	use std::{fmt::Debug, fs};
+
+	use starchart::backend::Backend;
+	use static_assertions::assert_impl_all;
+
+	use crate::fs::{
+		transcoders::YamlTranscoder,
+		util::testing::{FsCleanup, TEST_GUARD},
+		FsBackend, FsError,
+	};
+
+	assert_impl_all!(YamlTranscoder: Clone, Copy, Debug, Send, Sync);
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = FsCleanup::new("init", "yaml", false)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		assert!(fs::read_dir(&path).is_ok());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn has_and_create_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = FsCleanup::new("has_and_create_table", "yaml", true)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		Ok(())
+	}
+}

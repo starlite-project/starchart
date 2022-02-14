@@ -48,11 +48,15 @@ default-features = false
 optional = true
 version = "1.0"
 
+[dev-dependencies]
+static_assertions = "1.0"
+
 [dev-dependencies.tokio]
 version = "1.0"
-features = ["sync", "parking_lot"]
+features = ["sync", "parking_lot", "test-util", "macros"]
 
 [build-dependencies]
+autocfg = "1"
 rustc_version = "0.4"
 
 [features]

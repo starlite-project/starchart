@@ -23,7 +23,12 @@ pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError
 
 #[cfg(test)]
 pub mod testing {
-	use std::{ffi::OsStr, fs, io::Result as IoResult, path::{Path, PathBuf}};
+	use std::{
+		ffi::OsStr,
+		fs,
+		io::Result as IoResult,
+		path::{Path, PathBuf},
+	};
 
 	use tokio::sync::RwLock;
 
