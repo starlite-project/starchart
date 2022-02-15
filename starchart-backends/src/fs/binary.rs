@@ -196,7 +196,11 @@ mod tests {
 	async fn create_and_delete_table() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
 		let path = TestPath::new("create_and_delete_table", "binary");
-		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), "bin".to_owned(), &path)?;
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -208,5 +212,33 @@ mod tests {
 		Ok(())
 	}
 
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create_bin() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_and_create_bin", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
 
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		backend.create("table", "1", &MockSettings::new()).await?;
+
+		assert!(backend.get::<MockSettings>("table", "1").await?.is_some());
+
+		assert!(backend.get::<MockSettings>("table", "2").await?.is_none());
+
+		let settings = MockSettings {
+			id: 2,
+			..MockSettings::new()
+		};
+
+		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		Ok(())
+	}
 }
