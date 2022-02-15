@@ -79,9 +79,134 @@ mod tests {
 
 	use crate::fs::{
 		transcoders::{BinaryFormat, BinaryTranscoder},
-		util::testing::{FsCleanup, TEST_GUARD},
+		util::testing::{MockSettings, TestPath, TEST_GUARD},
 		FsBackend, FsError,
 	};
 
 	assert_impl_all!(BinaryTranscoder: Clone, Copy, Debug, Send, Sync);
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("new_bin", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+
+		assert!(fs::read_dir(&path).is_ok());
+
+		backend.init().await?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn has_and_create_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("has_and_create_table", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys_bin() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_keys", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings).await?;
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys_cbor() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_keys", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Cbor),
+			"cbor".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings).await?;
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn create_and_delete_table() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("create_and_delete_table", "binary");
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), "bin".to_owned(), &path)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+		assert!(!backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+
 }

@@ -37,7 +37,7 @@ mod tests {
 
 	use crate::fs::{
 		transcoders::YamlTranscoder,
-		util::testing::{FsCleanup, MockSettings, TEST_GUARD},
+		util::testing::{MockSettings, TestPath, TEST_GUARD},
 		FsBackend, FsError,
 	};
 
@@ -47,7 +47,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("init", "yaml", false)?;
+		let path = TestPath::new("init", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -61,7 +61,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn has_and_create_table() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("has_and_create_table", "yaml", true)?;
+		let path = TestPath::new("has_and_create_table", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -79,7 +79,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write();
-		let path = FsCleanup::new("get_keys", "yaml", true)?;
+		let path = TestPath::new("get_keys", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -109,7 +109,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn create_and_delete_table() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("create_and_delete_table", "yaml", true)?;
+		let path = TestPath::new("create_and_delete_table", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -127,7 +127,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("get_and_create", "yaml", true)?;
+		let path = TestPath::new("get_and_create", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -135,13 +135,11 @@ mod tests {
 		backend.create_table("table").await?;
 		backend.create("table", "1", &MockSettings::new()).await?;
 
-		assert!(
-			backend.get::<MockSettings>("table", "1").await?.is_some()
-		);
+		assert!(backend.get::<MockSettings>("table", "1").await?.is_some());
 
 		assert!(backend.get::<MockSettings>("table", "2").await?.is_none());
 
-		let settings =MockSettings {
+		let settings = MockSettings {
 			id: 2,
 			..MockSettings::new()
 		};
@@ -155,7 +153,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn update() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("update", "yaml", true)?;
+		let path = TestPath::new("update", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -170,7 +168,10 @@ mod tests {
 
 		backend.update("table", "1", &settings).await?;
 
-		assert_eq!(backend.get::<MockSettings>("table", "1").await?, Some(settings));
+		assert_eq!(
+			backend.get::<MockSettings>("table", "1").await?,
+			Some(settings)
+		);
 
 		Ok(())
 	}
@@ -179,7 +180,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = FsCleanup::new("delete", "yaml",  true)?;
+		let path = TestPath::new("delete", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;

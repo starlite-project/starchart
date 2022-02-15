@@ -25,12 +25,11 @@ pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError
 pub mod testing {
 	use std::{
 		ffi::OsStr,
-		fs,
-		io::Result as IoResult,
+		fs::remove_dir_all,
 		path::{Path, PathBuf},
 	};
-	use serde::{Serialize, Deserialize};
 
+	use serde::{Deserialize, Serialize};
 	use starchart::IndexEntry;
 	use tokio::sync::RwLock;
 
@@ -38,36 +37,32 @@ pub mod testing {
 
 	#[derive(Debug)]
 	#[repr(transparent)]
-	pub struct FsCleanup(PathBuf);
+	pub struct TestPath(PathBuf);
 
-	impl FsCleanup {
-		pub fn new(test_name: &str, module_name: &str, should_create: bool) -> IoResult<Self> {
+	impl TestPath {
+		pub fn new(test_name: &str, module_name: &str) -> Self {
 			let mut path = PathBuf::from(env!("OUT_DIR"));
-			path.extend(&["target", "tests", module_name, test_name]);
+			path.extend(&["tests", module_name, test_name]);
 
-			if should_create {
-				fs::create_dir_all(&path)?;
-			}
-
-			Ok(Self(path))
+			Self(path)
 		}
 	}
 
-	impl AsRef<Path> for FsCleanup {
+	impl AsRef<Path> for TestPath {
 		fn as_ref(&self) -> &Path {
 			self.0.as_ref()
 		}
 	}
 
-	impl AsRef<OsStr> for FsCleanup {
+	impl AsRef<OsStr> for TestPath {
 		fn as_ref(&self) -> &OsStr {
 			self.0.as_ref()
 		}
 	}
 
-	impl Drop for FsCleanup {
+	impl Drop for TestPath {
 		fn drop(&mut self) {
-			let _res = fs::remove_dir_all(&self);
+			let _res = remove_dir_all(self);
 		}
 	}
 
