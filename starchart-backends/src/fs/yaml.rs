@@ -151,9 +151,9 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn update() -> Result<(), FsError> {
+	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = TestPath::new("update", "yaml");
+		let path = TestPath::new("update_and_delete", "yaml");
 		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
 
 		backend.init().await?;
@@ -173,25 +173,9 @@ mod tests {
 			Some(settings)
 		);
 
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn delete() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
-		let path = TestPath::new("delete", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
-
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		backend.create("table", "1", &MockSettings::new()).await?;
-
 		backend.delete("table", "1").await?;
 
-		assert_eq!(backend.get::<MockSettings>("table", "id").await?, None);
+		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
 
 		Ok(())
 	}

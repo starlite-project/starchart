@@ -241,4 +241,98 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create_cbor() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_and_create_cbor", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Cbor),
+			"cbor".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		backend.create("table", "1", &MockSettings::new()).await?;
+
+		assert!(backend.get::<MockSettings>("table", "1").await?.is_some());
+
+		assert!(backend.get::<MockSettings>("table", "2").await?.is_none());
+
+		let settings = MockSettings {
+			id: 2,
+			..MockSettings::new()
+		};
+
+		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_delete_bin() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("update_and_delete_bin", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Bincode),
+			"bin".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
+
+		assert_eq!(backend.get("table", "1").await?, Some(settings));
+
+		backend.delete("table", "1").await?;
+
+		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_delete_cbor() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("update_and_delete_cbor", "binary");
+		let backend = FsBackend::new(
+			BinaryTranscoder::new(BinaryFormat::Cbor),
+			"cbor".to_owned(),
+			&path,
+		)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
+
+		assert_eq!(backend.get("table", "1").await?, Some(settings));
+
+		backend.delete("table", "1").await?;
+
+		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
 }
