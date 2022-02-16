@@ -2,7 +2,7 @@ use std::io::Read;
 
 use starchart::Entry;
 
-use super::{FsError, Transcoder, transcoders::TranscoderFormat};
+use super::{transcoders::TranscoderFormat, FsError, Transcoder};
 
 /// A transcoder for the JSON format.
 #[derive(Debug, Default, Clone, Copy)]

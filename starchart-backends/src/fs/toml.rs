@@ -161,4 +161,62 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_and_create", "toml");
+		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+		backend.create("table", "1", &MockSettings::new()).await?;
+
+		assert_eq!(
+			backend.get::<MockSettings>("table", "1").await?,
+			Some(MockSettings::new())
+		);
+
+		assert_eq!(backend.get::<MockSettings>("table", "2").await?, None);
+
+		let settings = MockSettings {
+			id: 2,
+			..MockSettings::new()
+		};
+
+		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create_pretty() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_and_create_pretty", "toml");
+		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+		backend.create("table", "1", &MockSettings::new()).await?;
+
+		assert_eq!(
+			backend.get::<MockSettings>("table", "1").await?,
+			Some(MockSettings::new())
+		);
+
+		assert_eq!(backend.get::<MockSettings>("table", "2").await?, None);
+
+		let settings = MockSettings {
+			id: 2,
+			..MockSettings::new()
+		};
+
+		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		Ok(())
+	}
 }
