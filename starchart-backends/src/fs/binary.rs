@@ -107,9 +107,9 @@ mod tests {
 
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
-	async fn has_and_create_table() -> Result<(), FsError> {
+	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = TestPath::new("has_and_create_table", "binary");
+		let path = TestPath::new("table_methods", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
 			"bin".to_owned(),
@@ -123,6 +123,10 @@ mod tests {
 		backend.create_table("table").await?;
 
 		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+
+		assert!(!backend.has_table("table").await?);
 
 		Ok(())
 	}
@@ -187,27 +191,6 @@ mod tests {
 		expected.sort();
 
 		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn create_and_delete_table() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
-		let path = TestPath::new("create_and_delete_table", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
-			&path,
-		)?;
-
-		backend.init().await?;
-		backend.create_table("table").await?;
-		assert!(backend.has_table("table").await?);
-
-		backend.delete_table("table").await?;
-		assert!(!backend.has_table("table").await?);
 
 		Ok(())
 	}

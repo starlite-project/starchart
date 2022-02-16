@@ -2,30 +2,42 @@ use std::io::Read;
 
 use starchart::Entry;
 
-use super::{FsError, Transcoder};
+use super::{transcoders::TranscoderFormat, FsError, Transcoder};
 
 /// A transcoder for the TOML format.
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg(feature = "toml")]
 #[must_use = "transcoders do nothing by themselves"]
-pub struct TomlTranscoder(bool);
+pub struct TomlTranscoder(TranscoderFormat);
 
 impl TomlTranscoder {
 	/// Creates a new [`TomlTranscoder`], optionally using pretty printing.
-	pub const fn new(is_pretty: bool) -> Self {
-		Self(is_pretty)
+	pub const fn new(format: TranscoderFormat) -> Self {
+		Self(format)
 	}
 
 	/// Returns whether or not this transcoder uses pretty formatting.
 	#[must_use]
 	pub const fn is_pretty(self) -> bool {
-		self.0
+		matches!(self.0, TranscoderFormat::Pretty)
+	}
+
+	pub const fn is_standard(self) -> bool {
+		!self.is_pretty()
+	}
+
+	pub const fn pretty() -> Self {
+		Self::new(TranscoderFormat::Pretty)
+	}
+
+	pub const fn standard() -> Self {
+		Self::new(TranscoderFormat::Standard)
 	}
 }
 
 impl Transcoder for TomlTranscoder {
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
-		if self.0 {
+		if self.is_pretty() {
 			Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
 		} else {
 			Ok(serde_toml::to_vec(value)?)
@@ -36,5 +48,117 @@ impl Transcoder for TomlTranscoder {
 		let mut output = String::new();
 		rdr.read_to_string(&mut output)?;
 		Ok(serde_toml::from_str(&output)?)
+	}
+}
+
+#[cfg(all(test, feature = "toml"))]
+mod tests {
+	use std::{fmt::Debug, fs};
+
+	use starchart::backend::Backend;
+	use static_assertions::assert_impl_all;
+
+	use crate::fs::{
+		transcoders::TomlTranscoder,
+		util::testing::{MockSettings, TestPath, TEST_GUARD},
+		FsBackend, FsError,
+	};
+
+	assert_impl_all!(TomlTranscoder: Clone, Copy, Debug, Send, Sync);
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn init() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("init", "toml");
+		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		assert!(fs::read_dir(&path).is_ok());
+
+		backend.init().await?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn table_methods() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("table_methods", "toml");
+		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_keys", "toml");
+		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings).await?;
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys_pretty() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("get_keys_pretty", "toml");
+		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings).await?;
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
 	}
 }

@@ -274,4 +274,17 @@ pub mod transcoders {
 	pub use super::toml::TomlTranscoder;
 	#[cfg(feature = "yaml")]
 	pub use super::yaml::YamlTranscoder;
+
+	#[cfg(any(feature = "toml", feature = "json"))]
+	#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+	pub enum TranscoderFormat {
+		Standard,
+		Pretty,
+	}
+
+	impl Default for TranscoderFormat {
+		fn default() -> Self {
+			Self::Standard
+		}
+	}
 }
