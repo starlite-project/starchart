@@ -13,6 +13,10 @@ features = ["std"]
 version = "0.3"
 optional = true
 
+[target.'cfg(unix)'.dependencies.libc]
+optional = true
+version = "0.2"
+
 [dependencies.serde_bincode]
 optional = true
 package = "bincode"
@@ -46,7 +50,12 @@ version = "0.18"
 [dependencies.tokio]
 default-features = false
 optional = true
+features = ["fs"]
 version = "1.0"
+
+[target.'cfg(windows)'.dependencies.winapi]
+optional = true
+version = "0.3"
 
 [dev-dependencies]
 static_assertions = "1.0"
@@ -66,7 +75,7 @@ rustc_version = "0.4"
 [features]
 binary = ["serde_bincode", "serde_cbor", "fs"]
 default = []
-fs = ["tokio/fs", "futures-util"]
+fs = ["tokio", "futures-util", "libc", "winapi"]
 json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap", "futures-util"]
 toml = ["serde_toml", "fs"]
