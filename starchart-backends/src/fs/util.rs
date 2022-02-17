@@ -23,11 +23,7 @@ pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError
 
 #[cfg(test)]
 pub mod testing {
-	use std::{
-		ffi::OsStr,
-		fs::remove_dir_all,
-		path::{Path, PathBuf},
-	};
+	use std::{ffi::OsStr, fs::remove_dir_all, io::ErrorKind, path::{Path, PathBuf}};
 
 	use serde::{Deserialize, Serialize};
 	use starchart::IndexEntry;
@@ -44,6 +40,16 @@ pub mod testing {
 			let mut path = PathBuf::from(env!("OUT_DIR"));
 			path.extend(&["tests", module_name, test_name]);
 
+			let res = remove_dir_all(&path);
+
+			if let Err(e) = res {
+				if e.kind() == ErrorKind::NotFound {
+					// noop
+				} else {
+					panic!("{:?}", e);
+				}
+			}
+
 			Self(path)
 		}
 	}
@@ -57,12 +63,6 @@ pub mod testing {
 	impl AsRef<OsStr> for TestPath {
 		fn as_ref(&self) -> &OsStr {
 			self.0.as_ref()
-		}
-	}
-
-	impl Drop for TestPath {
-		fn drop(&mut self) {
-			let _res = remove_dir_all(self);
 		}
 	}
 

@@ -130,7 +130,7 @@ mod tests {
 			..MockSettings::new()
 		};
 
-		assert!(backend.create("table", "id", &settings).await.is_ok());
+		assert!(backend.create("table", "2", &settings).await.is_ok());
 
 		Ok(())
 	}

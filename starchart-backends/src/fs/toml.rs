@@ -219,4 +219,64 @@ mod tests {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_delete() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("update_and_delete", "toml");
+		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
+
+		assert_eq!(
+			backend.get::<MockSettings>("table", "1").await?,
+			Some(settings)
+		);
+
+		backend.delete("table", "1").await?;
+
+		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_delete_pretty() -> Result<(), FsError> {
+		let _lock = TEST_GUARD.write().await;
+		let path = TestPath::new("update_and_delete_pretty", "toml");
+		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+
+		backend.init().await?;
+		backend.create_table("table").await?;
+
+		let mut settings = MockSettings::new();
+
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
+
+		assert_eq!(
+			backend.get::<MockSettings>("table", "1").await?,
+			Some(settings)
+		);
+
+		backend.delete("table", "1").await?;
+
+		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
 }

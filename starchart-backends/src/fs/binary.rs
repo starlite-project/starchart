@@ -37,6 +37,14 @@ impl BinaryTranscoder {
 		self.0
 	}
 
+	pub const fn bincode() -> Self {
+		Self::new(BinaryFormat::Bincode)
+	}
+
+	pub const fn cbor() -> Self {
+		Self::new(BinaryFormat::Cbor)
+	}
+
 	/// Checks whether the transcoder uses the [`Bincode`] format.
 	///
 	/// [`Bincode`]: serde_bincode
@@ -89,7 +97,7 @@ mod tests {
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.write().await;
-		let path = TestPath::new("new_bin", "binary");
+		let path = TestPath::new("init", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
 			"bin".to_owned(),
