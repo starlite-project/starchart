@@ -2,6 +2,12 @@
 edition = "2018"
 name = "starchart-backends"
 version = "0.2.0"
+description = "Basic backends for the starchart crate"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/starlite-project/starchart"
+homepage = "https://github.com/starlite-project/starchart"
+authors = ["Gryffon Bellish <owenbellish@gmail.com>"]
 
 [dependencies.dashmap]
 optional = true
