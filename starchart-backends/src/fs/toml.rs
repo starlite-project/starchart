@@ -55,7 +55,7 @@ impl Transcoder for TomlTranscoder {
 	}
 }
 
-#[cfg(all(test, feature = "toml"))]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::{fmt::Debug, fs};
 
@@ -70,7 +70,6 @@ mod tests {
 	assert_impl_all!(TomlTranscoder: Clone, Copy, Debug, Send, Sync);
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "toml");
@@ -86,7 +85,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "toml");
@@ -108,7 +106,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "toml");
@@ -137,7 +134,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys_pretty", "toml");
@@ -166,7 +162,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "toml");
@@ -197,7 +192,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_pretty", "toml");
@@ -228,7 +222,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "toml");
@@ -258,7 +251,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_pretty", "toml");

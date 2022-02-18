@@ -53,7 +53,7 @@ impl Transcoder for JsonTranscoder {
 	}
 }
 
-#[cfg(all(test, feature = "json"))]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::{fmt::Debug, fs};
 
@@ -68,7 +68,6 @@ mod tests {
 	assert_impl_all!(JsonTranscoder: Clone, Copy, Debug, Send, Sync);
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "json");
@@ -84,7 +83,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "json");
@@ -106,7 +104,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "json");
@@ -135,7 +132,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys_pretty", "json");
@@ -164,7 +160,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "json");
@@ -195,7 +190,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_pretty", "json");
@@ -226,7 +220,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "json");
@@ -256,7 +249,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_pretty", "json");

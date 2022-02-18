@@ -301,7 +301,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 	}
 }
 
-#[cfg(all(test, feature = "memory"))]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::fmt::Debug;
 
@@ -314,19 +314,7 @@ mod tests {
 
 	assert_impl_all!(MemoryBackend: Backend, Clone, Debug, Default, Send, Sync);
 
-	#[test]
-	fn new_and_capacity() {
-		let new = MemoryBackend::new();
-
-		assert_eq!(new.tables.capacity(), 0);
-
-		let capacity = MemoryBackend::with_capacity(24);
-
-		assert_eq!(capacity.tables.capacity(), 24);
-	}
-
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), MemoryError> {
 		let backend = MemoryBackend::with_hasher(FxBuildHasher::default());
 
@@ -346,7 +334,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), MemoryError> {
 		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
 		backend.init().await?;
@@ -373,7 +360,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), MemoryError> {
 		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
 
@@ -402,7 +388,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete() -> Result<(), MemoryError> {
 		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
 		backend.init().await?;

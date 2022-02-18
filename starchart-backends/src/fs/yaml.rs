@@ -28,7 +28,7 @@ impl Transcoder for YamlTranscoder {
 	}
 }
 
-#[cfg(all(test, feature = "yaml"))]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::{fmt::Debug, fs};
 
@@ -43,7 +43,6 @@ mod tests {
 	assert_impl_all!(YamlTranscoder: Clone, Copy, Debug, Send, Sync);
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "yaml");
@@ -57,7 +56,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "yaml");
@@ -79,7 +77,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock();
 		let path = TestPath::new("get_keys", "yaml");
@@ -109,7 +106,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "yaml");
@@ -137,7 +133,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "yaml");

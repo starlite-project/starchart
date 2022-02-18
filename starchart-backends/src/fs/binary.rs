@@ -84,7 +84,7 @@ impl Transcoder for BinaryTranscoder {
 	}
 }
 
-#[cfg(all(test, feature = "binary"))]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::{fmt::Debug, fs};
 
@@ -102,7 +102,6 @@ mod tests {
 	assert_impl_all!(BinaryTranscoder: Clone, Copy, Debug, Send, Sync);
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "binary");
@@ -122,7 +121,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "binary");
@@ -148,7 +146,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "binary");
@@ -180,7 +177,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "binary");
@@ -212,7 +208,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_bin", "binary");
@@ -244,7 +239,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_and_create_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_cbor", "binary");
@@ -276,7 +270,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_bin", "binary");
@@ -308,7 +301,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_cbor", "binary");

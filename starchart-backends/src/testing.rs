@@ -1,4 +1,4 @@
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 use std::{
 	ffi::OsStr,
 	fs::remove_dir_all,
@@ -7,18 +7,18 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 use tokio::sync::Mutex;
 
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 pub static TEST_GUARD: Mutex<()> = Mutex::const_new(());
 
 #[derive(Debug)]
 #[repr(transparent)]
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 pub struct TestPath(PathBuf);
 
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 impl TestPath {
 	pub fn new(test_name: &str, module_name: &str) -> Self {
 		let mut path = PathBuf::from(env!("OUT_DIR"));
@@ -36,14 +36,14 @@ impl TestPath {
 	}
 }
 
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 impl AsRef<Path> for TestPath {
 	fn as_ref(&self) -> &Path {
 		self.0.as_ref()
 	}
 }
 
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(miri)))]
 impl AsRef<OsStr> for TestPath {
 	fn as_ref(&self) -> &OsStr {
 		self.0.as_ref()
