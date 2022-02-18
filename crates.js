@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["starchart","starchart_derive"];
+window.ALL_CRATES = ["starchart","starchart_backends","starchart_derive"];

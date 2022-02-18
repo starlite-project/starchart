@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["fs","The file-system based backends for the starchart crate."],["memory","A memory based backend. Useful for debugging or applications who only need to store data at runtime."]]});

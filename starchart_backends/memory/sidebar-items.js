@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["MemoryErrorType","The type of [`MemoryError`] that occurred."]],"struct":[["MemoryBackend","A memory-based backend, uses a [`DashMap`] of [`Value`]s to represent data."],["MemoryError","An error returned from the [`MemoryBackend`]."]]});
