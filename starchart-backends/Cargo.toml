@@ -40,7 +40,7 @@ optional = true
 version = "0.7"
 
 [dependencies.starchart]
-path = "../"
+path = "../starchart"
 version = "0.18"
 
 [dependencies.tokio]
@@ -67,9 +67,11 @@ rustc_version = "0.4"
 
 [features]
 binary = ["serde_bincode", "serde_cbor", "fs"]
-default = []
 fs = ["tokio", "futures-util"]
 json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap", "futures-util"]
 toml = ["serde_toml", "fs"]
 yaml = ["serde_yaml", "fs"]
+
+[package.metadata.docs.rs]
+all-features = true
