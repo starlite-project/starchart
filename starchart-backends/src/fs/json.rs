@@ -60,10 +60,9 @@ mod tests {
 	use starchart::backend::Backend;
 	use static_assertions::assert_impl_all;
 
-	use crate::fs::{
-		transcoders::JsonTranscoder,
-		util::testing::{MockSettings, TestPath, TEST_GUARD},
-		FsBackend, FsError,
+	use crate::{
+		fs::{transcoders::JsonTranscoder, FsBackend, FsError},
+		testing::{TestPath, TestSettings, TEST_GUARD},
 	};
 
 	assert_impl_all!(JsonTranscoder: Clone, Copy, Debug, Send, Sync);
@@ -71,7 +70,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn init() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "json");
 		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
 
@@ -87,7 +86,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn table_methods() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "json");
 		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
 
@@ -109,7 +108,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "json");
 		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
 
@@ -117,7 +116,7 @@ mod tests {
 
 		backend.create_table("table").await?;
 
-		let mut settings = MockSettings::new();
+		let mut settings = TestSettings::default();
 		backend.create("table", "1", &settings).await?;
 		settings.id = 2;
 		settings.opt = None;
@@ -138,7 +137,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_keys_pretty() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys_pretty", "json");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
 
@@ -146,7 +145,7 @@ mod tests {
 
 		backend.create_table("table").await?;
 
-		let mut settings = MockSettings::new();
+		let mut settings = TestSettings::default();
 		backend.create("table", "1", &settings).await?;
 		settings.id = 2;
 		settings.opt = None;
@@ -167,25 +166,27 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "json");
 		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
 
 		backend.init().await?;
 
 		backend.create_table("table").await?;
-		backend.create("table", "1", &MockSettings::new()).await?;
+		backend
+			.create("table", "1", &TestSettings::default())
+			.await?;
 
 		assert_eq!(
-			backend.get::<MockSettings>("table", "1").await?,
-			Some(MockSettings::new())
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(TestSettings::default())
 		);
 
-		assert_eq!(backend.get::<MockSettings>("table", "2").await?, None);
+		assert_eq!(backend.get::<TestSettings>("table", "2").await?, None);
 
-		let settings = MockSettings {
+		let settings = TestSettings {
 			id: 2,
-			..MockSettings::new()
+			..TestSettings::default()
 		};
 
 		assert!(backend.create("table", "2", &settings).await.is_ok());
@@ -196,25 +197,27 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_pretty", "json");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
 
 		backend.init().await?;
 
 		backend.create_table("table").await?;
-		backend.create("table", "1", &MockSettings::new()).await?;
+		backend
+			.create("table", "1", &TestSettings::default())
+			.await?;
 
 		assert_eq!(
-			backend.get::<MockSettings>("table", "1").await?,
-			Some(MockSettings::new())
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(TestSettings::default())
 		);
 
-		assert_eq!(backend.get::<MockSettings>("table", "2").await?, None);
+		assert_eq!(backend.get::<TestSettings>("table", "2").await?, None);
 
-		let settings = MockSettings {
+		let settings = TestSettings {
 			id: 2,
-			..MockSettings::new()
+			..TestSettings::default()
 		};
 
 		assert!(backend.create("table", "2", &settings).await.is_ok());
@@ -225,14 +228,14 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "json");
 		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
 
-		let mut settings = MockSettings::new();
+		let mut settings = TestSettings::default();
 
 		backend.create("table", "1", &settings).await?;
 
@@ -241,13 +244,13 @@ mod tests {
 		backend.update("table", "1", &settings).await?;
 
 		assert_eq!(
-			backend.get::<MockSettings>("table", "1").await?,
+			backend.get::<TestSettings>("table", "1").await?,
 			Some(settings)
 		);
 
 		backend.delete("table", "1").await?;
 
-		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
 		Ok(())
 	}
@@ -255,14 +258,14 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.write().await;
+		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_pretty", "json");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
 
-		let mut settings = MockSettings::new();
+		let mut settings = TestSettings::default();
 
 		backend.create("table", "1", &settings).await?;
 
@@ -271,13 +274,13 @@ mod tests {
 		backend.update("table", "1", &settings).await?;
 
 		assert_eq!(
-			backend.get::<MockSettings>("table", "1").await?,
+			backend.get::<TestSettings>("table", "1").await?,
 			Some(settings)
 		);
 
 		backend.delete("table", "1").await?;
 
-		assert_eq!(backend.get::<MockSettings>("table", "1").await?, None);
+		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
 		Ok(())
 	}

@@ -21,3 +21,5 @@
 pub mod fs;
 #[cfg(feature = "memory")]
 pub mod memory;
+#[cfg(test)]
+pub(crate) mod testing;
