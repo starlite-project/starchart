@@ -300,3 +300,131 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 		ok(()).boxed()
 	}
 }
+
+#[cfg(all(test, feature = "memory"))]
+mod tests {
+	use std::fmt::Debug;
+
+	use fxhash::FxBuildHasher;
+	use starchart::backend::Backend;
+	use static_assertions::assert_impl_all;
+
+	use super::{MemoryBackend, MemoryError};
+	use crate::testing::TestSettings;
+
+	assert_impl_all!(MemoryBackend: Backend, Clone, Debug, Default, Send, Sync);
+
+	#[test]
+	fn new_and_capacity() {
+		let new = MemoryBackend::new();
+
+		assert_eq!(new.tables.capacity(), 0);
+
+		let capacity = MemoryBackend::with_capacity(24);
+
+		assert_eq!(capacity.tables.capacity(), 24);
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn table_methods() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_hasher(FxBuildHasher::default());
+
+		backend.init().await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_keys() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = TestSettings::default();
+
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings);
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_and_create() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+		backend
+			.create("table", "1", &TestSettings::default())
+			.await?;
+
+		assert_eq!(
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(TestSettings::default())
+		);
+
+		assert_eq!(backend.get::<TestSettings>("table", "2").await?, None);
+
+		let settings = TestSettings {
+			id: 2,
+			..TestSettings::default()
+		};
+
+		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn update_and_delete() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = TestSettings::default();
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
+
+		assert_eq!(
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(settings)
+		);
+
+		backend.delete("table", "1").await?;
+
+		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
+}
