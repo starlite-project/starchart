@@ -33,7 +33,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --workspace --all-features --all-targets
+          args: --all-features --all-targets
 
   build-docs:
     name: Build docs
@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --workspace --no-deps --all-features -Zrustdoc-map -Zunstable-options
+          args: --no-deps --all-features -Zrustdoc-map -Zunstable-options
         env:
           RUSTDOCFLAGS: --cfg docsrs -D rustdoc::broken_intra_doc_links
 
@@ -141,7 +141,7 @@ jobs:
         uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --tests --workspace
+          args: --all-features --tests
 
   rustfmt:
     name: Format
@@ -170,7 +170,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check
+          args: -- --check
 
   codespell:
     name: Spelling
@@ -234,7 +234,7 @@ jobs:
         with:
           command: hack
           # group all of the fs backends together, skip default and derive as there's no tests for them
-          args: check --feature-powerset --exclude-features default,derive
+          args: check --feature-powerset --exclude-features derive
 
   miri:
     name: Miri UB tests
