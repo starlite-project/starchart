@@ -1,6 +1,11 @@
+//! A memory based backend. Useful for debugging or applications
+//! who only need to store data at runtime.
+
 use std::{
+	collections::hash_map::RandomState,
 	error::Error,
-	fmt::{Display, Formatter, Result as FmtResult},
+	fmt::{Debug, Display, Formatter, Result as FmtResult},
+	hash::BuildHasher,
 	iter::FromIterator,
 };
 
@@ -10,15 +15,16 @@ use futures_util::{
 	FutureExt,
 };
 use serde_value::{to_value, DeserializerError, SerializerError, Value};
-
-use super::{
-	futures::{
-		CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture, GetFuture,
-		GetKeysFuture, HasFuture, HasTableFuture, UpdateFuture,
+use starchart::{
+	backend::{
+		futures::{
+			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture,
+			GetFuture, GetKeysFuture, HasFuture, HasTableFuture, UpdateFuture,
+		},
+		Backend,
 	},
-	Backend,
+	Entry,
 };
-use crate::Entry;
 
 /// An error returned from the [`MemoryBackend`].
 #[cfg(feature = "memory")]
@@ -97,21 +103,63 @@ pub enum MemoryErrorType {
 
 /// A memory-based backend, uses a [`DashMap`] of [`Value`]s
 /// to represent data.
-#[derive(Debug, Default, Clone)]
 #[cfg(feature = "memory")]
-pub struct MemoryBackend {
-	tables: DashMap<String, DashMap<String, Value>>,
+#[must_use = "a memory backend does nothing on it's own"]
+pub struct MemoryBackend<S = RandomState> {
+	tables: DashMap<String, DashMap<String, Value, S>, S>,
 }
 
-impl MemoryBackend {
+impl MemoryBackend<RandomState> {
 	/// Creates a new [`MemoryBackend`].
-	#[must_use]
 	pub fn new() -> Self {
-		Self::default()
+		Self::with_capacity_and_hasher(0, RandomState::default())
+	}
+
+	/// Creates a new [`MemoryBackend`] with the specified capacity.
+	pub fn with_capacity(cap: usize) -> Self {
+		Self::with_capacity_and_hasher(cap, RandomState::default())
 	}
 }
 
-impl Backend for MemoryBackend {
+impl<S: BuildHasher + Clone> MemoryBackend<S> {
+	/// Creates a new [`MemoryBackend`] with the specified hasher.
+	pub fn with_hasher(hasher: S) -> Self {
+		Self::with_capacity_and_hasher(0, hasher)
+	}
+
+	/// Creates a new [`MemoryBackend`] with the specified capacity and hasher.
+	pub fn with_capacity_and_hasher(cap: usize, hasher: S) -> Self {
+		Self {
+			tables: DashMap::with_capacity_and_hasher(cap, hasher),
+		}
+	}
+}
+
+impl<S: BuildHasher + Clone> Debug for MemoryBackend<S> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		f.debug_struct("MemoryBackend")
+			.field("tables", &self.tables)
+			.finish()
+	}
+}
+
+impl<S: Default + BuildHasher + Clone> Default for MemoryBackend<S> {
+	fn default() -> Self {
+		Self {
+			tables: DashMap::default(),
+		}
+	}
+}
+
+impl<S: Clone> Clone for MemoryBackend<S> {
+	fn clone(&self) -> Self {
+		Self {
+			tables: self.tables.clone(),
+		}
+	}
+}
+
+impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 	type Error = MemoryError;
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
@@ -119,7 +167,10 @@ impl Backend for MemoryBackend {
 	}
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
-		self.tables.insert(table.to_owned(), DashMap::new());
+		self.tables.insert(
+			table.to_owned(),
+			DashMap::with_hasher(self.tables.hasher().clone()),
+		);
 
 		ok(()).boxed()
 	}
@@ -146,7 +197,7 @@ impl Backend for MemoryBackend {
 	fn get_all<'a, D, I>(
 		&'a self,
 		table: &'a str,
-		entries: &'a [&str],
+		entries: &'a [&'a str],
 	) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
@@ -200,14 +251,14 @@ impl Backend for MemoryBackend {
 		.boxed()
 	}
 
-	fn create<'a, S>(
+	fn create<'a, E>(
 		&'a self,
 		table: &'a str,
 		id: &'a str,
-		value: &'a S,
+		value: &'a E,
 	) -> CreateFuture<'a, Self::Error>
 	where
-		S: Entry,
+		E: Entry,
 	{
 		if let Some(table) = self.tables.get(table) {
 			let serialized = match to_value(value) {
@@ -221,14 +272,14 @@ impl Backend for MemoryBackend {
 		ok(()).boxed()
 	}
 
-	fn update<'a, S>(
+	fn update<'a, E>(
 		&'a self,
 		table: &'a str,
 		id: &'a str,
-		value: &'a S,
+		value: &'a E,
 	) -> UpdateFuture<'a, Self::Error>
 	where
-		S: Entry,
+		E: Entry,
 	{
 		if let Some(table) = self.tables.get(table) {
 			let to_replace = match to_value(value) {
@@ -250,217 +301,114 @@ impl Backend for MemoryBackend {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(miri)))]
 mod tests {
 	use std::fmt::Debug;
 
-	use serde::{Deserialize, Serialize};
-	use serde_value::to_value;
+	use fxhash::FxBuildHasher;
+	use starchart::backend::Backend;
 	use static_assertions::assert_impl_all;
 
-	use crate::{
-		backend::{Backend, MemoryBackend, MemoryError},
-		error::MemoryErrorType,
-	};
+	use super::{MemoryBackend, MemoryError};
+	use crate::testing::TestSettings;
 
 	assert_impl_all!(MemoryBackend: Backend, Clone, Debug, Default, Send, Sync);
 
-	#[derive(
-		Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-	)]
-	struct Settings {
-		option: bool,
-		times: u32,
-	}
-
-	#[test]
-	fn new() {
-		let cache_backend = MemoryBackend::new();
-
-		assert_eq!(cache_backend.tables.len(), 0);
-	}
-
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn has_table() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
+	async fn table_methods() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_hasher(FxBuildHasher::default());
 
-		assert!(!cache_backend.has_table("test").await?);
+		backend.init().await?;
+
+		assert!(!backend.has_table("table").await?);
+
+		backend.create_table("table").await?;
+
+		assert!(backend.has_table("table").await?);
+
+		backend.delete_table("table").await?;
+
+		assert!(!backend.has_table("table").await?);
 
 		Ok(())
 	}
 
 	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn create_table() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend.create_table("test").await?;
-
-		assert!(cache_backend.tables.contains_key("test"));
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn delete_table() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend.create_table("test").await?;
-
-		assert!(cache_backend.tables.contains_key("test"));
-
-		cache_backend.delete_table("test").await?;
-
-		assert!(!cache_backend.tables.contains_key("test"));
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
 	async fn get_keys() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		backend.init().await?;
 
-		cache_backend.create_table("test").await?;
+		backend.create_table("table").await?;
 
-		cache_backend.tables.get("test").unwrap().insert(
-			"key".to_owned(),
-			to_value("value").map_err(|e| MemoryError {
-				kind: MemoryErrorType::Serialization,
-				source: Some(Box::new(e)),
-			})?,
+		let mut settings = TestSettings::default();
+
+		backend.create("table", "1", &settings).await?;
+		settings.id = 2;
+		settings.opt = None;
+		backend.create("table", "2", &settings);
+
+		let mut keys: Vec<String> = backend.get_keys("table").await?;
+
+		let mut expected = vec!["1".to_owned(), "2".to_owned()];
+
+		keys.sort();
+		expected.sort();
+
+		assert_eq!(keys, expected);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn get_and_create() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+		backend
+			.create("table", "1", &TestSettings::default())
+			.await?;
+
+		assert_eq!(
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(TestSettings::default())
 		);
 
-		let keys = cache_backend.get_keys::<Vec<_>>("test").await?;
+		assert_eq!(backend.get::<TestSettings>("table", "2").await?, None);
 
-		assert_eq!(keys, vec!["key".to_owned()]);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn get_and_create() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		let settings = Settings {
-			option: true,
-			times: 42,
+		let settings = TestSettings {
+			id: 2,
+			..TestSettings::default()
 		};
 
-		cache_backend.create_table("test").await?;
+		assert!(backend.create("table", "2", &settings).await.is_ok());
 
-		cache_backend.create("test", "foo", &settings).await?;
+		Ok(())
+	}
 
-		let settings = cache_backend.get::<Settings>("test", "foo").await?;
+	#[tokio::test]
+	async fn update_and_delete() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		backend.init().await?;
+
+		backend.create_table("table").await?;
+
+		let mut settings = TestSettings::default();
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+
+		backend.update("table", "1", &settings).await?;
 
 		assert_eq!(
-			settings,
-			Some(Settings {
-				option: true,
-				times: 42
-			})
+			backend.get::<TestSettings>("table", "1").await?,
+			Some(settings)
 		);
 
-		let not_existing = cache_backend.get::<Settings>("test", "bar").await?;
+		backend.delete("table", "1").await?;
 
-		assert_eq!(not_existing, None);
-
-		assert!(cache_backend.create("test", "foo", &settings).await.is_ok());
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn has() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend.create_table("test").await?;
-
-		cache_backend
-			.create(
-				"test",
-				"foo",
-				&Settings {
-					option: true,
-					times: 42,
-				},
-			)
-			.await?;
-
-		assert!(cache_backend.has("test", "foo").await?);
-
-		assert!(!cache_backend.has("test", "bar").await?);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn update_and_replace() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend.create_table("test").await?;
-
-		cache_backend
-			.create(
-				"test",
-				"foo",
-				&Settings {
-					option: true,
-					times: 42,
-				},
-			)
-			.await?;
-
-		cache_backend
-			.update(
-				"test",
-				"foo",
-				&Settings {
-					option: false,
-					times: 43,
-				},
-			)
-			.await?;
-
-		assert_eq!(
-			cache_backend.get::<Settings>("test", "foo").await?,
-			Some(Settings {
-				option: false,
-				times: 43
-			})
-		);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[cfg_attr(miri, ignore)]
-	async fn delete() -> Result<(), MemoryError> {
-		let cache_backend = MemoryBackend::new();
-
-		cache_backend.create_table("test").await?;
-
-		cache_backend
-			.create(
-				"test",
-				"foo",
-				&Settings {
-					option: true,
-					times: 42,
-				},
-			)
-			.await?;
-
-		assert!(cache_backend.has("test", "foo").await?);
-
-		cache_backend.delete("test", "foo").await?;
-
-		assert!(!cache_backend.has("test", "foo").await?);
+		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
 		Ok(())
 	}
