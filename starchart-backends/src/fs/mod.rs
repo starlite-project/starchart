@@ -275,13 +275,17 @@ pub mod transcoders {
 	#[cfg(feature = "yaml")]
 	pub use super::yaml::YamlTranscoder;
 
+	/// Transcoder formats for supported transcoders to use.
 	#[cfg(any(feature = "toml", feature = "json"))]
 	#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 	pub enum TranscoderFormat {
+		/// Standard formatting, this is the default.
 		Standard,
+		/// Prettier formatting, this uses more file space but is also more human-readable.
 		Pretty,
 	}
 
+	#[cfg(any(feature = "toml", feature = "json"))]
 	impl Default for TranscoderFormat {
 		fn default() -> Self {
 			Self::Standard

@@ -22,14 +22,18 @@ impl JsonTranscoder {
 		matches!(self.0, TranscoderFormat::Pretty)
 	}
 
+	/// Returns whether or not this transcoder uses standard formatting.
+	#[must_use]
 	pub const fn is_standard(self) -> bool {
 		!self.is_pretty()
 	}
 
+	/// Create a new [`JsonTranscoder`] with prettier file formatting.
 	pub const fn pretty() -> Self {
 		Self::new(TranscoderFormat::Pretty)
 	}
 
+	/// Creates a new [`JsonTranscoder`] with standard file formatting.
 	pub const fn standard() -> Self {
 		Self::new(TranscoderFormat::Standard)
 	}

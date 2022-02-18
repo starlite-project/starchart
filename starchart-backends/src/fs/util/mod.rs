@@ -1,4 +1,3 @@
-mod file;
 #[cfg(test)]
 pub mod testing;
 
@@ -24,5 +23,3 @@ pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError
 		})
 	}
 }
-
-pub struct LockedFile {}

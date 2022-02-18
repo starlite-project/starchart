@@ -22,14 +22,18 @@ impl TomlTranscoder {
 		matches!(self.0, TranscoderFormat::Pretty)
 	}
 
+	/// Returns whether or not this transcoder uses standard formatting.
+	#[must_use]
 	pub const fn is_standard(self) -> bool {
 		!self.is_pretty()
 	}
 
+	/// Create a new [`TomlTranscoder`] with prettier file formatting.
 	pub const fn pretty() -> Self {
 		Self::new(TranscoderFormat::Pretty)
 	}
 
+	/// Creates a new [`TomlTranscoder`] with standard file formatting.
 	pub const fn standard() -> Self {
 		Self::new(TranscoderFormat::Standard)
 	}

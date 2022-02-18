@@ -1,4 +1,3 @@
-
 use std::{
 	ffi::OsStr,
 	fs::remove_dir_all,

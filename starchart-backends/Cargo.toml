@@ -3,6 +3,9 @@ edition = "2018"
 name = "starchart-backends"
 version = "0.1.0"
 
+[dependencies]
+momo = "0.2"
+
 [dependencies.dashmap]
 optional = true
 version = "5.1"

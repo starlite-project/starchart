@@ -37,10 +37,16 @@ impl BinaryTranscoder {
 		self.0
 	}
 
+	/// Creates a [`BinaryTranscoder`] using [`bincode`] formatting.
+	///
+	/// [`bincode`]: serde_bincode
 	pub const fn bincode() -> Self {
 		Self::new(BinaryFormat::Bincode)
 	}
 
+	/// Creates a [`BinaryTranscoder`] using [`Cbor`] formatting.
+	///
+	/// [`Cbor`]: serde_cbor
 	pub const fn cbor() -> Self {
 		Self::new(BinaryFormat::Cbor)
 	}
