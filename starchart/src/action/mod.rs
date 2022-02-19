@@ -195,7 +195,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		self.validate_entry()?;
 		self.validate_table()?;
 
-		let lock = chart.guard.exclusive();
+		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
@@ -229,7 +229,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		self.validate_table()?;
 		self.validate_key()?;
 
-		let lock = chart.guard.shared();
+		let lock = chart.guard.shared().await;
 
 		let backend = &**chart;
 
@@ -257,7 +257,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		self.validate_table()?;
 		self.validate_entry()?;
 
-		let lock = chart.guard.exclusive();
+		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
@@ -288,7 +288,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 	async fn delete_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
 		self.validate_table()?;
 		self.validate_key()?;
-		let lock = chart.guard.exclusive();
+		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
@@ -326,7 +326,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 	async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		self.validate_table()?;
 
-		let lock = chart.guard.exclusive();
+		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
@@ -365,7 +365,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		I: FromIterator<S>,
 	{
 		self.validate_table()?;
-		let lock = chart.guard.shared();
+		let lock = chart.guard.shared().await;
 
 		let backend = &**chart;
 
@@ -409,7 +409,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 	async fn delete_table<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
 		self.validate_table()?;
 
-		let lock = chart.guard.exclusive();
+		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 

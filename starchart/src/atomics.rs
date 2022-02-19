@@ -1,38 +1,19 @@
-#![allow(clippy::non_send_fields_in_send_ty)]
-use parking_lot::{lock_api::RawRwLock as _, RawRwLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use futures_util::{Future, FutureExt};
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Guard(RwLock<()>);
 
 impl Guard {
-	pub const fn new() -> Self {
-		Self(RwLock::const_new(RawRwLock::INIT, ()))
+	pub fn shared(&self) -> impl Future<Output = SharedGuard> {
+		self.0.read().map(SharedGuard)
 	}
 
-	pub fn shared(&self) -> SharedGuard {
-		let inner = self.0.read();
-
-		SharedGuard(inner)
-	}
-
-	pub fn exclusive(&self) -> ExclusiveGuard {
-		let inner = self.0.write();
-
-		ExclusiveGuard(inner)
+	pub fn exclusive(&self) -> impl Future<Output = ExclusiveGuard> {
+		self.0.write().map(ExclusiveGuard)
 	}
 }
 
-impl Default for Guard {
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-// implementing send doesn't matter bc we're not actually editing the value, just using it for a locking mechanism
 pub struct SharedGuard<'a>(RwLockReadGuard<'a, ()>);
 
-unsafe impl<'a> Send for SharedGuard<'a> {}
-
 pub struct ExclusiveGuard<'a>(RwLockWriteGuard<'a, ()>);
-
-unsafe impl<'a> Send for ExclusiveGuard<'a> {}

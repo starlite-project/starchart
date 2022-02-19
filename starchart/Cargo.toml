@@ -28,6 +28,11 @@ optional = true
 path = "../starchart-derive"
 version = "^0.19"
 
+[dependencies.tokio]
+version = "1"
+default-features = false
+features = ["sync", "parking_lot"]
+
 [dev-dependencies]
 static_assertions = "1.0.0"
 thiserror = "1.0.30"
