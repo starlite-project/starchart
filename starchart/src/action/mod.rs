@@ -462,6 +462,7 @@ impl<'a, S: ?Sized> Clone for InnerAction<'a, S> {
 /// [`Starchart`]: crate::Starchart
 #[derive(Clone)]
 #[must_use = "an action alone has no side effects"]
+#[repr(transparent)]
 pub struct Action<'a, S, C, T> {
 	pub(crate) inner: InnerAction<'a, S>,
 	kind: PhantomData<C>,
