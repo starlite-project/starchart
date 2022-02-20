@@ -1,3 +1,5 @@
+use std::any::type_name;
+
 use serde::{Deserialize, Serialize};
 use starchart::{action::CreateTableAction, backend::Backend, Action, IndexEntry, Starchart};
 use tokio::sync::Mutex;
@@ -6,7 +8,7 @@ pub const OUT_DIR: &str = env!("OUT_DIR");
 
 pub static TEST_GUARD: Mutex<()> = Mutex::const_new(());
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, IndexEntry)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, IndexEntry)]
 pub struct TestSettings {
 	pub id: u32,
 	pub value: String,
@@ -14,10 +16,10 @@ pub struct TestSettings {
 	pub opt: Option<f64>,
 }
 
-impl Default for TestSettings {
-	fn default() -> Self {
+impl TestSettings {
+	pub fn new(id: u32) -> Self {
 		Self {
-			id: 1,
+			id,
 			value: "hello, world!".to_owned(),
 			array: vec![1, 2, 3, 4, 5],
 			opt: Some(4.2),
@@ -25,15 +27,32 @@ impl Default for TestSettings {
 	}
 }
 
-pub async fn setup_chart<T: Backend>(backend: T, with_table: bool) -> Starchart<T> {
+pub async fn setup_chart<T: Backend>(backend: T, table: &str) -> Starchart<T> {
 	let chart = Starchart::new(backend).await.unwrap();
-	if with_table {
-		let mut action: CreateTableAction<TestSettings> = Action::new();
 
-		action.set_table("table");
+	let mut action: CreateTableAction<TestSettings> = Action::new();
 
-		action.run_create_table(&chart).await.unwrap();
-	}
+	action.set_table(table);
+
+	action.run_create_table(&chart).await.unwrap();
 
 	chart
+}
+
+pub trait TestName {
+	fn test_name(&self) -> String;
+}
+
+impl<T> TestName for T {
+	fn test_name(&self) -> String {
+		let name = type_name::<T>();
+
+		if let Some(position) = name.rfind("::") {
+			if let Some(slice) = name.get(position + 2..) {
+				return slice.to_owned();
+			}
+		}
+
+		name.to_owned()
+	}
 }
