@@ -1,7 +1,5 @@
-use starchart::{
-	action::{ActionKind, EntryTarget, ReadEntryAction, ReadOperation, TargetKind},
-	Action,
-};
+use starchart::{Action, Error, action::{ActionKind, CreateEntryAction, EntryTarget, ReadEntryAction, ReadOperation, TargetKind}};
+use starchart_backends::fs::{FsBackend, transcoders::TomlTranscoder};
 
 use self::common::*;
 
@@ -45,4 +43,46 @@ fn default() {
 
 	assert!(default.data().is_none());
 	assert!(default.key().is_none());
+}
+
+#[test]
+fn validation_methods() {
+	let def = TestSettings::default();
+	let mut action: Action<TestSettings, ReadOperation, EntryTarget> = Action::new();
+
+    assert!(action.validate_entry().is_err());
+    action.set_entry(&def);
+    assert!(action.validate_entry().is_ok());
+
+    assert!(action.validate_table().is_err());
+    action.set_table("table");
+    assert!(action.validate_table().is_ok());
+
+    action.set_key(&"__metadata__");
+    assert!(action.validate_key().is_err());
+
+    action.set_table("__metadata__");
+    assert!(action.validate_table().is_err());
+}
+
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn basic_run() -> Result<(), Error> {
+	let _lock = TEST_GUARD.lock().await;
+	let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), OUT_DIR)?;
+	let gateway = setup_chart(backend, true).await;
+
+	for i in 0..3 {
+		let settings = TestSettings {
+			id: i,
+			..TestSettings::default()
+		};
+
+		let mut action: CreateEntryAction<TestSettings> = Action::new();
+		action.set_table("table").set_entry(&settings);
+
+		action.run_create_entry(&gateway).await?;
+	}
+
+	Ok(())
 }

@@ -16,3 +16,7 @@ features = ["derive", "metadata"]
 [dev-dependencies.starchart-backends]
 path = "../starchart-backends"
 features = ["toml", "yaml", "json", "binary", "memory"]
+
+[dev-dependencies.tokio]
+version = "1.0"
+features = ["sync", "parking_lot", "test-util", "macros"]

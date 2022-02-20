@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use starchart::{action::CreateTableAction, backend::Backend, Action, IndexEntry, Starchart};
+use tokio::sync::Mutex;
 
 pub const OUT_DIR: &str = env!("OUT_DIR");
+
+pub static TEST_GUARD: Mutex<()> = Mutex::const_new(());
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, IndexEntry)]
 pub struct TestSettings {
