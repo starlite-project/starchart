@@ -1,7 +1,11 @@
-use std::any::type_name;
+use std::{any::type_name, cmp::Ordering};
 
 use serde::{Deserialize, Serialize};
-use starchart::{action::CreateTableAction, backend::Backend, Action, IndexEntry, Starchart};
+use starchart::{
+	action::{CreateTableAction, DeleteTableAction},
+	backend::Backend,
+	Action, IndexEntry, Starchart,
+};
 use tokio::sync::Mutex;
 
 pub const OUT_DIR: &str = env!("OUT_DIR");
@@ -25,10 +29,20 @@ impl TestSettings {
 			opt: Some(4.2),
 		}
 	}
+
+	pub fn key_sort(&self, other: &Self) -> Ordering {
+		self.id.cmp(&other.id)
+	}
 }
 
 pub async fn setup_chart<T: Backend>(backend: T, table: &str) -> Starchart<T> {
 	let chart = Starchart::new(backend).await.unwrap();
+
+	let mut delete_action: DeleteTableAction<TestSettings> = Action::new();
+
+	delete_action.set_table(table);
+
+	let _res = delete_action.run_delete_table(&chart).await;
 
 	let mut action: CreateTableAction<TestSettings> = Action::new();
 
@@ -54,5 +68,14 @@ impl<T> TestName for T {
 		}
 
 		name.to_owned()
+	}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Empty {}
+
+impl<A> FromIterator<A> for Empty {
+	fn from_iter<T: IntoIterator<Item = A>>(_: T) -> Self {
+		unreachable!()
 	}
 }

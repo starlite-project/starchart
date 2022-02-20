@@ -26,6 +26,10 @@ impl Transcoder for YamlTranscoder {
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError> {
 		Ok(serde_yaml::from_reader(rdr)?)
 	}
+
+	fn extension(&self) -> &'static str {
+		"yaml"
+	}
 }
 
 #[cfg(all(test, not(miri)))]
@@ -46,7 +50,7 @@ mod tests {
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -59,7 +63,7 @@ mod tests {
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -80,7 +84,7 @@ mod tests {
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock();
 		let path = TestPath::new("get_keys", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -109,7 +113,7 @@ mod tests {
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -136,7 +140,7 @@ mod tests {
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "yaml");
-		let backend = FsBackend::new(YamlTranscoder::new(), "yaml".to_owned(), &path)?;
+		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
 
 		backend.init().await?;
 

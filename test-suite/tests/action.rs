@@ -1,12 +1,12 @@
 use starchart::{
 	action::{
-		ActionKind, CreateEntryAction, EntryTarget, ReadEntryAction, ReadOperation,
-		ReadTableAction, TargetKind, UpdateEntryAction,
+		ActionKind, CreateEntryAction, DeleteEntryAction, DeleteTableAction, EntryTarget,
+		ReadEntryAction, ReadOperation, ReadTableAction, TargetKind, UpdateEntryAction,
 	},
 	Action, Result,
 };
 use starchart_backends::fs::{
-	transcoders::{BinaryTranscoder, JsonTranscoder, TomlTranscoder},
+	transcoders::{BinaryTranscoder, JsonTranscoder, TomlTranscoder, YamlTranscoder},
 	FsBackend,
 };
 
@@ -79,7 +79,7 @@ fn validation_methods() {
 async fn basic_run() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = basic_run.test_name();
-	let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), OUT_DIR)?;
+	let backend = FsBackend::new(TomlTranscoder::pretty(), OUT_DIR)?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	for i in 0..3 {
@@ -99,10 +99,8 @@ async fn basic_run() -> Result<()> {
 
 	let mut expected = (0..3).map(TestSettings::new).collect::<Vec<_>>();
 
-	let cmp_fn = |a: &TestSettings, b: &TestSettings| a.id.cmp(&b.id);
-
-	values.sort_by(cmp_fn);
-	expected.sort_by(cmp_fn);
+	values.sort_by(|a, b| a.key_sort(b));
+	expected.sort_by(|a, b| a.key_sort(b));
 
 	assert_eq!(values, expected);
 
@@ -114,7 +112,7 @@ async fn basic_run() -> Result<()> {
 async fn duplicate_creates() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = duplicate_creates.test_name();
-	let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), OUT_DIR)?;
+	let backend = FsBackend::new(JsonTranscoder::pretty(), OUT_DIR)?;
 	let gateway = setup_chart(backend, &test_name).await;
 	let mut def = TestSettings::new(7);
 
@@ -138,7 +136,7 @@ async fn duplicate_creates() -> Result<()> {
 async fn read_and_update() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = read_and_update.test_name();
-	let backend = FsBackend::new(BinaryTranscoder::bincode(), "bin".to_owned(), OUT_DIR)?;
+	let backend = FsBackend::new(BinaryTranscoder::bincode(), OUT_DIR)?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	{
@@ -175,6 +173,45 @@ async fn read_and_update() -> Result<()> {
 		reread_action.run_read_entry(&gateway).await?,
 		Some(new_settings)
 	);
+
+	Ok(())
+}
+
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn deletes() -> Result<()> {
+	let _lock = TEST_GUARD.lock().await;
+	let test_name = deletes.test_name();
+	let backend = FsBackend::new(YamlTranscoder::new(), OUT_DIR)?;
+	let gateway = setup_chart(backend, &test_name).await;
+
+	let def = TestSettings::new(1);
+
+	let mut action: CreateEntryAction<TestSettings> = Action::new();
+
+	action.set_table(&test_name).set_entry(&def);
+
+	action.run_create_entry(&gateway).await?;
+
+	let mut delete_action: DeleteEntryAction<TestSettings> = Action::new();
+	delete_action.set_table(&test_name).set_key(&0_u32);
+	assert!(delete_action.run_delete_entry(&gateway).await?);
+	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
+	read_action.set_table(&test_name).set_key(&0_u32);
+	assert_eq!(read_action.run_read_entry(&gateway).await?, None);
+
+	let mut delete_table_action: DeleteTableAction<TestSettings> = Action::new();
+	delete_table_action.set_table(&test_name);
+	assert!(delete_table_action.run_delete_table(&gateway).await?);
+	let mut read_table: ReadTableAction<TestSettings> = Action::new();
+	read_table.set_table(&test_name);
+
+	let res: Result<Empty> = read_table
+		.run_read_table(&gateway)
+		.await
+		.map_err(Into::into);
+
+	assert!(res.is_err());
 
 	Ok(())
 }

@@ -36,7 +36,6 @@ pub use self::error::{FsError, FsErrorType};
 #[cfg(feature = "fs")]
 pub struct FsBackend<T> {
 	transcoder: T,
-	extension: String,
 	base_directory: PathBuf,
 }
 
@@ -48,7 +47,6 @@ impl<T: Transcoder> FsBackend<T> {
 	/// Returns an error if the provided path is not a directory.
 	pub fn new<P: AsRef<Path>>(
 		transcoder: T,
-		extension: String,
 		base_directory: P,
 	) -> Result<Self, FsError> {
 		let path = base_directory.as_ref().to_path_buf();
@@ -61,7 +59,6 @@ impl<T: Transcoder> FsBackend<T> {
 		} else {
 			Ok(Self {
 				transcoder,
-				extension,
 				base_directory: path,
 			})
 		}
@@ -74,7 +71,7 @@ impl<T: Transcoder> FsBackend<T> {
 
 	/// Returns the currently used extension for the [`FsBackend`].
 	pub fn extension(&self) -> &str {
-		&self.extension
+		self.transcoder().extension()
 	}
 
 	/// Returns a reference to the current [`Transcoder`].
@@ -261,6 +258,9 @@ pub trait Transcoder: Send + Sync {
 	///
 	/// Any errors from the transcoder should use [`FsError::serde`] to return properly.
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError>;
+
+	/// Gives the extension for the current transcoder.
+	fn extension(&self) -> &'static str;
 }
 
 /// The transcoders for the [`FsBackend`].

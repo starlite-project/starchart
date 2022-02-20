@@ -53,6 +53,10 @@ impl Transcoder for TomlTranscoder {
 		rdr.read_to_string(&mut output)?;
 		Ok(serde_toml::from_str(&output)?)
 	}
+
+	fn extension(&self) -> &'static str {
+		"toml"
+	}
 }
 
 #[cfg(all(test, not(miri)))]
@@ -73,7 +77,7 @@ mod tests {
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -88,7 +92,7 @@ mod tests {
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -109,7 +113,7 @@ mod tests {
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -137,7 +141,7 @@ mod tests {
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 
@@ -165,7 +169,7 @@ mod tests {
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -195,7 +199,7 @@ mod tests {
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 
@@ -225,7 +229,7 @@ mod tests {
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -254,7 +258,7 @@ mod tests {
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;

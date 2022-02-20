@@ -82,6 +82,13 @@ impl Transcoder for BinaryTranscoder {
 			BinaryFormat::Cbor => Ok(serde_cbor::from_reader(rdr)?),
 		}
 	}
+
+	fn extension(&self) -> &'static str {
+		match self.format() {
+			BinaryFormat::Bincode => "bin",
+			BinaryFormat::Cbor => "cbor",
+		}
+	}
 }
 
 #[cfg(all(test, not(miri)))]
@@ -107,7 +114,6 @@ mod tests {
 		let path = TestPath::new("init", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
 			&path,
 		)?;
 
@@ -126,7 +132,6 @@ mod tests {
 		let path = TestPath::new("table_methods", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
 			&path,
 		)?;
 
@@ -151,7 +156,6 @@ mod tests {
 		let path = TestPath::new("get_keys", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
 			&path,
 		)?;
 
@@ -182,7 +186,6 @@ mod tests {
 		let path = TestPath::new("get_keys", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Cbor),
-			"cbor".to_owned(),
 			&path,
 		)?;
 
@@ -213,7 +216,6 @@ mod tests {
 		let path = TestPath::new("get_and_create_bin", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
 			&path,
 		)?;
 
@@ -244,7 +246,6 @@ mod tests {
 		let path = TestPath::new("get_and_create_cbor", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Cbor),
-			"cbor".to_owned(),
 			&path,
 		)?;
 
@@ -275,7 +276,6 @@ mod tests {
 		let path = TestPath::new("update_and_delete_bin", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Bincode),
-			"bin".to_owned(),
 			&path,
 		)?;
 
@@ -306,7 +306,6 @@ mod tests {
 		let path = TestPath::new("update_and_delete_cbor", "binary");
 		let backend = FsBackend::new(
 			BinaryTranscoder::new(BinaryFormat::Cbor),
-			"cbor".to_owned(),
 			&path,
 		)?;
 

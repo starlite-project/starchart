@@ -51,6 +51,10 @@ impl Transcoder for JsonTranscoder {
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError> {
 		Ok(serde_json::from_reader(rdr)?)
 	}
+
+	fn extension(&self) -> &'static str {
+		"json"
+	}
 }
 
 #[cfg(all(test, not(miri)))]
@@ -71,7 +75,7 @@ mod tests {
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "json");
-		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -86,7 +90,7 @@ mod tests {
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "json");
-		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -107,7 +111,7 @@ mod tests {
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "json");
-		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -135,7 +139,7 @@ mod tests {
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys_pretty", "json");
-		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 
@@ -163,7 +167,7 @@ mod tests {
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create", "json");
-		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -193,7 +197,7 @@ mod tests {
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_pretty", "json");
-		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 
@@ -223,7 +227,7 @@ mod tests {
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete", "json");
-		let backend = FsBackend::new(JsonTranscoder::default(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -252,7 +256,7 @@ mod tests {
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_pretty", "json");
-		let backend = FsBackend::new(JsonTranscoder::pretty(), "json".to_owned(), &path)?;
+		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
