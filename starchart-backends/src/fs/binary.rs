@@ -112,10 +112,7 @@ mod tests {
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), &path)?;
 
 		backend.init().await?;
 
@@ -130,10 +127,7 @@ mod tests {
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), &path)?;
 
 		backend.init().await?;
 
@@ -154,10 +148,7 @@ mod tests {
 	async fn get_keys_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -184,10 +175,7 @@ mod tests {
 	async fn get_keys_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_keys", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Cbor),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Cbor), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -214,10 +202,7 @@ mod tests {
 	async fn get_and_create_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_bin", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -244,10 +229,7 @@ mod tests {
 	async fn get_and_create_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create_cbor", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Cbor),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Cbor), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -274,10 +256,7 @@ mod tests {
 	async fn update_and_delete_bin() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_bin", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Bincode),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Bincode), &path)?;
 
 		backend.init().await?;
 
@@ -304,10 +283,7 @@ mod tests {
 	async fn update_and_delete_cbor() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete_cbor", "binary");
-		let backend = FsBackend::new(
-			BinaryTranscoder::new(BinaryFormat::Cbor),
-			&path,
-		)?;
+		let backend = FsBackend::new(BinaryTranscoder::new(BinaryFormat::Cbor), &path)?;
 
 		backend.init().await?;
 

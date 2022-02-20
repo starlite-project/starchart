@@ -45,10 +45,7 @@ impl<T: Transcoder> FsBackend<T> {
 	/// # Errors
 	///
 	/// Returns an error if the provided path is not a directory.
-	pub fn new<P: AsRef<Path>>(
-		transcoder: T,
-		base_directory: P,
-	) -> Result<Self, FsError> {
+	pub fn new<P: AsRef<Path>>(transcoder: T, base_directory: P) -> Result<Self, FsError> {
 		let path = base_directory.as_ref().to_path_buf();
 
 		if path.is_file() {
@@ -121,7 +118,7 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
 		let path = self.base_directory().join(table);
-		fs::remove_dir(path)
+		fs::remove_dir_all(path)
 			.map(|res| match res {
 				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
 				_ => Ok(()),

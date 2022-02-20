@@ -1,14 +1,14 @@
-use std::{any::type_name, cmp::Ordering};
+use std::{
+	any::type_name,
+	cmp::Ordering,
+	fs::remove_dir_all,
+	io::ErrorKind,
+	path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
-use starchart::{
-	action::{CreateTableAction, DeleteTableAction},
-	backend::Backend,
-	Action, IndexEntry, Starchart,
-};
+use starchart::{action::CreateTableAction, backend::Backend, Action, IndexEntry, Starchart};
 use tokio::sync::Mutex;
-
-pub const OUT_DIR: &str = env!("OUT_DIR");
 
 pub static TEST_GUARD: Mutex<()> = Mutex::const_new(());
 
@@ -35,14 +35,33 @@ impl TestSettings {
 	}
 }
 
+#[derive(Debug)]
+pub struct TestPath(PathBuf);
+
+impl TestPath {
+	pub fn new(test_name: &str) -> Self {
+		let path = PathBuf::from(env!("OUT_DIR")).join(test_name);
+
+		if let Err(e) = remove_dir_all(&path) {
+			if e.kind() == ErrorKind::NotFound {
+				// noop
+			} else {
+				panic!("{:?}", e);
+			}
+		}
+
+		Self(path)
+	}
+}
+
+impl AsRef<Path> for TestPath {
+	fn as_ref(&self) -> &Path {
+		self.0.as_ref()
+	}
+}
+
 pub async fn setup_chart<T: Backend>(backend: T, table: &str) -> Starchart<T> {
 	let chart = Starchart::new(backend).await.unwrap();
-
-	let mut delete_action: DeleteTableAction<TestSettings> = Action::new();
-
-	delete_action.set_table(table);
-
-	let _res = delete_action.run_delete_table(&chart).await;
 
 	let mut action: CreateTableAction<TestSettings> = Action::new();
 
@@ -68,14 +87,5 @@ impl<T> TestName for T {
 		}
 
 		name.to_owned()
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Empty {}
-
-impl<A> FromIterator<A> for Empty {
-	fn from_iter<T: IntoIterator<Item = A>>(_: T) -> Self {
-		unreachable!()
 	}
 }

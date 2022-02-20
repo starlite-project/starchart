@@ -79,7 +79,7 @@ fn validation_methods() {
 async fn basic_run() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = basic_run.test_name();
-	let backend = FsBackend::new(TomlTranscoder::pretty(), OUT_DIR)?;
+	let backend = FsBackend::new(TomlTranscoder::pretty(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	for i in 0..3 {
@@ -112,7 +112,7 @@ async fn basic_run() -> Result<()> {
 async fn duplicate_creates() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = duplicate_creates.test_name();
-	let backend = FsBackend::new(JsonTranscoder::pretty(), OUT_DIR)?;
+	let backend = FsBackend::new(JsonTranscoder::pretty(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 	let mut def = TestSettings::new(7);
 
@@ -136,7 +136,7 @@ async fn duplicate_creates() -> Result<()> {
 async fn read_and_update() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = read_and_update.test_name();
-	let backend = FsBackend::new(BinaryTranscoder::bincode(), OUT_DIR)?;
+	let backend = FsBackend::new(BinaryTranscoder::bincode(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	{
@@ -182,7 +182,7 @@ async fn read_and_update() -> Result<()> {
 async fn deletes() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = deletes.test_name();
-	let backend = FsBackend::new(YamlTranscoder::new(), OUT_DIR)?;
+	let backend = FsBackend::new(YamlTranscoder::new(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	let def = TestSettings::new(1);
@@ -194,7 +194,7 @@ async fn deletes() -> Result<()> {
 	action.run_create_entry(&gateway).await?;
 
 	let mut delete_action: DeleteEntryAction<TestSettings> = Action::new();
-	delete_action.set_table(&test_name).set_key(&0_u32);
+	delete_action.set_table(&test_name).set_key(&1_u32);
 	assert!(delete_action.run_delete_entry(&gateway).await?);
 	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
 	read_action.set_table(&test_name).set_key(&0_u32);
@@ -206,7 +206,7 @@ async fn deletes() -> Result<()> {
 	let mut read_table: ReadTableAction<TestSettings> = Action::new();
 	read_table.set_table(&test_name);
 
-	let res: Result<Empty> = read_table
+	let res: Result<Vec<_>> = read_table
 		.run_read_table(&gateway)
 		.await
 		.map_err(Into::into);
