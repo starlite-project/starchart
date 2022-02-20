@@ -85,10 +85,9 @@ async fn basic_run() -> Result<()> {
 	for i in 0..3 {
 		let settings = TestSettings::new(i);
 
-		let mut action: CreateEntryAction<TestSettings> = Action::new();
-		action.set_table(&test_name).set_entry(&settings);
-
-		action.run_create_entry(&gateway).await?;
+		CreateEntryAction::with_entry(&test_name, &settings)
+			.run_create_entry(&gateway)
+			.await?;
 	}
 
 	let mut read_table: ReadTableAction<TestSettings> = Action::new();
@@ -139,13 +138,9 @@ async fn read_and_update() -> Result<()> {
 	let backend = FsBackend::new(BinaryTranscoder::bincode(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
-	{
-		let def = TestSettings::new(1);
-		let mut action: CreateEntryAction<TestSettings> = Action::new();
-		action.set_table(&test_name).set_entry(&def);
-
-		action.run_create_entry(&gateway).await?;
-	}
+	CreateEntryAction::with_entry(&test_name, &TestSettings::new(1))
+		.run_create_entry(&gateway)
+		.await?;
 
 	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
 
@@ -185,19 +180,15 @@ async fn deletes() -> Result<()> {
 	let backend = FsBackend::new(YamlTranscoder::new(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
-	let def = TestSettings::new(1);
-
-	let mut action: CreateEntryAction<TestSettings> = Action::new();
-
-	action.set_table(&test_name).set_entry(&def);
-
-	action.run_create_entry(&gateway).await?;
+	CreateEntryAction::with_entry(&test_name, &TestSettings::new(1))
+		.run_create_entry(&gateway)
+		.await?;
 
 	let mut delete_action: DeleteEntryAction<TestSettings> = Action::new();
 	delete_action.set_table(&test_name).set_key(&1_u32);
 	assert!(delete_action.run_delete_entry(&gateway).await?);
 	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
-	read_action.set_table(&test_name).set_key(&0_u32);
+	read_action.set_table(&test_name).set_key(&1_u32);
 	assert_eq!(read_action.run_read_entry(&gateway).await?, None);
 
 	let mut delete_table_action: DeleteTableAction<TestSettings> = Action::new();

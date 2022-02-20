@@ -493,6 +493,15 @@ impl<'a, S, C, T> Action<'a, S, C, T> {
 }
 
 impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
+	/// Construct a new [`Action`] with the specified table.
+	pub fn with_table(table: &'a str) -> Self {
+		let mut act = Self::new();
+
+		act.set_table(table);
+
+		act
+	}
+
 	/// Get a reference to the currently set data.
 	#[must_use]
 	pub fn data(&self) -> Option<&S> {
@@ -561,6 +570,14 @@ impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
 
 // Entry helpers
 impl<'a, S: Entry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
+	/// Construct a new [`Action`] with the specified table and key.
+	pub fn with_key<K: Key>(table: &'a str, key: &K) -> Self {
+		let mut act = Self::new();
+
+		act.set_table(table).set_key(key);
+		act
+	}
+
 	/// Sets the key for the action.
 	///
 	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
@@ -614,6 +631,15 @@ impl<'a, S: IndexEntry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
 	pub fn set_entry(&mut self, entity: &'a S) -> &mut Self {
 		self.set_key(entity.key()).set_data(entity)
+	}
+
+	/// Construct a new [`Action`] with the specified table and data.
+	pub fn with_entry(table: &'a str, entry: &'a S) -> Self {
+		let mut act = Self::new();
+
+		act.set_table(table).set_entry(entry);
+
+		act
 	}
 }
 
