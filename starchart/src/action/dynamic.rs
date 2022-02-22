@@ -18,7 +18,6 @@ use crate::{
 		CreateOperation, DeleteOperation, EntryTarget, ReadOperation, TableTarget, UpdateOperation,
 	},
 	backend::Backend,
-	util::InnerUnwrap,
 	Action, Entry, IndexEntry, Key, Starchart,
 };
 
@@ -28,18 +27,18 @@ use crate::{
 pub struct DynamicAction<S: ?Sized> {
 	pub(super) key: Option<String>,
 	pub(super) data: Option<Box<S>>,
-	pub(super) table: Option<String>,
+	pub(super) table: String,
 	pub(super) kind: ActionKind,
 	pub(super) target: TargetKind,
 }
 
 impl<S: ?Sized> DynamicAction<S> {
 	/// Creates a new action of the specified type and target.
-	pub const fn new(kind: ActionKind, target: TargetKind) -> Self {
+	pub const fn new(table: String, kind: ActionKind, target: TargetKind) -> Self {
 		Self {
 			key: None,
 			data: None,
-			table: None,
+			table,
 			kind,
 			target,
 		}
@@ -53,8 +52,8 @@ impl<S: ?Sized> DynamicAction<S> {
 
 	/// Get a reference to the currently set table.
 	#[must_use]
-	pub fn table(&self) -> Option<&str> {
-		self.table.as_deref()
+	pub fn table(&self) -> &str {
+		&self.table
 	}
 
 	/// Get the type of action.
@@ -73,13 +72,6 @@ impl<S: Entry + ?Sized> DynamicAction<S> {
 	#[must_use]
 	pub fn data(&self) -> Option<&S> {
 		self.data.as_deref()
-	}
-
-	/// Sets the table for this action.
-	pub fn set_table(&mut self, table: String) -> &mut Self {
-		self.table.replace(table);
-
-		self
 	}
 
 	/// Sets the key for the action.
@@ -141,16 +133,7 @@ impl<S: Entry + ?Sized> DynamicAction<S> {
 	///
 	/// Errors if [`Self::set_table`] has not yet been called.
 	pub fn validate_table(&self) -> Result<(), ActionValidationError> {
-		if self.table.is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Table,
-			});
-		}
-
-		self.validate_metadata(self.table.as_deref())?;
-
-		Ok(())
+		self.validate_metadata(Some(self.table()))
 	}
 
 	/// Validates that the data has been set.
@@ -282,7 +265,7 @@ impl<S: Entry + ?Sized> DynamicAction<S> {
 		let inner: InnerAction<S> = InnerAction {
 			data: self.data.as_deref(),
 			key: self.key.clone(),
-			table: self.table.as_deref(),
+			table: self.table(),
 		};
 
 		Ok(unsafe { std::mem::transmute(inner) })
@@ -296,27 +279,29 @@ impl<S: IndexEntry + ?Sized> DynamicAction<S> {
 	}
 }
 
+impl<S: ?Sized> Default for DynamicAction<S> {
+	fn default() -> Self {
+		Self {
+			key: None,
+			data: None,
+			table: String::default(),
+			kind: ActionKind::default(),
+			target: TargetKind::default(),
+		}
+	}
+}
+
 impl<E: ?Sized> Serialize for DynamicAction<E> {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: Serializer,
 	{
-		if serializer.is_human_readable() {
-			let (kind, target) = (self.kind, self.target);
-			let ser = self.table.as_ref().map_or_else(
-				|| [kind.to_string(), target.to_string()].join("."),
-				|table| [kind.to_string(), target.to_string(), table.clone()].join("."),
-			);
+		let mut state = serializer.serialize_struct("DynamicAction", 3)?;
+		state.serialize_field("type", &self.kind)?;
+		state.serialize_field("target", &self.target)?;
+		state.serialize_field("table", &self.table)?;
 
-			ser.serialize(serializer)
-		} else {
-			let mut state = serializer.serialize_struct("DynamicAction", 3)?;
-			state.serialize_field("type", &self.kind)?;
-			state.serialize_field("target", &self.target)?;
-			state.serialize_field("table", &self.table.as_ref())?;
-
-			state.end()
-		}
+		state.end()
 	}
 }
 
@@ -407,46 +392,6 @@ impl<'de, S: ?Sized> Visitor<'de> for ActionVisitor<S> {
 			target,
 			key: None,
 			data: None,
-		})
-	}
-
-	fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-	where
-		E: DeError,
-	{
-		let sections = v.split('.').collect::<Vec<_>>();
-		if !(2..=3).contains(&sections.len()) {
-			return Err(DeError::custom("failed to parse DynamicAction"));
-		}
-
-		let (kind, target, table) = unsafe {
-			(
-				sections.get(0).inner_unwrap(),
-				sections.get(1).inner_unwrap(),
-				sections.get(2),
-			)
-		};
-
-		let kind = match *kind {
-			"Create" => ActionKind::Create,
-			"Read" => ActionKind::Read,
-			"Update" => ActionKind::Update,
-			"Delete" => ActionKind::Delete,
-			_ => return Err(DeError::custom("failed to parse ActionKind")),
-		};
-
-		let target = match *target {
-			"Entry" => TargetKind::Entry,
-			"Table" => TargetKind::Table,
-			_ => return Err(DeError::custom("failed to parse TargetKind")),
-		};
-
-		Ok(DynamicAction {
-			key: None,
-			data: None,
-			table: table.map(|s| (*s).to_owned()),
-			kind,
-			target,
 		})
 	}
 }

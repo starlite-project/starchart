@@ -16,10 +16,16 @@ impl TomlTranscoder {
 		Self(format)
 	}
 
+	/// Returns the transcoder format being used.
+	#[must_use]
+	pub const fn format(self) -> TranscoderFormat {
+		self.0
+	}
+
 	/// Returns whether or not this transcoder uses pretty formatting.
 	#[must_use]
 	pub const fn is_pretty(self) -> bool {
-		matches!(self.0, TranscoderFormat::Pretty)
+		matches!(self.format(), TranscoderFormat::Pretty)
 	}
 
 	/// Returns whether or not this transcoder uses standard formatting.
@@ -41,10 +47,11 @@ impl TomlTranscoder {
 
 impl Transcoder for TomlTranscoder {
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
-		if self.is_pretty() {
-			Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
-		} else {
-			Ok(serde_toml::to_vec(value)?)
+		match self.format() {
+			TranscoderFormat::Pretty => {
+				Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
+			}
+			TranscoderFormat::Standard => Ok(serde_toml::to_vec(value)?),
 		}
 	}
 
@@ -57,6 +64,16 @@ impl Transcoder for TomlTranscoder {
 	fn extension(&self) -> &'static str {
 		"toml"
 	}
+}
+
+#[test]
+fn format_tests() {
+	let transcoder = TomlTranscoder::default();
+
+	assert!(!transcoder.is_pretty());
+	assert!(transcoder.is_standard());
+
+	assert_eq!(transcoder.format(), TomlTranscoder::standard().format());
 }
 
 #[cfg(all(test, not(miri)))]

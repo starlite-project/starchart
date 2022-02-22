@@ -356,6 +356,12 @@ mod tests {
 
 		assert_eq!(keys, expected);
 
+		let empty_table: Vec<String> = backend.get_keys("non_existant").await?;
+
+		let empty: Vec<String> = vec![];
+
+		assert_eq!(empty_table, empty);
+
 		Ok(())
 	}
 
@@ -384,6 +390,8 @@ mod tests {
 
 		assert!(backend.create("table", "2", &settings).await.is_ok());
 
+		assert_eq!(backend.get::<TestSettings>("non_exist", "1").await?, None);
+
 		Ok(())
 	}
 
@@ -409,6 +417,51 @@ mod tests {
 		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_all() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		backend.init().await?;
+
+		backend.ensure_table("table").await?;
+
+		let mut settings = TestSettings::default();
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+		settings.id += 1;
+
+		backend.create("table", "2", &settings).await?;
+
+		settings.value = "goodbye!".to_owned();
+		settings.array.extend(&[7, 8, 9]);
+
+		backend.create("table", "3", &settings);
+
+		let values: Vec<TestSettings> = backend.get_all("table", &["1", "2", "4"]).await?;
+
+		assert_eq!(
+			values,
+			vec![
+				TestSettings::default(),
+				TestSettings {
+					id: 2,
+					opt: None,
+					..TestSettings::default()
+				}
+			]
+		);
+
+		assert_eq!(
+			backend
+				.get_all::<TestSettings, Vec<TestSettings>>("non_exist", &[])
+				.await?,
+			vec![]
+		);
 
 		Ok(())
 	}

@@ -1,7 +1,9 @@
-[all_features_coverage]
+[all-features-coverage]
 workspace = true
 all-features = true
 ignore-tests = true
+# skip-clean = true
+force-clean = false
 
 [report]
 out = ["Html", "Xml"]

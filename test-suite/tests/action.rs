@@ -16,7 +16,7 @@ mod common;
 
 #[test]
 fn new_kind_and_target() {
-	let action: ReadEntryAction<TestSettings> = Action::new();
+	let action: ReadEntryAction<TestSettings> = Action::new("foo");
 
 	assert_eq!(action.kind(), ActionKind::Read);
 	assert_eq!(action.target(), TargetKind::Entry);
@@ -25,7 +25,7 @@ fn new_kind_and_target() {
 #[test]
 fn set_methods() {
 	let def = TestSettings::new(1);
-	let mut action: Action<TestSettings, ReadOperation, EntryTarget> = Action::new();
+	let mut action: Action<TestSettings, ReadOperation, EntryTarget> = Action::new("bar");
 	action.set_entry(&def);
 
 	assert_eq!(action.data(), Some(&TestSettings::new(1)));
@@ -43,7 +43,7 @@ fn set_methods() {
 
 	let action = action.set_data(&changed);
 
-	assert_eq!(action.data(), Some(&changed));
+	assert_ne!(action.data(), Some(&def));
 }
 
 #[test]
@@ -57,20 +57,18 @@ fn default() {
 #[test]
 fn validation_methods() {
 	let def = TestSettings::default();
-	let mut action: Action<TestSettings, ReadOperation, EntryTarget> = Action::new();
+	let mut action: Action<TestSettings, ReadOperation, EntryTarget> = Action::new("table");
 
 	assert!(action.validate_entry().is_err());
 	action.set_entry(&def);
 	assert!(action.validate_entry().is_ok());
 
-	assert!(action.validate_table().is_err());
-	action.set_table("table");
 	assert!(action.validate_table().is_ok());
 
 	action.set_key(&"__metadata__");
 	assert!(action.validate_key().is_err());
 
-	action.set_table("__metadata__");
+	action = Action::new("__metadata__");
 	assert!(action.validate_table().is_err());
 }
 
@@ -90,9 +88,7 @@ async fn basic_run() -> Result<()> {
 			.await?;
 	}
 
-	let mut read_table: ReadTableAction<TestSettings> = Action::new();
-
-	read_table.set_table(&test_name);
+	let read_table: ReadTableAction<TestSettings> = Action::new(&test_name);
 
 	let mut values: Vec<_> = read_table.run_read_table(&gateway).await?;
 
@@ -117,9 +113,9 @@ async fn duplicate_creates() -> Result<()> {
 
 	def.array.extend([6, 7, 8]);
 
-	let mut create_action: CreateEntryAction<TestSettings> = Action::new();
+	let mut create_action: CreateEntryAction<TestSettings> = Action::new(&test_name);
 
-	create_action.set_table(&test_name).set_entry(&def);
+	create_action.set_entry(&def);
 
 	let double_create = create_action.clone();
 
@@ -142,9 +138,9 @@ async fn read_and_update() -> Result<()> {
 		.run_create_entry(&gateway)
 		.await?;
 
-	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
+	let mut read_action: ReadEntryAction<TestSettings> = Action::new(&test_name);
 
-	read_action.set_key(&1_u32).set_table(&test_name);
+	read_action.set_key(&1_u32);
 
 	let reread_action = read_action.clone();
 
@@ -158,9 +154,9 @@ async fn read_and_update() -> Result<()> {
 		opt: None,
 	};
 
-	let mut update_action: UpdateEntryAction<TestSettings> = Action::new();
+	let mut update_action: UpdateEntryAction<TestSettings> = Action::new(&test_name);
 
-	update_action.set_table(&test_name).set_entry(&new_settings);
+	update_action.set_entry(&new_settings);
 
 	update_action.run_update_entry(&gateway).await?;
 
@@ -184,18 +180,16 @@ async fn deletes() -> Result<()> {
 		.run_create_entry(&gateway)
 		.await?;
 
-	let mut delete_action: DeleteEntryAction<TestSettings> = Action::new();
-	delete_action.set_table(&test_name).set_key(&1_u32);
+	let mut delete_action: DeleteEntryAction<TestSettings> = Action::new(&test_name);
+	delete_action.set_key(&1_u32);
 	assert!(delete_action.run_delete_entry(&gateway).await?);
-	let mut read_action: ReadEntryAction<TestSettings> = Action::new();
-	read_action.set_table(&test_name).set_key(&1_u32);
+	let mut read_action: ReadEntryAction<TestSettings> = Action::new(&test_name);
+	read_action.set_key(&1_u32);
 	assert_eq!(read_action.run_read_entry(&gateway).await?, None);
 
-	let mut delete_table_action: DeleteTableAction<TestSettings> = Action::new();
-	delete_table_action.set_table(&test_name);
+	let delete_table_action: DeleteTableAction<TestSettings> = Action::new(&test_name);
 	assert!(delete_table_action.run_delete_table(&gateway).await?);
-	let mut read_table: ReadTableAction<TestSettings> = Action::new();
-	read_table.set_table(&test_name);
+	let read_table: ReadTableAction<TestSettings> = Action::new(&test_name);
 
 	let res: Result<Vec<_>> = read_table
 		.run_read_table(&gateway)

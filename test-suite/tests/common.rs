@@ -1,3 +1,5 @@
+#![allow(dead_code)] // not every test will use every function
+
 use std::{
 	any::type_name,
 	cmp::Ordering,
@@ -63,9 +65,7 @@ impl AsRef<Path> for TestPath {
 pub async fn setup_chart<T: Backend>(backend: T, table: &str) -> Starchart<T> {
 	let chart = Starchart::new(backend).await.unwrap();
 
-	let mut action: CreateTableAction<TestSettings> = Action::new();
-
-	action.set_table(table);
+	let action: CreateTableAction<TestSettings> = Action::new(table);
 
 	action.run_create_table(&chart).await.unwrap();
 

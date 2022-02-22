@@ -16,10 +16,16 @@ impl JsonTranscoder {
 		Self(format)
 	}
 
+	/// Returns the transcoder format being used.
+	#[must_use]
+	pub const fn format(self) -> TranscoderFormat {
+		self.0
+	}
+
 	/// Returns whether or not this transcoder uses pretty formatting.
 	#[must_use]
 	pub const fn is_pretty(self) -> bool {
-		matches!(self.0, TranscoderFormat::Pretty)
+		matches!(self.format(), TranscoderFormat::Pretty)
 	}
 
 	/// Returns whether or not this transcoder uses standard formatting.
@@ -41,10 +47,9 @@ impl JsonTranscoder {
 
 impl Transcoder for JsonTranscoder {
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
-		if self.is_pretty() {
-			Ok(serde_json::to_vec_pretty(value)?)
-		} else {
-			Ok(serde_json::to_vec(value)?)
+		match self.format() {
+			TranscoderFormat::Standard => Ok(serde_json::to_vec_pretty(value)?),
+			TranscoderFormat::Pretty => Ok(serde_json::to_vec(value)?),
 		}
 	}
 
@@ -55,6 +60,16 @@ impl Transcoder for JsonTranscoder {
 	fn extension(&self) -> &'static str {
 		"json"
 	}
+}
+
+#[test]
+fn format_tests() {
+	let transcoder = JsonTranscoder::default();
+
+	assert!(!transcoder.is_pretty());
+	assert!(transcoder.is_standard());
+
+	assert_eq!(transcoder.format(), JsonTranscoder::standard().format());
 }
 
 #[cfg(all(test, not(miri)))]

@@ -74,15 +74,15 @@ pub type DeleteTableAction<'a, S> = Action<'a, S, DeleteOperation, TableTarget>;
 pub(crate) struct InnerAction<'a, S: ?Sized> {
 	pub data: Option<&'a S>,
 	pub key: Option<String>,
-	pub table: Option<&'a str>,
+	pub table: &'a str,
 }
 
 impl<'a, S: ?Sized> InnerAction<'a, S> {
-	const fn new() -> Self {
+	const fn new(table: &'a str) -> Self {
 		Self {
 			data: None,
 			key: None,
-			table: None,
+			table,
 		}
 	}
 
@@ -92,14 +92,7 @@ impl<'a, S: ?Sized> InnerAction<'a, S> {
 	}
 
 	fn validate_table(&self) -> Result<(), ActionValidationError> {
-		if self.table.is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Table,
-			});
-		}
-
-		self.validate_metadata(self.table)
+		self.validate_metadata(Some(self.table))
 	}
 
 	fn validate_data(&self) -> Result<(), ActionValidationError> {
@@ -201,7 +194,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let (table, key, entry) = unsafe {
 			(
-				self.table.take().inner_unwrap(),
+				self.table,
 				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
 			)
@@ -233,12 +226,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let backend = &**chart;
 
-		let (table, key) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-			)
-		};
+		let (table, key) = unsafe { (self.table, self.key.take().inner_unwrap()) };
 
 		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
@@ -263,7 +251,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let (table, key, entry) = unsafe {
 			(
-				self.table.take().inner_unwrap(),
+				self.table,
 				self.key.take().inner_unwrap(),
 				self.data.take().inner_unwrap(),
 			)
@@ -292,12 +280,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let backend = &**chart;
 
-		let (table, key) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-			)
-		};
+		let (table, key) = unsafe { (self.table, self.key.take().inner_unwrap()) };
 
 		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
@@ -330,7 +313,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.inner_unwrap() };
+		let table = self.table;
 
 		backend
 			.ensure_table(table)
@@ -360,7 +343,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		Ok(())
 	}
 
-	async fn read_table<B: Backend, I>(mut self, chart: &Starchart<B>) -> Result<I, ActionError>
+	async fn read_table<B: Backend, I>(self, chart: &Starchart<B>) -> Result<I, ActionError>
 	where
 		I: FromIterator<S>,
 	{
@@ -369,7 +352,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.take().inner_unwrap() };
+		let table = self.table;
 
 		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
@@ -406,14 +389,14 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		Ok(data)
 	}
 
-	async fn delete_table<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+	async fn delete_table<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
 		self.validate_table()?;
 
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.take().inner_unwrap() };
+		let table = self.table;
 
 		self.check_table(backend, table).await?;
 		self.check_metadata(backend, table).await?;
@@ -442,7 +425,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 
 impl<'a, S: ?Sized> Default for InnerAction<'a, S> {
 	fn default() -> Self {
-		Self::new()
+		Self::new("")
 	}
 }
 
@@ -471,9 +454,9 @@ pub struct Action<'a, S, C, T> {
 
 impl<'a, S, C, T> Action<'a, S, C, T> {
 	/// Creates a new [`Action`] with the specified operation.
-	pub const fn new() -> Self {
+	pub const fn new(table: &'a str) -> Self {
 		Self {
-			inner: InnerAction::new(),
+			inner: InnerAction::new(table),
 			kind: PhantomData,
 			target: PhantomData,
 		}
@@ -481,7 +464,7 @@ impl<'a, S, C, T> Action<'a, S, C, T> {
 
 	/// Get a reference to the currently set table.
 	#[must_use]
-	pub const fn table(&self) -> Option<&str> {
+	pub const fn table(&self) -> &str {
 		self.inner.table
 	}
 
@@ -493,15 +476,6 @@ impl<'a, S, C, T> Action<'a, S, C, T> {
 }
 
 impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
-	/// Construct a new [`Action`] with the specified table.
-	pub fn with_table(table: &'a str) -> Self {
-		let mut act = Self::new();
-
-		act.set_table(table);
-
-		act
-	}
-
 	/// Get a reference to the currently set data.
 	#[must_use]
 	pub fn data(&self) -> Option<&S> {
@@ -524,18 +498,11 @@ impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
 	pub fn to_dynamic(&self) -> DynamicAction<S> {
 		DynamicAction {
 			key: self.key().map(ToOwned::to_owned),
-			table: self.table().map(ToOwned::to_owned),
+			table: self.table().to_owned(),
 			data: self.data().cloned().map(Box::new),
 			kind: C::kind(),
 			target: T::target(),
 		}
-	}
-
-	/// Sets the table for this action.
-	pub fn set_table(&mut self, table_name: &'a str) -> &mut Self {
-		self.inner.table.replace(table_name);
-
-		self // coverage:ignore-line
 	}
 
 	/// Validates that the table key is set.
@@ -572,9 +539,9 @@ impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
 impl<'a, S: Entry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 	/// Construct a new [`Action`] with the specified table and key.
 	pub fn with_key<K: Key>(table: &'a str, key: &K) -> Self {
-		let mut act = Self::new();
+		let mut act = Self::new(table);
 
-		act.set_table(table).set_key(key);
+		act.set_key(key);
 		act
 	}
 
@@ -635,9 +602,9 @@ impl<'a, S: IndexEntry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
 
 	/// Construct a new [`Action`] with the specified table and data.
 	pub fn with_entry(table: &'a str, entry: &'a S) -> Self {
-		let mut act = Self::new();
+		let mut act = Self::new(table);
 
-		act.set_table(table).set_entry(entry);
+		act.set_entry(entry);
 
 		act
 	}
@@ -655,9 +622,7 @@ impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<'a, S,
 			state.field("key", &key);
 		}
 
-		if let Some(table) = self.table() {
-			state.field("table", &table);
-		}
+		state.field("table", &self.table());
 
 		state.finish()
 	}
