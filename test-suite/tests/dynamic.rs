@@ -1,4 +1,8 @@
-use starchart::action::{ActionKind, DynamicAction, TargetKind};
+use starchart::{
+	action::{ActionKind, DynamicAction, TargetKind},
+	Result,
+};
+use starchart_backends::fs::{transcoders::TomlTranscoder, FsBackend};
 
 use self::common::*;
 
@@ -70,4 +74,29 @@ fn validation_methods() {
 		TargetKind::Entry,
 	);
 	assert!(action.validate_table().is_err());
+}
+
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn basic_run() -> Result<()> {
+	let _lock = TEST_GUARD.lock().await;
+	let test_name = basic_run.test_name();
+	let backend = FsBackend::new(TomlTranscoder::pretty(), TestPath::new(&test_name))?;
+	let gateway = setup_chart(backend, &test_name).await;
+
+	for i in 0..3 {
+		let settings = TestSettings::new(i);
+
+		DynamicAction::with_entry(
+			test_name.clone(),
+			ActionKind::Create,
+			TargetKind::Entry,
+			settings,
+		)
+		.run(&gateway)
+		.await?
+		.unwrap_create();
+	}
+
+	Ok(())
 }

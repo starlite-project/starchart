@@ -20,10 +20,8 @@ pub struct TestPath(PathBuf);
 
 #[cfg(all(feature = "fs", not(miri)))]
 impl TestPath {
-	pub fn new(test_name: &str, module_name: &str) -> Self {
-		let mut path = PathBuf::from(env!("OUT_DIR"));
-		path.extend(&[test_name, module_name]);
-
+	pub fn new(test_name: &str) -> Self {
+		let path = PathBuf::from(env!("OUT_DIR")).join(test_name);
 		if let Err(e) = remove_dir_all(&path) {
 			if e.kind() == ErrorKind::NotFound {
 				// noop

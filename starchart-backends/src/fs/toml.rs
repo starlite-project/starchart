@@ -1,5 +1,6 @@
 use std::io::Read;
 
+use serde::{Deserialize, Serialize};
 use starchart::Entry;
 
 use super::{transcoders::TranscoderFormat, FsError, Transcoder};
@@ -46,6 +47,10 @@ impl TomlTranscoder {
 }
 
 impl Transcoder for TomlTranscoder {
+	type IgnoredData = TomlValue;
+
+	const EXTENSION: &'static str = "toml";
+
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
 		match self.format() {
 			TranscoderFormat::Pretty => {
@@ -60,9 +65,17 @@ impl Transcoder for TomlTranscoder {
 		rdr.read_to_string(&mut output)?;
 		Ok(serde_toml::from_str(&output)?)
 	}
+}
 
-	fn extension(&self) -> &'static str {
-		"toml"
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
+#[cfg(feature = "toml")]
+pub struct TomlValue(serde_toml::Value);
+
+impl Default for TomlValue {
+	fn default() -> Self {
+		Self(serde_toml::Value::Table(serde_toml::map::Map::default()))
 	}
 }
 
@@ -93,7 +106,7 @@ mod tests {
 	#[tokio::test]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("init", "toml");
+		let path = TestPath::new("init");
 		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -108,7 +121,7 @@ mod tests {
 	#[tokio::test]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("table_methods", "toml");
+		let path = TestPath::new("table_methods");
 		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -129,7 +142,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys", "toml");
+		let path = TestPath::new("get_keys");
 		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -157,7 +170,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys_pretty", "toml");
+		let path = TestPath::new("get_keys_pretty");
 		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -185,7 +198,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create", "toml");
+		let path = TestPath::new("get_and_create");
 		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -215,7 +228,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create_pretty", "toml");
+		let path = TestPath::new("get_and_create_pretty");
 		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -245,7 +258,7 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete", "toml");
+		let path = TestPath::new("update_and_delete");
 		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -264,7 +277,7 @@ mod tests {
 			Some(settings)
 		);
 
-		backend.delete::<TestSettings>("table", "1").await?;
+		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
@@ -274,7 +287,7 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete_pretty", "toml");
+		let path = TestPath::new("update_and_delete_pretty");
 		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -293,7 +306,7 @@ mod tests {
 			Some(settings)
 		);
 
-		backend.delete::<TestSettings>("table", "1").await?;
+		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 

@@ -89,21 +89,7 @@ impl From<FsError> for starchart::Error {
 	}
 }
 
-#[cfg(feature = "binary")]
-impl From<serde_bincode::Error> for FsError {
-	fn from(e: serde_bincode::Error) -> Self {
-		Self::serde(Some(e))
-	}
-}
-
-#[cfg(feature = "binary")]
-impl From<serde_bincode::ErrorKind> for FsError {
-	fn from(e: serde_bincode::ErrorKind) -> Self {
-		Self::serde(Some(Box::new(e)))
-	}
-}
-
-#[cfg(feature = "binary")]
+#[cfg(feature = "cbor")]
 impl From<serde_cbor::Error> for FsError {
 	fn from(e: serde_cbor::Error) -> Self {
 		Self::serde(Some(Box::new(e)))

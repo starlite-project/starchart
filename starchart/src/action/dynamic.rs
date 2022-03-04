@@ -68,6 +68,14 @@ impl<S: ?Sized> DynamicAction<S> {
 }
 
 impl<S: Entry + ?Sized> DynamicAction<S> {
+	/// Construct a new [`DynamicAction`] with the specified table and key
+	pub fn with_key<K: Key>(table: String, kind: ActionKind, target: TargetKind, key: &K) -> Self {
+		let mut act = Self::new(table, kind, target);
+
+		act.set_key(key);
+		act
+	}
+
 	/// Get a reference to the currently set data.
 	#[must_use]
 	pub fn data(&self) -> Option<&S> {
@@ -276,6 +284,14 @@ impl<S: IndexEntry + ?Sized> DynamicAction<S> {
 	/// Sets both a key and a value to run the action with.
 	pub fn set_entry(&mut self, entry: S) -> &mut Self {
 		self.set_key(entry.key()).set_data(entry)
+	}
+
+	/// Construct a new [`DynamicAction`] with the specified table and data.
+	pub fn with_entry(table: String, kind: ActionKind, target: TargetKind, entry: S) -> Self {
+		let mut act = Self::new(table, kind, target);
+
+		act.set_entry(entry);
+		act
 	}
 }
 

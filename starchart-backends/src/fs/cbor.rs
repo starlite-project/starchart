@@ -1,34 +1,46 @@
 use std::io::Read;
 
+use serde::{Deserialize, Serialize};
 use starchart::Entry;
 
 use super::{FsError, Transcoder};
 
-/// A transcoder for the YAML format.
+/// A transcoder for the [`CBOR`] format.
+///
+/// [`CBOR`]: serde_cbor
 #[derive(Debug, Default, Clone, Copy)]
-#[cfg(feature = "yaml")]
+#[cfg(feature = "cbor")]
 #[non_exhaustive]
 #[must_use = "transcoders do nothing by themselves"]
-pub struct YamlTranscoder;
+pub struct CborTranscoder;
 
-impl YamlTranscoder {
-	/// Creates a new [`YamlTranscoder`].
+impl CborTranscoder {
+	/// Creates a new [`CborTranscoder`].
 	pub const fn new() -> Self {
 		Self
 	}
 }
 
-impl Transcoder for YamlTranscoder {
-	type IgnoredData = serde_yaml::Value;
+impl Transcoder for CborTranscoder {
+	type IgnoredData = CborValue;
 
-	const EXTENSION: &'static str = "yaml";
+	const EXTENSION: &'static str = "cbor";
 
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
-		Ok(serde_yaml::to_vec(value)?)
+		Ok(serde_cbor::to_vec(value)?)
 	}
 
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError> {
-		Ok(serde_yaml::from_reader(rdr)?)
+		Ok(serde_cbor::from_reader(rdr)?)
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CborValue(serde_cbor::Value);
+
+impl Default for CborValue {
+	fn default() -> Self {
+		Self(serde_cbor::Value::Null)
 	}
 }
 
@@ -40,17 +52,17 @@ mod tests {
 	use static_assertions::assert_impl_all;
 
 	use crate::{
-		fs::{transcoders::YamlTranscoder, FsBackend, FsError},
+		fs::{transcoders::CborTranscoder, FsBackend, FsError},
 		testing::{TestPath, TestSettings, TEST_GUARD},
 	};
 
-	assert_impl_all!(YamlTranscoder: Clone, Copy, Debug, Send, Sync);
+	assert_impl_all!(CborTranscoder: Clone, Copy, Debug, Send, Sync);
 
 	#[tokio::test]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("init");
-		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
+		let backend = FsBackend::new(CborTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -63,7 +75,7 @@ mod tests {
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("table_methods");
-		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
+		let backend = FsBackend::new(CborTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -84,7 +96,7 @@ mod tests {
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock();
 		let path = TestPath::new("get_keys");
-		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
+		let backend = FsBackend::new(CborTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -113,7 +125,7 @@ mod tests {
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create");
-		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
+		let backend = FsBackend::new(CborTranscoder::new(), &path)?;
 
 		backend.init().await?;
 
@@ -140,7 +152,7 @@ mod tests {
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("update_and_delete");
-		let backend = FsBackend::new(YamlTranscoder::new(), &path)?;
+		let backend = FsBackend::new(CborTranscoder::new(), &path)?;
 
 		backend.init().await?;
 

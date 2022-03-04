@@ -6,7 +6,7 @@ use starchart::{
 	Action, Result,
 };
 use starchart_backends::fs::{
-	transcoders::{BinaryTranscoder, JsonTranscoder, TomlTranscoder, YamlTranscoder},
+	transcoders::{CborTranscoder, JsonTranscoder, TomlTranscoder, YamlTranscoder},
 	FsBackend,
 };
 
@@ -131,7 +131,7 @@ async fn duplicate_creates() -> Result<()> {
 async fn read_and_update() -> Result<()> {
 	let _lock = TEST_GUARD.lock().await;
 	let test_name = read_and_update.test_name();
-	let backend = FsBackend::new(BinaryTranscoder::bincode(), TestPath::new(&test_name))?;
+	let backend = FsBackend::new(CborTranscoder::new(), TestPath::new(&test_name))?;
 	let gateway = setup_chart(backend, &test_name).await;
 
 	CreateEntryAction::with_entry(&test_name, &TestSettings::new(1))

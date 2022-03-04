@@ -23,11 +23,6 @@ optional = true
 version = "1"
 optional = true
 
-[dependencies.serde_bincode]
-optional = true
-package = "bincode"
-version = "1.3"
-
 [dependencies.serde_cbor]
 optional = true
 version = "0.11"
@@ -76,7 +71,7 @@ autocfg = "1"
 rustc_version = "0.4"
 
 [features]
-binary = ["serde_bincode", "serde_cbor", "fs"]
+cbor = ["serde_cbor", "fs"]
 fs = ["tokio", "futures-util", "serde"]
 json = ["serde_json", "fs"]
 memory = ["serde-value", "dashmap", "futures-util"]

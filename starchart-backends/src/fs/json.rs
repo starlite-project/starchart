@@ -46,6 +46,10 @@ impl JsonTranscoder {
 }
 
 impl Transcoder for JsonTranscoder {
+	type IgnoredData = serde_json::Value;
+
+	const EXTENSION: &'static str = "json";
+
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
 		match self.format() {
 			TranscoderFormat::Standard => Ok(serde_json::to_vec_pretty(value)?),
@@ -55,10 +59,6 @@ impl Transcoder for JsonTranscoder {
 
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError> {
 		Ok(serde_json::from_reader(rdr)?)
-	}
-
-	fn extension(&self) -> &'static str {
-		"json"
 	}
 }
 
@@ -89,7 +89,7 @@ mod tests {
 	#[tokio::test]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("init", "json");
+		let path = TestPath::new("init");
 		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -104,7 +104,7 @@ mod tests {
 	#[tokio::test]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("table_methods", "json");
+		let path = TestPath::new("table_methods");
 		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -125,7 +125,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_keys() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys", "json");
+		let path = TestPath::new("get_keys");
 		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -153,7 +153,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_keys_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys_pretty", "json");
+		let path = TestPath::new("get_keys_pretty");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -181,7 +181,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create", "json");
+		let path = TestPath::new("get_and_create");
 		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -211,7 +211,7 @@ mod tests {
 	#[tokio::test]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create_pretty", "json");
+		let path = TestPath::new("get_and_create_pretty");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -241,7 +241,7 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete", "json");
+		let path = TestPath::new("update_and_delete");
 		let backend = FsBackend::new(JsonTranscoder::default(), &path)?;
 
 		backend.init().await?;
@@ -260,7 +260,7 @@ mod tests {
 			Some(settings)
 		);
 
-		backend.delete::<TestSettings>("table", "1").await?;
+		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
@@ -270,7 +270,7 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete_pretty", "json");
+		let path = TestPath::new("update_and_delete_pretty");
 		let backend = FsBackend::new(JsonTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
@@ -289,7 +289,7 @@ mod tests {
 			Some(settings)
 		);
 
-		backend.delete::<TestSettings>("table", "1").await?;
+		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 

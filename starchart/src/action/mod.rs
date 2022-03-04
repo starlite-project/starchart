@@ -294,7 +294,7 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		}
 
 		backend
-			.delete::<S>(table, &key)
+			.delete(table, &key)
 			.await
 			.map_err(|e| ActionRunError {
 				source: Some(Box::new(e)),

@@ -1,7 +1,7 @@
 //! The file-system based backends for the starchart crate.
 
-#[cfg(feature = "binary")]
-mod binary;
+#[cfg(feature = "cbor")]
+mod cbor;
 mod error;
 #[cfg(feature = "json")]
 mod json;
@@ -13,18 +13,17 @@ mod yaml;
 use std::{
 	collections::HashMap,
 	fs::File,
-	io::{ErrorKind, Read, Write},
+	io::{ErrorKind, Read, Seek, Write},
 	iter::FromIterator,
 	path::{Path, PathBuf},
 };
 
-use futures_util::future::{err, FutureExt};
-use serde::de::IgnoredAny;
+use futures_util::future::FutureExt;
 use starchart::{
 	backend::{
 		futures::{
-			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureTableFuture,
-			GetFuture, GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
+			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
+			GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 		},
 		Backend,
 	},
@@ -34,7 +33,6 @@ use starchart::{
 use tokio::fs::{create_dir_all, read_dir, remove_file, OpenOptions};
 
 pub use self::error::{FsError, FsErrorType};
-use self::util::IgnoredData;
 
 /// An fs-based backend for [`starchart`].
 #[derive(Debug, Default, Clone)]
@@ -72,8 +70,9 @@ impl<T: Transcoder> FsBackend<T> {
 	}
 
 	/// Extension used for tables.
+	#[allow(clippy::unused_self)]
 	pub fn extension(&self) -> &str {
-		self.transcoder().extension()
+		T::EXTENSION
 	}
 
 	/// Reference to the [`Transcoder`].
@@ -135,11 +134,15 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 				.into_std()
 				.await;
 
-			let map: HashMap<String, IgnoredData> = HashMap::new();
+			let map: HashMap<String, T::IgnoredData> = HashMap::new();
 
 			let empty_data = self.transcoder().serialize_value(&map)?;
 
+			file.rewind()?;
+
 			file.write_all(&empty_data)?;
+
+			file.sync_data()?;
 
 			Ok(())
 		}
@@ -173,7 +176,8 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 				.await?
 				.into_std()
 				.await;
-			let entries: HashMap<String, IgnoredData> = self.transcoder().deserialize_data(file)?;
+			let entries: HashMap<String, T::IgnoredData> =
+				self.transcoder().deserialize_data(file)?;
 
 			entries.into_keys().map(Ok).collect()
 		}
@@ -215,7 +219,7 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 				.into_std()
 				.await;
 
-			let map: HashMap<String, IgnoredData> = self.transcoder().deserialize_data(file)?;
+			let map: HashMap<String, T::IgnoredData> = self.transcoder().deserialize_data(file)?;
 
 			Ok(map.contains_key(id))
 		}
@@ -236,21 +240,30 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 				.base_directory()
 				.join(&[table, self.extension()].join("."));
 
-			let mut file: File = OpenOptions::new()
-				.write(true)
+			let file: File = OpenOptions::new()
 				.read(true)
-				.open(path)
+				.open(&path)
 				.await?
 				.into_std()
 				.await;
 
-			let mut data: HashMap<String, S> = self.transcoder().deserialize_data(&file)?;
+			let mut data: HashMap<String, S> = self.transcoder().deserialize_data(file)?;
 
 			data.insert(id.to_owned(), value.clone());
 
 			let raw = self.transcoder().serialize_value(&data)?;
 
+			let mut file: File = OpenOptions::new()
+				.write(true)
+				.truncate(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+
 			file.write_all(&raw)?;
+
+			file.sync_data()?;
 
 			Ok(())
 		}
@@ -269,31 +282,37 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 		self.create(table, id, value)
 	}
 
-	fn delete<'a, S: Entry>(
-		&'a self,
-		table: &'a str,
-		id: &'a str,
-	) -> DeleteFuture<'a, Self::Error> {
+	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		async move {
 			let path = self
 				.base_directory()
 				.join(&[table, self.extension()].join("."));
 
-			let mut file: File = OpenOptions::new()
+			let file: File = OpenOptions::new()
 				.read(true)
-				.write(true)
-				.open(path)
+				.open(&path)
 				.await?
 				.into_std()
 				.await;
 
-			let mut map: HashMap<String, S> = self.transcoder().deserialize_data(&file)?;
+			let mut map: HashMap<String, T::IgnoredData> =
+				self.transcoder().deserialize_data(file)?;
+
 			map.remove(id);
 
 			let data = self.transcoder().serialize_value(&map)?;
 
+			let mut file: File = OpenOptions::new()
+				.truncate(true)
+				.write(true)
+				.open(&path)
+				.await?
+				.into_std()
+				.await;
+
 			file.write_all(&data)?;
 
+			file.sync_data()?;
 			Ok(())
 		}
 		.boxed()
@@ -303,6 +322,12 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 /// The transcoder trait for transforming data for the [`FsBackend`].
 #[cfg(feature = "fs")]
 pub trait Transcoder: Send + Sync {
+	/// The file extension to use for tables.
+	const EXTENSION: &'static str;
+
+	/// Type to use when data isn't needed for information, but may still be written with.
+	type IgnoredData: Entry;
+
 	/// Serializes a value into a [`Vec<u8>`] for writing to a file.
 	///
 	/// # Errors
@@ -316,15 +341,12 @@ pub trait Transcoder: Send + Sync {
 	///
 	/// Any errors from the transcoder should use [`FsError::serde`] to return properly.
 	fn deserialize_data<T: Entry, R: Read>(&self, rdr: R) -> Result<T, FsError>;
-
-	/// Gives the extension for the current transcoder.
-	fn extension(&self) -> &'static str;
 }
 
 /// The transcoders for the [`FsBackend`].
 pub mod transcoders {
-	#[cfg(feature = "binary")]
-	pub use super::binary::{BinaryFormat, BinaryTranscoder};
+	#[cfg(feature = "cbor")]
+	pub use super::cbor::CborTranscoder;
 	#[cfg(feature = "json")]
 	pub use super::json::JsonTranscoder;
 	#[cfg(feature = "toml")]
@@ -346,34 +368,6 @@ pub mod transcoders {
 	impl Default for TranscoderFormat {
 		fn default() -> Self {
 			Self::Standard
-		}
-	}
-}
-
-mod util {
-	use serde::{de::IgnoredAny, Deserialize, Serialize};
-
-	/// needed bc [`IgnoredAny`] doesn't implement Serialize, so it can't be used as an Entry.
-	#[derive(Debug, Clone, Copy)]
-	pub struct IgnoredData;
-
-	impl Serialize for IgnoredData {
-		#[allow(clippy::panic_in_result_fn)]
-		fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
-		where
-			S: serde::Serializer,
-		{
-			unreachable!()
-		}
-	}
-
-	impl<'de> Deserialize<'de> for IgnoredData {
-		fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-		where
-			D: serde::Deserializer<'de>,
-		{
-			IgnoredAny::deserialize(deserializer)?;
-			Ok(Self)
 		}
 	}
 }
