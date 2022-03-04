@@ -277,7 +277,7 @@ mod tests {
 
 		assert_eq!(backend.get("table", "1").await?, Some(settings));
 
-		backend.delete("table", "1").await?;
+		backend.delete::<TestSettings>("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
@@ -304,7 +304,7 @@ mod tests {
 
 		assert_eq!(backend.get("table", "1").await?, Some(settings));
 
-		backend.delete("table", "1").await?;
+		backend.delete::<TestSettings>("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 

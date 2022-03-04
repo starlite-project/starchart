@@ -146,6 +146,10 @@ pub trait Backend: Send + Sync {
 	where
 		S: Entry;
 
+	// We pass the generic value for things that need
+	// type information, like the FsBackend, which uses it to
+	// properly reencode the data.
 	/// Deletes an entry from a table.
-	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
+	fn delete<'a, S: Entry>(&'a self, table: &'a str, id: &'a str)
+		-> DeleteFuture<'a, Self::Error>;
 }

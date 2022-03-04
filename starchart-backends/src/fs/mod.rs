@@ -11,28 +11,33 @@ mod toml;
 mod yaml;
 
 use std::{
-	io::{ErrorKind, Read},
+	collections::HashMap,
+	fs::File,
+	io::{ErrorKind, Read, Write},
 	iter::FromIterator,
 	path::{Path, PathBuf},
 };
 
 use futures_util::future::{err, FutureExt};
+use serde::de::IgnoredAny;
 use starchart::{
 	backend::{
 		futures::{
-			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
-			GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
+			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureTableFuture,
+			GetFuture, GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 		},
 		Backend,
 	},
 	Entry,
 };
-use tokio::fs;
+// use tokio::fs::OpenOptions;
+use tokio::fs::{create_dir_all, read_dir, remove_file, OpenOptions};
 
 pub use self::error::{FsError, FsErrorType};
+use self::util::IgnoredData;
 
-/// An fs-based backend for the starchart crate.
-#[derive(Debug, Clone)]
+/// An fs-based backend for [`starchart`].
+#[derive(Debug, Default, Clone)]
 #[cfg(feature = "fs")]
 pub struct FsBackend<T> {
 	transcoder: T,
@@ -61,17 +66,17 @@ impl<T: Transcoder> FsBackend<T> {
 		}
 	}
 
-	/// Returns the base directory for the [`FsBackend`].
+	/// Base directory for the [`FsBackend`].
 	pub fn base_directory(&self) -> &Path {
 		&self.base_directory
 	}
 
-	/// Returns the currently used extension for the [`FsBackend`].
+	/// Extension used for tables.
 	pub fn extension(&self) -> &str {
 		self.transcoder().extension()
 	}
 
-	/// Returns a reference to the current [`Transcoder`].
+	/// Reference to the [`Transcoder`].
 	pub fn transcoder(&self) -> &T {
 		&self.transcoder
 	}
@@ -83,14 +88,15 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	fn init(&self) -> InitFuture<'_, Self::Error> {
 		async move {
 			let path = self.base_directory();
-			let exists = match fs::read_dir(path).await {
+
+			let exists = match read_dir(path).await {
 				Ok(_) => true,
 				Err(e) if e.kind() == ErrorKind::NotFound => false,
 				Err(e) => return Err(e.into()),
 			};
 
 			if !exists {
-				fs::create_dir_all(path).await?;
+				create_dir_all(path).await?;
 			}
 
 			Ok(())
@@ -99,26 +105,53 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	}
 
 	fn has_table<'a>(&'a self, table: &'a str) -> HasTableFuture<'a, Self::Error> {
-		let path = self.base_directory().join(table);
-		fs::read_dir(path)
-			.map(|res| match res {
+		async move {
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
+
+			let res = OpenOptions::new().read(true).open(path).await;
+
+			match res {
 				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
 				Err(e) => Err(e.into()),
 				Ok(_) => Ok(true),
-			})
-			.boxed()
+			}
+		}
+		.boxed()
 	}
 
 	fn create_table<'a>(&'a self, table: &'a str) -> CreateTableFuture<'a, Self::Error> {
-		let path = self.base_directory().join(table);
-		fs::create_dir(path)
-			.map(|res| res.map_err(Into::into))
-			.boxed()
+		async move {
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
+
+			let mut file: File = OpenOptions::new()
+				.write(true)
+				.create(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+
+			let map: HashMap<String, IgnoredData> = HashMap::new();
+
+			let empty_data = self.transcoder().serialize_value(&map)?;
+
+			file.write_all(&empty_data)?;
+
+			Ok(())
+		}
+		.boxed()
 	}
 
 	fn delete_table<'a>(&'a self, table: &'a str) -> DeleteTableFuture<'a, Self::Error> {
-		let path = self.base_directory().join(table);
-		fs::remove_dir_all(path)
+		let path = self
+			.base_directory()
+			.join(&[table, self.extension()].join("."));
+
+		remove_file(path)
 			.map(|res| match res {
 				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
 				_ => Ok(()),
@@ -131,19 +164,18 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 		I: FromIterator<String>,
 	{
 		async move {
-			let path = self.base_directory().join(table);
-			let mut read_dir = fs::read_dir(&path).await?;
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
+			let file: File = OpenOptions::new()
+				.read(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+			let entries: HashMap<String, IgnoredData> = self.transcoder().deserialize_data(file)?;
 
-			let mut output = Vec::new();
-			while let Some(entry) = read_dir.next_entry().await? {
-				if entry.file_type().await?.is_dir() {
-					continue;
-				}
-
-				output.push(util::resolve_key(self.extension(), &entry.file_name()));
-			}
-
-			output.into_iter().collect::<Result<I, Self::Error>>()
+			entries.into_keys().map(Ok).collect()
 		}
 		.boxed()
 	}
@@ -153,31 +185,41 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 		D: Entry,
 	{
 		async move {
-			let filename = [id, self.extension()].join(".");
-			let mut path = self.base_directory().to_path_buf();
-			path.extend(&[table, filename.as_str()]);
-			let file: std::fs::File = match fs::File::open(&path).await {
-				Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
-				Err(e) => return Err(e.into()),
-				Ok(v) => v.into_std().await,
-			};
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
 
-			Ok(Some(self.transcoder().deserialize_data(file)?))
+			let file: File = OpenOptions::new()
+				.read(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+			let mut map: HashMap<String, D> = self.transcoder().deserialize_data(file)?;
+
+			Ok(map.remove(id))
 		}
 		.boxed()
 	}
 
 	fn has<'a>(&'a self, table: &'a str, id: &'a str) -> HasFuture<'a, Self::Error> {
-		let filename = [id, self.extension()].join(".");
-		let mut path = self.base_directory().to_path_buf();
-		path.extend(&[table, filename.as_str()]);
-		fs::metadata(path)
-			.map(|res| match res {
-				Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
-				Err(e) => Err(e.into()),
-				Ok(_) => Ok(true),
-			})
-			.boxed()
+		async move {
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
+
+			let file: File = OpenOptions::new()
+				.read(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+
+			let map: HashMap<String, IgnoredData> = self.transcoder().deserialize_data(file)?;
+
+			Ok(map.contains_key(id))
+		}
+		.boxed()
 	}
 
 	fn create<'a, S>(
@@ -189,18 +231,30 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	where
 		S: Entry,
 	{
-		let filename = [id, self.extension()].join(".");
-		let mut path = self.base_directory().to_path_buf();
-		path.extend(&[table, filename.as_str()]);
+		async move {
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
 
-		let serialized = match self.transcoder().serialize_value(value) {
-			Ok(v) => v,
-			Err(e) => return err(e).boxed(),
-		};
+			let mut file: File = OpenOptions::new()
+				.write(true)
+				.read(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
 
-		fs::write(path, serialized)
-			.map(|res| res.map_err(Into::into))
-			.boxed()
+			let mut data: HashMap<String, S> = self.transcoder().deserialize_data(&file)?;
+
+			data.insert(id.to_owned(), value.clone());
+
+			let raw = self.transcoder().serialize_value(&data)?;
+
+			file.write_all(&raw)?;
+
+			Ok(())
+		}
+		.boxed()
 	}
 
 	fn update<'a, S>(
@@ -212,30 +266,37 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	where
 		S: Entry,
 	{
-		let serialized = match self.transcoder().serialize_value(value) {
-			Ok(v) => v,
-			Err(e) => return err(e).boxed(),
-		};
-
-		let filepath = [id, self.extension()].join(".");
-		let mut path = self.base_directory().to_path_buf();
-		path.extend(&[table, filepath.as_str()]);
-
-		fs::write(path, serialized)
-			.map(|res| res.map_err(Into::into))
-			.boxed()
+		self.create(table, id, value)
 	}
 
-	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
-		let filename = [id, self.extension()].join(".");
-		let mut path = self.base_directory().to_path_buf();
-		path.extend(&[table, filename.as_str()]);
-		fs::remove_file(path)
-			.map(|res| match res {
-				Err(e) if e.kind() != ErrorKind::NotFound => Err(e.into()),
-				_ => Ok(()),
-			})
-			.boxed()
+	fn delete<'a, S: Entry>(
+		&'a self,
+		table: &'a str,
+		id: &'a str,
+	) -> DeleteFuture<'a, Self::Error> {
+		async move {
+			let path = self
+				.base_directory()
+				.join(&[table, self.extension()].join("."));
+
+			let mut file: File = OpenOptions::new()
+				.read(true)
+				.write(true)
+				.open(path)
+				.await?
+				.into_std()
+				.await;
+
+			let mut map: HashMap<String, S> = self.transcoder().deserialize_data(&file)?;
+			map.remove(id);
+
+			let data = self.transcoder().serialize_value(&map)?;
+
+			file.write_all(&data)?;
+
+			Ok(())
+		}
+		.boxed()
 	}
 }
 
@@ -290,25 +351,29 @@ pub mod transcoders {
 }
 
 mod util {
-	use std::{ffi::OsStr, path::Path};
+	use serde::{de::IgnoredAny, Deserialize, Serialize};
 
-	use super::{FsError, FsErrorType};
-	pub fn resolve_key(extension: &str, file_name: &OsStr) -> Result<String, FsError> {
-		let path_ref: &Path = file_name.as_ref();
+	/// needed bc [`IgnoredAny`] doesn't implement Serialize, so it can't be used as an Entry.
+	#[derive(Debug, Clone, Copy)]
+	pub struct IgnoredData;
 
-		if path_ref.extension().map_or(false, |path| path == extension) {
-			path_ref
-				.file_stem()
-				.ok_or(FsError {
-					source: None,
-					kind: FsErrorType::InvalidFile(path_ref.to_path_buf()),
-				})
-				.map(|raw| raw.to_string_lossy().into_owned())
-		} else {
-			Err(FsError {
-				source: None,
-				kind: FsErrorType::InvalidFile(path_ref.to_path_buf()),
-			})
+	impl Serialize for IgnoredData {
+		#[allow(clippy::panic_in_result_fn)]
+		fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
+		where
+			S: serde::Serializer,
+		{
+			unreachable!()
+		}
+	}
+
+	impl<'de> Deserialize<'de> for IgnoredData {
+		fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+		where
+			D: serde::Deserializer<'de>,
+		{
+			IgnoredAny::deserialize(deserializer)?;
+			Ok(Self)
 		}
 	}
 }

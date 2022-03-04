@@ -292,7 +292,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 		ok(()).boxed()
 	}
 
-	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
+	fn delete<'a, D: Entry>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error> {
 		if let Some(table) = self.tables.get(table) {
 			table.remove(id);
 		}
@@ -414,7 +414,7 @@ mod tests {
 			Some(settings)
 		);
 
-		backend.delete("table", "1").await?;
+		backend.delete::<TestSettings>("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
 
