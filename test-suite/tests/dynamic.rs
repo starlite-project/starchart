@@ -2,7 +2,7 @@ use starchart::{
 	action::{ActionKind, DynamicAction, TargetKind},
 	Result,
 };
-use starchart_backends::fs::{transcoders::TomlTranscoder, FsBackend};
+use starchart_backends::fs::{FsBackend, transcoders::{CborTranscoder, JsonTranscoder, TomlTranscoder}};
 
 use self::common::*;
 
@@ -60,6 +60,7 @@ fn validation_methods() {
 	let mut action = DynamicAction::new("table".to_owned(), ActionKind::Read, TargetKind::Entry);
 
 	assert!(action.validate_entry().is_err());
+	assert!(action.validate_data().is_err());
 	action.set_entry(TestSettings::default());
 	assert!(action.validate_entry().is_ok());
 
@@ -98,5 +99,48 @@ async fn basic_run() -> Result<()> {
 		.unwrap_create();
 	}
 
+	let read_table = DynamicAction::new(test_name.clone(), ActionKind::Read, TargetKind::Table);
+
+	let mut values: Vec<TestSettings> = read_table.run(&gateway).await?.unwrap_multi_read();
+
+	let mut expected = (0..3).map(TestSettings::new).collect::<Vec<_>>();
+
+	values.sort_by(|a, b| a.key_sort(b));
+	expected.sort_by(|a, b| a.key_sort(b));
+
+	assert_eq!(values, expected);
+
+	Ok(())
+}
+
+async fn duplicate_creates() -> Result<()> {
+	let _lock = TEST_GUARD.lock().await;
+	let test_name = duplicate_creates.test_name();
+	let backend = FsBackend::new(JsonTranscoder::pretty(), TestPath::new(&test_name))?;
+	let gateway = setup_chart(backend, &test_name).await;
+	let mut def = TestSettings::new(7);
+
+	def.array.extend([6, 7, 8]);
+
+	let mut create_action =
+		DynamicAction::new(test_name.clone(), ActionKind::Create, TargetKind::Entry);
+
+	create_action.set_entry(def);
+
+	let double_create = create_action.clone();
+
+	assert!(create_action.run(&gateway).await.is_ok());
+	assert!(double_create.run(&gateway).await.is_ok());
+
+	Ok(())
+}
+
+async fn read_and_update() -> Result<()> {
+	let _lock = TEST_GUARD.lock().await;
+	let test_name = read_and_update.test_name();
+	let backend = FsBackend::new(CborTranscoder::new(), TestPath::new(&test_name))?;
+	let gateway = setup_chart(backend, &test_name).await;
+
+	DynamicAction::with_entry(test_name.clone(), ActionKind::Create, TargetKind::Entry, TestSettings::new(1)).run(&gateway).await?.unwrap_create();
 	Ok(())
 }

@@ -36,6 +36,8 @@ impl Transcoder for CborTranscoder {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
 pub struct CborValue(serde_cbor::Value);
 
 impl Default for CborValue {
