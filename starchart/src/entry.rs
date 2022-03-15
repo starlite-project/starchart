@@ -1,16 +1,16 @@
-use std::fmt::Debug;
+use std::{borrow::Cow, fmt::Debug};
 
 use serde::{de::DeserializeOwned, Serialize};
 
 /// The key trait to be implemented on [`Entry`] to allow an easy way to get keys.
 pub trait Key {
 	/// The method to transform a [`Key`] into a value.
-	fn to_key(&self) -> String;
+	fn to_key(&self) -> Cow<'static, str>;
 }
 
 impl<T: ToString> Key for T {
-	fn to_key(&self) -> String {
-		self.to_string()
+	fn to_key(&self) -> Cow<'static, str> {
+		self.to_string().into()
 	}
 }
 
@@ -54,7 +54,7 @@ mod tests {
 
 	impl Display for Keyable {
 		fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-			Display::fmt(&self.inner, f)
+			f.write_str(&self.inner)
 		}
 	}
 

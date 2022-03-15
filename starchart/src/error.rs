@@ -5,11 +5,11 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
-#[doc(inline)]
-pub use crate::action::{
-	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
-	ActionValidationErrorType,
-};
+// #[doc(inline)]
+// pub use crate::action::{
+// 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
+// 	ActionValidationErrorType,
+// };
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -65,38 +65,6 @@ impl StdError for Error {
 		self.source
 			.as_ref()
 			.map(|source| &**source as &(dyn StdError + 'static))
-	}
-}
-
-impl From<ActionError> for Error {
-	fn from(e: ActionError) -> Self {
-		let kind = match e.kind() {
-			ActionErrorType::Run => ErrorType::ActionRun,
-			ActionErrorType::Validation => ErrorType::ActionValidation,
-		};
-		Self {
-			// source will always be an ActionRunError or ActionValidationError
-			source: e.into_source(),
-			kind,
-		}
-	}
-}
-
-impl From<ActionValidationError> for Error {
-	fn from(e: ActionValidationError) -> Self {
-		Self {
-			source: Some(Box::new(e)),
-			kind: ErrorType::ActionValidation,
-		}
-	}
-}
-
-impl From<ActionRunError> for Error {
-	fn from(e: ActionRunError) -> Self {
-		Self {
-			source: Some(Box::new(e)),
-			kind: ErrorType::ActionRun,
-		}
 	}
 }
 

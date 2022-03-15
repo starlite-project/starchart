@@ -3,5 +3,5 @@ members = [
   "./starchart",
   "./starchart-backends",
   "./starchart-derive",
-  "./test-suite"
+#   "./test-suite"
 ]
