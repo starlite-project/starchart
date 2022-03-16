@@ -22,8 +22,8 @@ use futures_util::future::FutureExt;
 use starchart::{
 	backend::{
 		futures::{
-			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetFuture,
-			GetKeysFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
+			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture,
+			GetFuture, HasFuture, HasTableFuture, InitFuture, UpdateFuture,
 		},
 		Backend,
 	},
@@ -162,24 +162,26 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 			.boxed()
 	}
 
-	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
+	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
-		I: FromIterator<String>,
+		D: Entry,
+		I: FromIterator<D>,
 	{
 		async move {
 			let path = self
 				.base_directory()
 				.join(&[table, self.extension()].join("."));
+
 			let file: File = OpenOptions::new()
 				.read(true)
 				.open(path)
 				.await?
 				.into_std()
 				.await;
-			let entries: HashMap<String, T::IgnoredData> =
-				self.transcoder().deserialize_data(file)?;
 
-			entries.into_keys().map(Ok).collect()
+			let map: HashMap<String, D> = self.transcoder().deserialize_data(file)?;
+
+			Ok(map.into_values().collect::<I>())
 		}
 		.boxed()
 	}

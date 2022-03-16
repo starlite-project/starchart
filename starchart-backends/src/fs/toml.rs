@@ -140,62 +140,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn get_keys() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys");
-		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
-
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		let mut settings = TestSettings::default();
-		backend.create("table", "1", &settings).await?;
-		settings.id = 2;
-		settings.opt = None;
-		backend.create("table", "2", &settings).await?;
-
-		let mut keys: Vec<String> = backend.get_keys("table").await?;
-
-		let mut expected = vec!["1".to_owned(), "2".to_owned()];
-
-		keys.sort();
-		expected.sort();
-
-		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn get_keys_pretty() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys_pretty");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
-
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		let mut settings = TestSettings::default();
-		backend.create("table", "1", &settings).await?;
-		settings.id = 2;
-		settings.opt = None;
-		backend.create("table", "2", &settings).await?;
-
-		let mut keys: Vec<String> = backend.get_keys("table").await?;
-
-		let mut expected = vec!["1".to_owned(), "2".to_owned()];
-
-		keys.sort();
-		expected.sort();
-
-		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
 		let path = TestPath::new("get_and_create");

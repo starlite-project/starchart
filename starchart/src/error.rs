@@ -5,11 +5,8 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
-// #[doc(inline)]
-// pub use crate::action::{
-// 	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
-// 	ActionValidationErrorType,
-// };
+#[doc(inline)]
+pub use crate::action::{ActionError, ActionErrorType, MissingValue};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -54,8 +51,7 @@ impl Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
 			ErrorType::Backend => f.write_str("an error occurred within a backend"),
-			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
-			ErrorType::ActionValidation => f.write_str("an action is invalid"),
+			ErrorType::Action => f.write_str("an error occurred with an action"),
 		}
 	}
 }
@@ -75,8 +71,6 @@ impl StdError for Error {
 pub enum ErrorType {
 	/// An error occurred within a backend.
 	Backend,
-	/// An [`ActionValidationError`] occurred.
-	ActionValidation,
-	/// An [`ActionRunError`] occurred.
-	ActionRun,
+	/// An [`ActionError`] occurred.
+	Action,
 }
