@@ -3,6 +3,8 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
+use crate::backend::Backend;
+
 #[derive(Debug)]
 pub struct ActionError {
 	pub(super) source: Option<Box<dyn StdError + Send + Sync>>,
@@ -26,6 +28,13 @@ impl ActionError {
 	#[must_use = "consuming the error into it's parts has no effect if left unused"]
 	pub fn into_parts(self) -> (ActionErrorType, Option<Box<dyn StdError + Send + Sync>>) {
 		(self.kind, self.source)
+	}
+
+	pub(super) fn from_backend<E: StdError + Send + Sync + 'static>(e: E) -> Self {
+		Self {
+			source: Some(Box::new(e)),
+			kind: ActionErrorType::Backend,
+		}
 	}
 }
 

@@ -1,6 +1,6 @@
 mod error;
 
-use std::borrow::Cow;
+use std::{borrow::Cow, iter::FromIterator};
 
 #[doc(hidden)]
 pub use self::error::{ActionError, ActionErrorType, MissingValue};
@@ -38,10 +38,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 
 	#[must_use]
 	pub fn entry(&self) -> Option<(&str, &'v D)> {
-		match (self.key(), self.data()) {
-			(Some(k), Some(v)) => Some((k, v)),
-			_ => None,
-		}
+		self.key().zip(self.data())
 	}
 
 	pub fn with_key<K: Key>(table: &'v str, key: &K) -> Self {
@@ -70,31 +67,20 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		mut self,
 		chart: &Starchart<B>,
 	) -> Result<(), ActionError> {
-		self.validate_entry()?;
-		self.validate_table()?;
-
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
 
-		let (table, key, entry) = unsafe {
-			(
-				self.table,
-				self.key.take().inner_unwrap(),
-				self.data.take().inner_unwrap(),
-			)
-		};
+		let table = self.validate_table()?;
+		let (key, entry) = self.validate_entry()?;
 
 		self.check_table(backend).await?;
 		self.check_metadata(backend).await?;
 
 		backend
-			.ensure(table, &key, &*entry)
+			.ensure(table, key, &*entry)
 			.await
-			.map_err(|e| ActionError {
-				source: Some(Box::new(e)),
-				kind: ActionErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
@@ -105,26 +91,150 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		mut self,
 		chart: &Starchart<B>,
 	) -> Result<Option<D>, ActionError> {
-		self.validate_data()?;
-		self.validate_key()?;
-
 		let lock = chart.guard.shared().await;
 
 		let backend = &**chart;
 
-		let (table, key) = unsafe { (self.table, self.key.take().inner_unwrap()) };
+		let table = self.validate_table()?;
+		let key = self.validate_key()?;
 
 		self.check_table(backend).await?;
 		self.check_metadata(backend).await?;
 
-		let res = backend.get(table, &key).await.map_err(|e| ActionError {
-			source: Some(Box::new(e)),
-			kind: ActionErrorType::Backend,
-		})?;
+		let res = backend
+			.get(table, key)
+			.await
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
 		Ok(res)
+	}
+
+	pub async fn update_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		let lock = chart.guard.exclusive().await;
+
+		let backend = &**chart;
+
+		let table = self.validate_table()?;
+		let (key, entry) = self.validate_entry()?;
+
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
+
+		backend
+			.update(table, key, entry)
+			.await
+			.map_err(ActionError::from_backend)?;
+
+		drop(lock);
+
+		Ok(())
+	}
+
+	pub async fn delete_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+		let lock = chart.guard.exclusive().await;
+
+		let backend = &**chart;
+
+		let table = self.validate_table()?;
+		let key = self.validate_key()?;
+
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
+
+		if !backend
+			.has(table, key)
+			.await
+			.map_err(ActionError::from_backend)?
+		{
+			drop(lock);
+			return Ok(false);
+		}
+
+		backend
+			.delete(table, key)
+			.await
+			.map_err(ActionError::from_backend)?;
+
+		drop(lock);
+		Ok(true)
+	}
+
+	pub async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		let lock = chart.guard.exclusive().await;
+
+		let backend = &**chart;
+
+		let table = self.validate_table()?;
+
+		backend
+			.ensure_table(table)
+			.await
+			.map_err(ActionError::from_backend)?;
+
+		#[cfg(feature = "metadata")]
+		{
+			let metadata = D::default();
+			backend
+				.ensure(table, crate::METADATA_KEY, &metadata)
+				.await
+				.map_err(|e| ActionError {
+					source: Some(Box::new(e)),
+					kind: ActionErrorType::Metadata(Some(table.to_owned())),
+				})?;
+		}
+
+		drop(lock);
+
+		Ok(())
+	}
+
+	pub async fn read_table<I: FromIterator<D>, B: Backend>(
+		self,
+		chart: &Starchart<B>,
+	) -> Result<I, ActionError> {
+		let lock = chart.guard.shared().await;
+
+		let backend = &**chart;
+
+		let table = self.validate_table()?;
+
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
+
+		let data = backend
+			.get_all(table)
+			.await
+			.map_err(ActionError::from_backend)?;
+
+		drop(lock);
+
+		Ok(data)
+	}
+
+	pub async fn delete_table<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+		let lock = chart.guard.exclusive().await;
+
+		let backend = &**chart;
+
+		let table = self.validate_table()?;
+
+		if self.check_table(backend).await.is_err() {
+			drop(lock);
+			return Ok(false);
+		}
+
+		self.check_metadata(backend).await?;
+
+		backend
+			.delete_table(table)
+			.await
+			.map_err(ActionError::from_backend)?;
+
+		drop(lock);
+
+		Ok(true)
 	}
 
 	#[cfg(feature = "metadata")]
@@ -183,35 +293,30 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
-	fn validate_key(&self) -> Result<(), ActionError> {
-		if self.key.is_none() {
-			return Err(ActionError {
-				source: None,
-				kind: ActionErrorType::SomethingMissing(MissingValue::Key),
-			});
-		}
+	fn validate_key(&self) -> Result<&str, ActionError> {
+		self.validate_metadata(self.key.as_deref())?;
 
-		self.validate_metadata(self.key.as_deref())
+		self.key.as_deref().ok_or(ActionError {
+			source: None,
+			kind: ActionErrorType::SomethingMissing(MissingValue::Key),
+		})
 	}
 
-	fn validate_data(&self) -> Result<(), ActionError> {
-		if self.data.is_none() {
-			return Err(ActionError {
-				source: None,
-				kind: ActionErrorType::SomethingMissing(MissingValue::Data),
-			});
-		}
-
-		Ok(())
+	fn validate_data(&self) -> Result<&'v D, ActionError> {
+		self.data.ok_or(ActionError {
+			source: None,
+			kind: ActionErrorType::SomethingMissing(MissingValue::Data),
+		})
 	}
 
-	fn validate_table(&self) -> Result<(), ActionError> {
-		self.validate_metadata(Some(self.table))
+	fn validate_table(&self) -> Result<&str, ActionError> {
+		self.validate_metadata(Some(self.table))?;
+
+		Ok(self.table)
 	}
 
-	fn validate_entry(&self) -> Result<(), ActionError> {
-		self.validate_key()?;
-		self.validate_data()
+	fn validate_entry(&self) -> Result<(&str, &'v D), ActionError> {
+		Ok((self.validate_key()?, self.validate_data()?))
 	}
 }
 
