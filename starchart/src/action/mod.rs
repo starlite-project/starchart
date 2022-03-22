@@ -190,7 +190,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
-	pub async fn read_table<I: FromIterator<D>, B: Backend>(
+	pub async fn read_table<I: FromIterator<(String, D)>, B: Backend>(
 		self,
 		chart: &Starchart<B>,
 	) -> Result<I, ActionError> {

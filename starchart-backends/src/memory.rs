@@ -184,7 +184,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
-		I: FromIterator<D>,
+		I: FromIterator<(String, D)>,
 	{
 		async move {
 			self.tables.get(table).map_or_else(
@@ -193,7 +193,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 					table
 						.clone()
 						.into_iter()
-						.map(|(_, v)| v.deserialize_into().map_err(MemoryError::from))
+						.map(|(k, v)| Ok((k, v.deserialize_into().map_err(MemoryError::from)?)))
 						.collect::<Result<I, Self::Error>>()
 				},
 			)
@@ -280,7 +280,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
-	use std::fmt::Debug;
+	use std::{collections::HashMap, fmt::Debug};
 
 	use fxhash::FxBuildHasher;
 	use starchart::backend::Backend;
@@ -387,7 +387,9 @@ mod tests {
 
 		backend.create("table", "3", &settings);
 
-		let values: Vec<TestSettings> = backend.get_all("table").await?;
+		let values: HashMap<_, TestSettings> = backend.get_all("table").await?;
+
+		let values = values.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
 
 		assert_eq!(
 			values,
@@ -409,9 +411,9 @@ mod tests {
 
 		assert_eq!(
 			backend
-				.get_all::<TestSettings, Vec<TestSettings>>("non_exist")
+				.get_all::<TestSettings, HashMap<_, _>>("non_exist")
 				.await?,
-			vec![]
+			HashMap::new(),
 		);
 
 		Ok(())

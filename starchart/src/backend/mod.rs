@@ -75,7 +75,7 @@ pub trait Backend: Send + Sync {
 	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
-		I: FromIterator<D>;
+		I: FromIterator<(String, D)>;
 
 	/// Gets a certain entry from a table.
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>

@@ -10,13 +10,7 @@ mod toml;
 #[cfg(feature = "yaml")]
 mod yaml;
 
-use std::{
-	collections::HashMap,
-	fs::File,
-	io::{ErrorKind, Read, Seek, Write},
-	iter::FromIterator,
-	path::{Path, PathBuf},
-};
+use std::{collections::HashMap, fs::File, io::{ErrorKind, Read, Seek, SeekFrom, Write}, iter::FromIterator, path::{Path, PathBuf}};
 
 use futures_util::future::FutureExt;
 use starchart::{
@@ -138,7 +132,7 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 
 			let empty_data = self.transcoder().serialize_value(&map)?;
 
-			file.rewind()?;
+			file.seek(SeekFrom::Start(0))?; // rewind isn't implemented until 1.55
 
 			file.write_all(&empty_data)?;
 
@@ -165,7 +159,7 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
-		I: FromIterator<D>,
+		I: FromIterator<(String, D)>,
 	{
 		async move {
 			let path = self
@@ -181,7 +175,7 @@ impl<T: Transcoder> Backend for FsBackend<T> {
 
 			let map: HashMap<String, D> = self.transcoder().deserialize_data(file)?;
 
-			Ok(map.into_values().collect::<I>())
+			Ok(map.into_iter().collect::<I>())
 		}
 		.boxed()
 	}
