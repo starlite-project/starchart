@@ -10,7 +10,13 @@ mod toml;
 #[cfg(feature = "yaml")]
 mod yaml;
 
-use std::{collections::HashMap, fs::File, io::{ErrorKind, Read, Seek, SeekFrom, Write}, iter::FromIterator, path::{Path, PathBuf}};
+use std::{
+	collections::HashMap,
+	fs::File,
+	io::{ErrorKind, Read, Seek, SeekFrom, Write},
+	iter::FromIterator,
+	path::{Path, PathBuf},
+};
 
 use futures_util::future::FutureExt;
 use starchart::{

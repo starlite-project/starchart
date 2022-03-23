@@ -5,7 +5,7 @@
 use std::{error::Error as StdError, iter::FromIterator};
 
 use futures_util::{
-	future::{join_all, ok, ready},
+	future::{ok, ready},
 	FutureExt,
 };
 
@@ -69,9 +69,7 @@ pub trait Backend: Send + Sync {
 		.boxed()
 	}
 
-	/// Gets all entries that match a predicate, to get all entries, use [`get_keys`] first.
-	///
-	/// [`get_keys`]: Self::get_keys
+	/// Gets all entries in the table.
 	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,

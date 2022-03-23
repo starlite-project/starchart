@@ -3,16 +3,6 @@
 #[cfg(not(has_unwrap_unchecked))]
 use std::hint::unreachable_unchecked;
 
-#[cfg(feature = "metadata")]
-pub fn is_metadata(key: &str) -> bool {
-	key == crate::METADATA_KEY
-}
-
-#[cfg(not(feature = "metadata"))]
-pub fn is_metadata(_: &str) -> bool {
-	false
-}
-
 pub unsafe trait InnerUnwrap<T> {
 	unsafe fn inner_unwrap(self) -> T;
 }

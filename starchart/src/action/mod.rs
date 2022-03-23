@@ -1,12 +1,18 @@
+//! The action structs for CRUD operations.
+
 mod error;
 
 use std::{borrow::Cow, iter::FromIterator};
 
 #[doc(hidden)]
 pub use self::error::{ActionError, ActionErrorType, MissingValue};
-use crate::{backend::Backend, util::InnerUnwrap, Entry, IndexEntry, Key, Starchart};
+use crate::{backend::Backend, Entry, IndexEntry, Key, Starchart};
 
-#[derive(Debug)]
+/// An [`Action`] for an easy [`CRUD`] operation with a [`Starchart`].
+///
+/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
+#[derive(Debug, PartialEq, Eq)]
+#[must_use = "Actions do nothing on their own"]
 pub struct Action<'v, D: ?Sized> {
 	table: &'v str,
 	key: Option<Cow<'static, str>>,
@@ -14,6 +20,16 @@ pub struct Action<'v, D: ?Sized> {
 }
 
 impl<'v, D: ?Sized> Action<'v, D> {
+	/// Creates a new [`Action`] with the specified table.
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # fn ignore_me() -> Action<'static, u8> {
+	/// let act = Action::new("foo");
+	///
+	/// assert_eq!(act.table(), "foo");
+	/// # act }
+	/// ```
 	pub const fn new(table: &'v str) -> Self {
 		Self {
 			table,
@@ -22,25 +38,33 @@ impl<'v, D: ?Sized> Action<'v, D> {
 		}
 	}
 
+	/// Get a reference to the table.
+	#[must_use = "getting Action information does nothing on it's own"]
 	pub const fn table(&self) -> &str {
 		self.table
 	}
 
+	/// Get a reference to the key, if one is set.
+	#[must_use = "getting Action information does nothing on it's own"]
 	pub fn key(&self) -> Option<&str> {
 		self.key.as_deref()
 	}
 }
 
 impl<'v, D: Entry + ?Sized> Action<'v, D> {
+	/// Get a reference to the data, if any is set.
+	#[must_use = "getting Action information does nothing on it's own"]
 	pub fn data(&self) -> Option<&'v D> {
 		self.data
 	}
 
-	#[must_use]
+	/// Get a reference to the entry, if it is set.
+	#[must_use = "getting Action information does nothing on it's own"]
 	pub fn entry(&self) -> Option<(&str, &'v D)> {
 		self.key().zip(self.data())
 	}
 
+	/// Creates a new [`Action`] with the specified [`Key`].
 	pub fn with_key<K: Key>(table: &'v str, key: &K) -> Self {
 		let mut act = Self::new(table);
 
@@ -49,12 +73,48 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		act
 	}
 
+	/// Sets a [`Key`] on an [`Action`].
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # fn ignore_me() -> Action<'static, u8> {
+	/// let mut act = Action::new("foo");
+	///
+	/// assert_eq!(act.key(), None);
+	///
+	/// act.set_key(&"bar"); // need a borrowed type.
+	///
+	/// assert_eq!(act.key(), Some("bar"));
+	/// # act }
 	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
 		self.key.replace(key.to_key());
 
 		self
 	}
 
+	/// Sets the [`Entry`] for this [`Action`].
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # use serde::{Serialize, Deserialize};
+	/// # #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+	/// struct Settings {
+	/// 	// our entry
+	/// 	key: String,
+	/// }
+	///
+	/// let settings = Settings {
+	/// 	key: "John".to_owned(),
+	/// };
+	///
+	/// let mut act = Action::new("foo");
+	///
+	/// assert_eq!(act.data(), None);
+	///
+	/// act.set_data(&settings);
+	///
+	/// assert_eq!(act.data(), Some(&settings));
+	/// ```
 	pub fn set_data(&mut self, entry: &'v D) -> &mut Self {
 		self.data.replace(entry);
 
@@ -63,10 +123,16 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 
 	// run methods
 
-	pub async fn create_entry<B: Backend>(
-		mut self,
-		chart: &Starchart<B>,
-	) -> Result<(), ActionError> {
+	/// Creates a new entry in the [`Starchart`] with the data specified in the action.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key or data isn't set (with the [`set_key`] and [`set_data`] methods, or [`set_entry`]), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	/// [`set_data`]: Self::set_data
+	/// [`set_entry`]: Self::set_entry
+	pub async fn create_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
@@ -87,8 +153,15 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
+	/// Reads an entry from the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key isn't set (with the [`set_key`] method), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
 	pub async fn read_entry<B: Backend>(
-		mut self,
+		self,
 		chart: &Starchart<B>,
 	) -> Result<Option<D>, ActionError> {
 		let lock = chart.guard.shared().await;
@@ -111,6 +184,15 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(res)
 	}
 
+	/// Updates an entry within the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key or data isn't set (with the [`set_key`] and [`set_data`] methods, or [`set_entry`]), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	/// [`set_data`]: Self::set_data
+	/// [`set_entry`]: Self::set_entry
 	pub async fn update_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
@@ -132,6 +214,13 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
+	/// Deletes an entry from the [`Starchart`], returning whether or not the item was deleted.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key isn't set (with the [`set_key`] method), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
 	pub async fn delete_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
 		let lock = chart.guard.exclusive().await;
 
@@ -161,6 +250,11 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(true)
 	}
 
+	/// Creates a table within the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
 	pub async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
@@ -190,6 +284,11 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
+	/// Reads a table from the [`Starchart`], returning a map-based iterator.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
 	pub async fn read_table<I: FromIterator<(String, D)>, B: Backend>(
 		self,
 		chart: &Starchart<B>,
@@ -213,6 +312,11 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(data)
 	}
 
+	/// Deletes a table from the [`Starchart`], returning whether or not the table was actually deleted.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
 	pub async fn delete_table<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
 		let lock = chart.guard.exclusive().await;
 
@@ -321,6 +425,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 }
 
 impl<'v, D: IndexEntry + ?Sized> Action<'v, D> {
+	/// Create an [`Action`] with the provided [`IndexEntry`].
 	pub fn with_entry(table: &'v str, entry: &'v D) -> Self {
 		let mut act = Self::new(table);
 
@@ -329,6 +434,7 @@ impl<'v, D: IndexEntry + ?Sized> Action<'v, D> {
 		act
 	}
 
+	/// Sets an [`IndexEntry`], which provides it's own key.
 	pub fn set_entry(&mut self, entry: &'v D) -> &mut Self {
 		self.set_key(entry.key()).set_data(entry)
 	}
@@ -340,6 +446,16 @@ impl<'v, D: ?Sized> Clone for Action<'v, D> {
 			table: self.table,
 			key: self.key.clone(),
 			data: self.data,
+		}
+	}
+}
+
+impl<'v, D: ?Sized> Default for Action<'v, D> {
+	fn default() -> Self {
+		Self {
+			table: Default::default(),
+			key: None,
+			data: None,
 		}
 	}
 }

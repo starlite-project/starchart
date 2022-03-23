@@ -34,6 +34,7 @@ mod util;
 #[doc(inline)]
 pub use self::{
 	action::Action,
+	backend::Backend,
 	entry::{Entry, IndexEntry, Key},
 	error::Error,
 	starchart::Starchart,

@@ -3,8 +3,9 @@ use std::{
 	fmt::{Display, Formatter, Result as FmtResult},
 };
 
-use crate::backend::Backend;
-
+/// An error that an [`Action`] encountered.
+///
+/// [`Action`]: super::Action
 #[derive(Debug)]
 pub struct ActionError {
 	pub(super) source: Option<Box<dyn StdError + Send + Sync>>,
@@ -70,18 +71,30 @@ impl StdError for ActionError {
 	}
 }
 
+/// Type of error an [`Action`] can encounter.
+///
+/// [`Action`]: super::Action
 #[derive(Debug)]
 pub enum ActionErrorType {
+	/// A key, data, or table was missing when it was expected.
 	SomethingMissing(MissingValue),
+	/// Metadata didn't match a table, or was unable to be created.
 	#[cfg(feature = "metadata")]
 	Metadata(Option<String>),
-
+	/// An error occurred within a [`Backend`].
+	///
+	/// [`Backend`]: crate::backend::Backend
 	Backend,
 }
 
+/// A value that could be missing.
 #[derive(Debug)]
+#[allow(missing_copy_implementations)]
 pub enum MissingValue {
+	/// Data was missing.
 	Data,
+	/// The key was missing.
 	Key,
+	/// The table was missing.
 	Table,
 }
