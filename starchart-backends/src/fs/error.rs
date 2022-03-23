@@ -5,6 +5,8 @@ use std::{
 	path::PathBuf,
 };
 
+use super::FsBackend;
+
 /// An error occurred from the [`FsBackend`] or one of it's [`Transcoders`].
 ///
 /// [`FsBackend`]: super::FsBackend
@@ -85,7 +87,7 @@ impl From<IoError> for FsError {
 
 impl From<FsError> for starchart::Error {
 	fn from(e: FsError) -> Self {
-		Self::backend(Some(Box::new(e)))
+		Self::backend::<FsBackend>(e)
 	}
 }
 

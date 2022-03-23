@@ -98,12 +98,13 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// # use starchart::Action;
 	/// # use serde::{Serialize, Deserialize};
 	/// # #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
-	/// struct Settings { // our entry
-	///     key: String,
+	/// struct Settings {
+	/// 	// our entry
+	/// 	key: String,
 	/// }
 	///
 	/// let settings = Settings {
-	///     key: "John".to_owned(),
+	/// 	key: "John".to_owned(),
 	/// };
 	///
 	/// let mut act = Action::new("foo");
@@ -455,6 +456,86 @@ impl<'v, D: ?Sized> Default for Action<'v, D> {
 			table: Default::default(),
 			key: None,
 			data: None,
+		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use serde::{Deserialize, Serialize};
+
+	use crate::{Action, IndexEntry};
+
+	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+	struct TestSettings {
+		pub id: u32,
+		pub value: String,
+		pub array: Vec<u8>,
+		pub opt: Option<f64>,
+	}
+
+	impl Default for TestSettings {
+		fn default() -> Self {
+			Self {
+				id: 1,
+				value: "hello, world!".to_owned(),
+				array: vec![1, 2, 3, 4, 5],
+				opt: Some(4.2),
+			}
+		}
+	}
+
+	impl IndexEntry for TestSettings {
+		type Key = u32;
+
+		fn key(&self) -> &Self::Key {
+			&self.id
+		}
+	}
+
+	#[test]
+	fn doctests() {
+		let settings = TestSettings::default();
+		let mut act: Action<TestSettings> = Action::new("foo");
+
+		assert_eq!(act.table(), "foo");
+		assert_eq!(act.key(), None);
+
+		act.set_key(&"bar");
+
+		assert_eq!(act.key(), Some("bar"));
+		assert_eq!(act.data(), None);
+
+		act.set_data(&settings);
+
+		assert_eq!(act.data(), Some(&settings));
+
+		assert_eq!(act.entry(), Some(("bar", &settings)));
+	}
+
+	#[test]
+	fn constructor_methods() {
+		{
+			let act: Action<TestSettings> = Action::new("foo");
+
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.entry(), None);
+		}
+
+		{
+			let act: Action<TestSettings> = Action::with_key("foo", &"bar");
+
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.key(), Some("bar"));
+			assert_eq!(act.entry(), None);
+		}
+
+		{
+			let settings = TestSettings::default();
+			let act = Action::with_entry("foo", &settings);
+
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.entry(), Some(("1", &settings)));
 		}
 	}
 }

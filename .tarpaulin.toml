@@ -4,6 +4,7 @@ all-features = true
 ignore-tests = true
 # skip-clean = true
 force-clean = false
+run-types = ["Tests", "Doctests"]
 
 [report]
 out = ["Html", "Xml"]
