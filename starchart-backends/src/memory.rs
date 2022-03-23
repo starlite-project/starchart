@@ -369,7 +369,7 @@ mod tests {
 	#[tokio::test]
 	#[cfg_attr(miri, ignore)]
 	async fn get_all() -> Result<(), MemoryError> {
-		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
+		let backend = MemoryBackend::with_capacity(1);
 		backend.init().await?;
 
 		backend.ensure_table("table").await?;
@@ -384,12 +384,16 @@ mod tests {
 
 		settings.value = "goodbye!".to_owned();
 		settings.array.extend(&[7, 8, 9]);
+		settings.opt = TestSettings::default().opt;
+		settings.id += 1;
 
 		backend.create("table", "3", &settings);
 
 		let values: HashMap<_, TestSettings> = backend.get_all("table").await?;
 
-		let values = values.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+		let mut values = values.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+
+		values.sort_by(|a, b| a.id.cmp(&b.id));
 
 		assert_eq!(
 			values,

@@ -98,13 +98,12 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// # use starchart::Action;
 	/// # use serde::{Serialize, Deserialize};
 	/// # #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
-	/// struct Settings {
-	/// 	// our entry
-	/// 	key: String,
+	/// struct Settings { // our entry
+	///     key: String,
 	/// }
 	///
 	/// let settings = Settings {
-	/// 	key: "John".to_owned(),
+	///     key: "John".to_owned(),
 	/// };
 	///
 	/// let mut act = Action::new("foo");
