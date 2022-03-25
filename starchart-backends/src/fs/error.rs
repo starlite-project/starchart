@@ -87,7 +87,7 @@ impl From<IoError> for FsError {
 
 impl From<FsError> for starchart::Error {
 	fn from(e: FsError) -> Self {
-		Self::backend::<FsBackend>(e)
+		Self::backend(Box::new(e))
 	}
 }
 

@@ -52,8 +52,8 @@ impl Transcoder for JsonTranscoder {
 
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
 		match self.format() {
-			TranscoderFormat::Standard => Ok(serde_json::to_vec_pretty(value)?),
-			TranscoderFormat::Pretty => Ok(serde_json::to_vec(value)?),
+			TranscoderFormat::Pretty => Ok(serde_json::to_vec_pretty(value)?),
+			TranscoderFormat::Standard => Ok(serde_json::to_vec(value)?),
 		}
 	}
 

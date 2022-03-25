@@ -2,7 +2,7 @@
 
 mod error;
 
-use std::{borrow::Cow, iter::FromIterator};
+use std::{borrow::Cow, collections::HashMap, iter::FromIterator};
 
 #[doc(hidden)]
 pub use self::error::{ActionError, ActionErrorType, MissingValue};
@@ -132,7 +132,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// [`set_key`]: Self::set_key
 	/// [`set_data`]: Self::set_data
 	/// [`set_entry`]: Self::set_entry
-	pub async fn create_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+	pub async fn create_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
@@ -161,7 +161,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	///
 	/// [`set_key`]: Self::set_key
 	pub async fn read_entry<B: Backend>(
-		self,
+		&self,
 		chart: &Starchart<B>,
 	) -> Result<Option<D>, ActionError> {
 		let lock = chart.guard.shared().await;
@@ -193,7 +193,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// [`set_key`]: Self::set_key
 	/// [`set_data`]: Self::set_data
 	/// [`set_entry`]: Self::set_entry
-	pub async fn update_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+	pub async fn update_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
@@ -221,7 +221,10 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// This raises an error if the key isn't set (with the [`set_key`] method), or if the [`Backend`] encounters an error.
 	///
 	/// [`set_key`]: Self::set_key
-	pub async fn delete_entry<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+	pub async fn delete_entry<B: Backend>(
+		&self,
+		chart: &Starchart<B>,
+	) -> Result<bool, ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
@@ -255,7 +258,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// # Errors
 	///
 	/// This raises an error if the [`Backend`] encounters an error.
-	pub async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
+	pub async fn create_table<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;
@@ -290,7 +293,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	///
 	/// This raises an error if the [`Backend`] encounters an error.
 	pub async fn read_table<I: FromIterator<(String, D)>, B: Backend>(
-		self,
+		&self,
 		chart: &Starchart<B>,
 	) -> Result<I, ActionError> {
 		let lock = chart.guard.shared().await;
@@ -302,10 +305,19 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		self.check_table(backend).await?;
 		self.check_metadata(backend).await?;
 
+		// HashMap as a sort of "middle grounds" before filtering
 		let data = backend
-			.get_all(table)
+			.get_all::<D, HashMap<_, _>>(table)
 			.await
 			.map_err(ActionError::from_backend)?;
+
+		let data = if cfg!(feature = "metadata") {
+			data.into_iter()
+				.filter(|(k, _)| k != crate::METADATA_KEY)
+				.collect::<I>()
+		} else {
+			data.into_iter().collect::<I>()
+		};
 
 		drop(lock);
 
@@ -317,7 +329,10 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// # Errors
 	///
 	/// This raises an error if the [`Backend`] encounters an error.
-	pub async fn delete_table<B: Backend>(self, chart: &Starchart<B>) -> Result<bool, ActionError> {
+	pub async fn delete_table<B: Backend>(
+		&self,
+		chart: &Starchart<B>,
+	) -> Result<bool, ActionError> {
 		let lock = chart.guard.exclusive().await;
 
 		let backend = &**chart;

@@ -89,6 +89,12 @@ impl From<DeserializerError> for MemoryError {
 	}
 }
 
+impl From<MemoryError> for starchart::Error {
+	fn from(e: MemoryError) -> Self {
+		Self::backend(Box::new(e))
+	}
+}
+
 /// The type of [`MemoryError`] that occurred.
 #[cfg(feature = "memory")]
 #[allow(missing_copy_implementations)]

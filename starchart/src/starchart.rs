@@ -22,8 +22,11 @@ impl<B: Backend> Starchart<B> {
 	/// # Errors
 	///
 	/// Any errors that [`Backend::init`] can raise.
-	pub async fn new(backend: B) -> Result<Self, B::Error> {
-		backend.init().await?;
+	pub async fn new(backend: B) -> super::Result<Self> {
+		backend
+			.init()
+			.await
+			.map_err(|e| super::Error::backend(Box::new(e)))?;
 		Ok(Self {
 			backend: Arc::new(backend),
 			guard: Arc::default(),
