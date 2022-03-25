@@ -7,7 +7,6 @@ use std::{
 
 #[doc(inline)]
 pub use crate::action::{ActionError, ActionErrorType, MissingValue};
-use crate::Backend;
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.

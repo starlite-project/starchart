@@ -12,13 +12,22 @@ pub struct TestSettings {
 }
 
 impl TestSettings {
-	pub fn new(id: u32, value: String, array: Vec<u8>, opt: Option<f64>) -> Self {
+	pub const fn new(id: u32, value: String, array: Vec<u8>, opt: Option<f64>) -> Self {
 		Self {
 			id,
 			value,
 			array,
 			opt,
 		}
+	}
+
+	pub fn with_defaults(id: u32) -> Self {
+		Self::new(
+			id,
+			"hello, world!".to_owned(),
+			vec![1, 2, 3, 4, 5],
+			Some(4.2),
+		)
 	}
 }
 

@@ -5,8 +5,6 @@ use std::{
 	path::PathBuf,
 };
 
-use super::FsBackend;
-
 /// An error occurred from the [`FsBackend`] or one of it's [`Transcoders`].
 ///
 /// [`FsBackend`]: super::FsBackend

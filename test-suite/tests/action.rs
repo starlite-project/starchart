@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use starchart::{Action, Result, Starchart};
+use starchart::{Action, Result};
 use starchart_backends::fs::{
-	transcoders::{CborTranscoder, JsonTranscoder, TomlTranscoder},
+	transcoders::{CborTranscoder, JsonTranscoder, TomlTranscoder, YamlTranscoder},
 	FsBackend,
 };
 
@@ -73,12 +73,7 @@ async fn duplicate_creates() -> Result<()> {
 	let backend = FsBackend::new(JsonTranscoder::pretty(), OUT_DIR)?;
 	let gateway = setup_gateway(backend, &test_name).await?;
 
-	let def = TestSettings {
-		id: 7,
-		value: "hello world!".to_owned(),
-		array: vec![1, 2, 3, 4, 5, 6, 7, 8],
-		opt: Some(4.2),
-	};
+	let def = TestSettings::with_defaults(7);
 
 	let create_action = Action::with_entry(&test_name, &def);
 
@@ -98,12 +93,7 @@ async fn read_and_update() -> Result<()> {
 	let gateway = setup_gateway(backend, &test_name).await?;
 
 	{
-		let def = TestSettings::new(
-			1,
-			"hello, world!".to_owned(),
-			vec![1, 2, 3, 4, 5],
-			Some(4.2),
-		);
+		let def = TestSettings::with_defaults(1);
 		Action::with_entry(&test_name, &def)
 			.create_entry(&gateway)
 			.await?;
@@ -114,15 +104,7 @@ async fn read_and_update() -> Result<()> {
 	let reread_action = read_action.clone();
 
 	let value = read_action.read_entry(&gateway).await?;
-	assert_eq!(
-		value,
-		Some(TestSettings::new(
-			1,
-			"hello, world!".to_owned(),
-			vec![1, 2, 3, 4, 5],
-			Some(4.2)
-		))
-	);
+	assert_eq!(value, Some(TestSettings::with_defaults(1)));
 
 	let new_settings = TestSettings::new(1, "goodbye!".to_owned(), vec![6, 7, 8], None);
 
@@ -134,6 +116,35 @@ async fn read_and_update() -> Result<()> {
 		reread_action.read_entry(&gateway).await?,
 		Some(new_settings)
 	);
+
+	Ok(())
+}
+
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn deletes() -> Result<()> {
+	let test_name = "deletes".to_owned();
+	let backend = FsBackend::new(YamlTranscoder::new(), OUT_DIR)?;
+	let gateway = setup_gateway(backend, &test_name).await?;
+
+	let def = TestSettings::with_defaults(1);
+
+	Action::with_entry(&test_name, &def)
+		.create_entry(&gateway)
+		.await?;
+
+	let delete_action = Action::<TestSettings>::with_key(&test_name, &1_u32);
+	assert!(delete_action.delete_entry(&gateway).await?);
+	let read_action = Action::<TestSettings>::with_key(&test_name, &1_u32);
+	assert_eq!(read_action.read_entry(&gateway).await?, None);
+
+	let delete_table_action = Action::<TestSettings>::new(&test_name);
+	assert!(delete_table_action.delete_table(&gateway).await?);
+	let read_table = Action::<TestSettings>::new(&test_name);
+
+	let res: Result<HashMap<_, _>> = read_table.read_table(&gateway).await.map_err(Into::into);
+
+	assert!(res.is_err());
 
 	Ok(())
 }
