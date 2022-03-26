@@ -301,18 +301,19 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		self.check_metadata(backend).await?;
 
 		// HashMap as a sort of "middle grounds" before filtering
-		let data = backend
+		let inter = backend
 			.get_all::<D, HashMap<_, _>>(table)
 			.await
 			.map_err(ActionError::from_backend)?;
 
-		let data = if cfg!(feature = "metadata") {
-			data.into_iter()
-				.filter(|(k, _)| k != crate::METADATA_KEY)
-				.collect::<I>()
-		} else {
-			data.into_iter().collect::<I>()
-		};
+		#[cfg(feature = "metadata")]
+		let data = inter
+			.into_iter()
+			.filter(|(k, _)| k != crate::METADATA_KEY)
+			.collect::<I>();
+
+		#[cfg(not(feature = "metadata"))]
+		let data = inter.into_iter().collect::<I>();
 
 		drop(lock);
 
