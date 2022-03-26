@@ -17,9 +17,6 @@
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! A simple database system that allows the use of multiple different backends.
 
-#[cfg(feature = "metadata")]
-const METADATA_KEY: &str = "__metadata__";
-
 use std::result::Result as StdResult;
 
 pub mod action;
@@ -27,6 +24,8 @@ mod atomics;
 pub mod backend;
 mod entry;
 pub mod error;
+#[cfg(feature = "metadata")]
+pub(crate) mod metadata;
 mod starchart;
 #[cfg(not(tarpaulin_include))]
 mod util;

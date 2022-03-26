@@ -1,3 +1,8 @@
+use std::{
+	io::ErrorKind,
+	path::{Path, PathBuf},
+};
+
 use serde::{Deserialize, Serialize};
 use starchart::{Action, Backend, Error as ChartError, IndexEntry, Result, Starchart};
 
@@ -41,4 +46,30 @@ pub async fn setup_gateway<B: Backend>(backend: B, table: &str) -> Result<Starch
 		.await?;
 
 	Ok(chart)
+}
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct TestPath(PathBuf);
+
+impl TestPath {
+	pub fn new(test_name: &str) -> Self {
+		let path = PathBuf::from(OUT_DIR).join(test_name);
+
+		if let Err(e) = std::fs::remove_dir_all(&path) {
+			if e.kind() == ErrorKind::NotFound {
+				// noop
+			} else {
+				panic!("{:?}", e);
+			}
+		}
+
+		Self(path)
+	}
+}
+
+impl AsRef<Path> for TestPath {
+	fn as_ref(&self) -> &Path {
+		self.0.as_ref()
+	}
 }

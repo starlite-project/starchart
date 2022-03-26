@@ -14,7 +14,7 @@ mod common;
 #[cfg_attr(miri, ignore)]
 async fn basic_run() -> Result<()> {
 	let test_name = "basic_run".to_owned();
-	let backend = FsBackend::new(TomlTranscoder::pretty(), OUT_DIR)?;
+	let backend = FsBackend::new(TomlTranscoder::pretty(), TestPath::new(&test_name))?;
 	let gateway = setup_gateway(backend, &test_name).await?;
 
 	for i in 1..=3 {
@@ -70,7 +70,7 @@ async fn basic_run() -> Result<()> {
 #[cfg_attr(miri, ignore)]
 async fn duplicate_creates() -> Result<()> {
 	let test_name = "duplicate_creates".to_owned();
-	let backend = FsBackend::new(JsonTranscoder::pretty(), OUT_DIR)?;
+	let backend = FsBackend::new(JsonTranscoder::pretty(), TestPath::new(&test_name))?;
 	let gateway = setup_gateway(backend, &test_name).await?;
 
 	let def = TestSettings::with_defaults(7);
@@ -89,7 +89,7 @@ async fn duplicate_creates() -> Result<()> {
 #[cfg_attr(miri, ignore)]
 async fn read_and_update() -> Result<()> {
 	let test_name = "read_and_update".to_owned();
-	let backend = FsBackend::new(CborTranscoder::new(), OUT_DIR)?;
+	let backend = FsBackend::new(CborTranscoder::new(), TestPath::new(&test_name))?;
 	let gateway = setup_gateway(backend, &test_name).await?;
 
 	{
@@ -124,7 +124,7 @@ async fn read_and_update() -> Result<()> {
 #[cfg_attr(miri, ignore)]
 async fn deletes() -> Result<()> {
 	let test_name = "deletes".to_owned();
-	let backend = FsBackend::new(YamlTranscoder::new(), OUT_DIR)?;
+	let backend = FsBackend::new(YamlTranscoder::new(), TestPath::new(&test_name))?;
 	let gateway = setup_gateway(backend, &test_name).await?;
 
 	let def = TestSettings::with_defaults(1);

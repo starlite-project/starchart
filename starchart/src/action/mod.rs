@@ -2,11 +2,11 @@
 
 mod error;
 
-use std::{borrow::Cow, collections::HashMap, iter::FromIterator};
+use std::{borrow::Cow, iter::FromIterator};
 
 #[doc(hidden)]
 pub use self::error::{ActionError, ActionErrorType, MissingValue};
-use crate::{backend::Backend, Entry, IndexEntry, Key, Starchart};
+use crate::{backend::Backend, metadata::Metadata, Entry, IndexEntry, Key, Starchart};
 
 /// An [`Action`] for an easy [`CRUD`] operation with a [`Starchart`].
 ///
@@ -54,6 +54,7 @@ impl<'v, D: ?Sized> Action<'v, D> {
 impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// Get a reference to the data, if any is set.
 	#[must_use = "getting Action information does nothing on it's own"]
+	#[allow(clippy::missing_const_for_fn)] // trait parameters other than sized are unstable for const fns, but clippy can't see that far
 	pub fn data(&self) -> Option<&'v D> {
 		self.data
 	}
@@ -267,14 +268,19 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 
 		#[cfg(feature = "metadata")]
 		{
-			let metadata = D::default();
+			let metadata = Metadata::new::<D>(table.to_owned()).map_err(|e| ActionError {
+				source: Some(Box::new(e)),
+				kind: ActionErrorType::Metadata(Some(table.to_owned())),
+			})?;
 			backend
-				.ensure(table, crate::METADATA_KEY, &metadata)
+				.ensure_table(crate::metadata::METADATA_KEY)
 				.await
-				.map_err(|e| ActionError {
-					source: Some(Box::new(e)),
-					kind: ActionErrorType::Metadata(Some(table.to_owned())),
-				})?;
+				.map_err(ActionError::from_backend)?;
+
+			backend
+				.ensure(crate::metadata::METADATA_KEY, table, &metadata)
+				.await
+				.map_err(ActionError::from_backend)?;
 		}
 
 		drop(lock);
@@ -301,19 +307,10 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		self.check_metadata(backend).await?;
 
 		// HashMap as a sort of "middle grounds" before filtering
-		let inter = backend
-			.get_all::<D, HashMap<_, _>>(table)
+		let data = backend
+			.get_all(table)
 			.await
 			.map_err(ActionError::from_backend)?;
-
-		#[cfg(feature = "metadata")]
-		let data = inter
-			.into_iter()
-			.filter(|(k, _)| k != crate::METADATA_KEY)
-			.collect::<I>();
-
-		#[cfg(not(feature = "metadata"))]
-		let data = inter.into_iter().collect::<I>();
 
 		drop(lock);
 
@@ -354,14 +351,39 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 
 	#[cfg(feature = "metadata")]
 	async fn check_metadata<B: Backend>(&self, backend: &B) -> Result<(), ActionError> {
-		backend
-			.get::<D>(self.table, crate::METADATA_KEY)
+		if !backend
+			.has_table(crate::metadata::METADATA_KEY)
 			.await
-			.map(|_| {})
+			.map_err(ActionError::from_backend)?
+		{
+			return Err(ActionError {
+				source: None,
+				kind: ActionErrorType::SomethingMissing(MissingValue::Table),
+			});
+		}
+		let m = backend
+			.get::<Metadata>(crate::metadata::METADATA_KEY, self.table)
+			.await
 			.map_err(|e| ActionError {
 				source: Some(Box::new(e)),
 				kind: ActionErrorType::Metadata(Some(self.table.to_owned())),
-			})
+			})?;
+		m.map_or(
+			Err(ActionError {
+				source: None,
+				kind: ActionErrorType::SomethingMissing(MissingValue::Metadata),
+			}),
+			|metadata| {
+				if metadata.is::<D>() {
+					Ok(())
+				} else {
+					Err(ActionError {
+						source: None,
+						kind: ActionErrorType::Metadata(Some(self.table.to_owned())),
+					})
+				}
+			},
+		)
 	}
 
 	#[cfg(not(feature = "metadata"))]
@@ -392,7 +414,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	#[cfg(feature = "metadata")]
 	#[allow(clippy::unused_self)]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionError> {
-		if key == Some(crate::METADATA_KEY) {
+		if key == Some(crate::metadata::METADATA_KEY) {
 			return Err(ActionError {
 				source: None,
 				kind: ActionErrorType::Metadata(None),

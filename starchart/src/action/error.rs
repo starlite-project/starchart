@@ -48,6 +48,8 @@ impl Display for ActionError {
 				MissingValue::Table => {
 					f.write_str("an operation was attempted on a non-existent table")
 				}
+				#[cfg(feature = "metadata")]
+				MissingValue::Metadata => f.write_str("the metadata was missing from the __metadata__ table"),
 			},
 			#[cfg(feature = "metadata")]
 			ActionErrorType::Metadata(value) => {
@@ -97,4 +99,7 @@ pub enum MissingValue {
 	Key,
 	/// The table was missing.
 	Table,
+	/// Metadata was missing from the appropriate table.
+	#[cfg(feature = "metadata")]
+	Metadata,
 }

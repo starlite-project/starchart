@@ -22,6 +22,10 @@ version = "0.3"
 features = ["derive"]
 version = "1"
 
+[dependencies.serde-value]
+optional = true
+version = "0.7"
+
 [dependencies.starchart-derive]
 optional = true
 path = "../starchart-derive"
@@ -46,7 +50,7 @@ rustc_version = "0.4"
 
 [features]
 derive = ["starchart-derive"]
-metadata = []
+metadata = ["serde-value"]
 
 [package.metadata.docs.rs]
 all-features = true
