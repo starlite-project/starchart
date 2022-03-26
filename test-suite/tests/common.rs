@@ -39,7 +39,7 @@ impl TestSettings {
 pub async fn setup_gateway<B: Backend>(backend: B, table: &str) -> Result<Starchart<B>> {
 	let chart = Starchart::new(backend)
 		.await
-		.map_err(|e| ChartError::backend(Box::new(e)))?;
+		.map_err(|e| ChartError::from_backend(Box::new(e)))?;
 
 	Action::<TestSettings>::new(table)
 		.create_table(&chart)
