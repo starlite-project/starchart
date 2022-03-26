@@ -70,12 +70,13 @@ impl<T: Transcoder> FsBackend<T> {
 	}
 
 	/// Extension used for tables.
-	#[allow(clippy::unused_self)]
+	#[allow(clippy::unused_self, clippy::missing_const_for_fn)]
 	pub fn extension(&self) -> &str {
 		T::EXTENSION
 	}
 
 	/// Reference to the [`Transcoder`].
+	#[allow(clippy::missing_const_for_fn)]
 	pub fn transcoder(&self) -> &T {
 		&self.transcoder
 	}

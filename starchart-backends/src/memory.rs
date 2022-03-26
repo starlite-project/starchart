@@ -111,6 +111,7 @@ pub enum MemoryErrorType {
 /// to represent data.
 #[cfg(feature = "memory")]
 #[must_use = "a memory backend does nothing on it's own"]
+#[repr(transparent)]
 pub struct MemoryBackend<S = RandomState> {
 	tables: DashMap<String, DashMap<String, Value, S>, S>,
 }

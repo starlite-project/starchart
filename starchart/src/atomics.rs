@@ -2,6 +2,7 @@ use futures_util::{Future, FutureExt};
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug, Default)]
+#[repr(transparent)]
 pub struct Guard(RwLock<()>);
 
 impl Guard {
@@ -14,6 +15,8 @@ impl Guard {
 	}
 }
 
+#[repr(transparent)]
 pub struct SharedGuard<'a>(RwLockReadGuard<'a, ()>);
 
+#[repr(transparent)]
 pub struct ExclusiveGuard<'a>(RwLockWriteGuard<'a, ()>);
