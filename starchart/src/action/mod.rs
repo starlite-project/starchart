@@ -6,7 +6,9 @@ use std::{borrow::Cow, iter::FromIterator};
 
 #[doc(hidden)]
 pub use self::error::{ActionError, ActionErrorType, MissingValue};
-use crate::{backend::Backend, metadata::Metadata, Entry, IndexEntry, Key, Starchart};
+#[cfg(feature = "metadata")]
+use crate::metadata::Metadata;
+use crate::{backend::Backend, Entry, IndexEntry, Key, Starchart};
 
 /// An [`Action`] for an easy [`CRUD`] operation with a [`Starchart`].
 ///
