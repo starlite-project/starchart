@@ -19,7 +19,7 @@
 
 use std::result::Result as StdResult;
 
-pub mod action;
+mod action;
 mod atomics;
 pub mod backend;
 mod entry;

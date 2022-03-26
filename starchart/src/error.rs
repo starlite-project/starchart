@@ -39,7 +39,7 @@ impl Error {
 
 	/// Creates a new error from a backend.
 	#[must_use]
-	pub fn backend(e: Box<dyn StdError + Send + Sync>) -> Self {
+	pub fn from_backend(e: Box<dyn StdError + Send + Sync>) -> Self {
 		Self {
 			source: Some(e),
 			kind: ErrorType::Backend,

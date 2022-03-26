@@ -26,7 +26,7 @@ impl<B: Backend> Starchart<B> {
 		backend
 			.init()
 			.await
-			.map_err(|e| super::Error::backend(Box::new(e)))?;
+			.map_err(|e| super::Error::from_backend(Box::new(e)))?;
 		Ok(Self {
 			backend: Arc::new(backend),
 			guard: Arc::default(),

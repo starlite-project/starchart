@@ -91,7 +91,7 @@ impl From<DeserializerError> for MemoryError {
 
 impl From<MemoryError> for starchart::Error {
 	fn from(e: MemoryError) -> Self {
-		Self::backend(Box::new(e))
+		Self::from_backend(Box::new(e))
 	}
 }
 
