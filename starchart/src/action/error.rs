@@ -8,7 +8,9 @@ use std::{
 /// [`Action`]: super::Action
 #[derive(Debug)]
 pub struct ActionError {
+	/// Source of the error.
 	pub(super) source: Option<Box<dyn StdError + Send + Sync>>,
+	/// Type of error.
 	pub(super) kind: ActionErrorType,
 }
 

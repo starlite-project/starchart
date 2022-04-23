@@ -20,6 +20,7 @@ impl Metadata {
 	}
 
 	pub fn is<T: Entry>(&self) -> bool {
+		// FIXME: remove this clone somehow
 		self.value.clone().deserialize_into::<T>().is_ok()
 	}
 }
