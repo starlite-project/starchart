@@ -16,8 +16,13 @@ use crate::{backend::Backend, Entry, IndexEntry, Key, Starchart};
 #[derive(Debug, PartialEq, Eq)]
 #[must_use = "Actions do nothing on their own"]
 pub struct Action<'v, D: ?Sized> {
+	/// The table, which is required.
 	table: &'v str,
+	/// The key this Action can run on.
+	///
+	/// This uses a [`Cow`] because that's the easiest way to allow people to return either [`str`] or [`String`].
 	key: Option<Cow<'static, str>>,
+	/// The data to use.
 	data: Option<&'v D>,
 }
 
@@ -131,7 +136,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// [`set_data`]: Self::set_data
 	/// [`set_entry`]: Self::set_entry
 	pub async fn create_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		let lock = chart.guard.exclusive().await;
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
@@ -162,7 +167,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		&self,
 		chart: &Starchart<B>,
 	) -> Result<Option<D>, ActionError> {
-		let lock = chart.guard.shared().await;
+		let lock = chart.guard.read().await;
 
 		let backend = &**chart;
 
@@ -192,7 +197,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	/// [`set_data`]: Self::set_data
 	/// [`set_entry`]: Self::set_entry
 	pub async fn update_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		let lock = chart.guard.exclusive().await;
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
@@ -223,7 +228,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		&self,
 		chart: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		let lock = chart.guard.exclusive().await;
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
@@ -257,7 +262,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	///
 	/// This raises an error if the [`Backend`] encounters an error.
 	pub async fn create_table<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		let lock = chart.guard.exclusive().await;
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
@@ -299,7 +304,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		&self,
 		chart: &Starchart<B>,
 	) -> Result<I, ActionError> {
-		let lock = chart.guard.shared().await;
+		let lock = chart.guard.read().await;
 
 		let backend = &**chart;
 
@@ -328,7 +333,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		&self,
 		chart: &Starchart<B>,
 	) -> Result<bool, ActionError> {
-		let lock = chart.guard.exclusive().await;
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
@@ -351,6 +356,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(true)
 	}
 
+	/// Checks that the metadata for [`D`] matches what's in the table.
 	#[cfg(feature = "metadata")]
 	async fn check_metadata<B: Backend>(&self, backend: &B) -> Result<(), ActionError> {
 		if !backend
@@ -396,6 +402,9 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		futures_util::future::ok(())
 	}
 
+	/// Checks that the table actually exists.
+	///
+	/// This doesn't violate any async guards because one will always be held when this is ran.
 	async fn check_table<B: Backend>(&self, backend: &B) -> Result<(), ActionError> {
 		if backend
 			.has_table(self.table)
@@ -413,6 +422,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		}
 	}
 
+	/// Checks that the provided key isn't the restricted metadata key.
 	#[cfg(feature = "metadata")]
 	#[allow(clippy::unused_self)]
 	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionError> {
@@ -432,6 +442,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		Ok(())
 	}
 
+	/// Validates that the key exists and isn't the restricted metadata key.
 	fn validate_key(&self) -> Result<&str, ActionError> {
 		self.validate_metadata(self.key.as_deref())?;
 
@@ -441,6 +452,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		})
 	}
 
+	/// Validates that the data exists.
 	fn validate_data(&self) -> Result<&'v D, ActionError> {
 		self.data.ok_or(ActionError {
 			source: None,
@@ -448,12 +460,14 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 		})
 	}
 
+	/// Validates that the table isn't the restricted metadata key.
 	fn validate_table(&self) -> Result<&str, ActionError> {
 		self.validate_metadata(Some(self.table))?;
 
 		Ok(self.table)
 	}
 
+	/// Validates both the key and the data.
 	fn validate_entry(&self) -> Result<(&str, &'v D), ActionError> {
 		Ok((self.validate_key()?, self.validate_data()?))
 	}

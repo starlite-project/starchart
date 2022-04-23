@@ -45,4 +45,5 @@ pub type UpdateFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 /// The future returned from [`Backend::delete`].
 pub type DeleteFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 
+/// A boxed pinned future.
 type PinBoxFuture<'a, Rt = ()> = Pin<Box<dyn Future<Output = Rt> + Send + 'a>>;

@@ -7,7 +7,7 @@
 	missing_copy_implementations,
 	missing_docs
 )]
-#![deny(clippy::all)]
+#![deny(clippy::all, clippy::undocumented_unsafe_blocks)]
 #![allow(clippy::module_name_repetitions, clippy::no_effect_underscore_binding)]
 #![cfg_attr(
 	docsrs,
@@ -27,8 +27,6 @@ pub mod error;
 #[cfg(feature = "metadata")]
 pub(crate) mod metadata;
 mod starchart;
-#[cfg(not(tarpaulin_include))]
-mod util;
 
 #[doc(inline)]
 pub use self::{

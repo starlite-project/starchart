@@ -1,22 +1,55 @@
-use futures_util::{Future, FutureExt};
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+//! Atomics that the chart uses to ensure synchronized data accesses.
 
-#[derive(Debug, Default)]
-#[repr(transparent)]
-pub struct Guard(RwLock<()>);
+use tokio::sync::{Semaphore, SemaphorePermit};
+
+/// Maximum number of locks for a [`Guard`].
+const MAX_LOCKS: usize = (u32::MAX >> 3) as usize;
+
+/// A guard for preventing data races easily.
+#[derive(Debug)]
+pub struct Guard(Semaphore);
 
 impl Guard {
-	pub fn shared(&self) -> impl Future<Output = SharedGuard> {
-		self.0.read().map(SharedGuard)
+	/// Creates a new [`Guard`].
+	pub const fn new() -> Self {
+		Self(Semaphore::const_new(MAX_LOCKS))
 	}
 
-	pub fn exclusive(&self) -> impl Future<Output = ExclusiveGuard> {
-		self.0.write().map(ExclusiveGuard)
+	/// Gives a shared read lock.
+	pub async fn read(&self) -> ReadLock<'_> {
+		// SAFETY: this is okay because semaphore will only return an error if it's closed.
+		ReadLock(unsafe { self.0.acquire().await.unwrap_unchecked() })
+	}
+
+	/// Gives an exclusive write lock.
+	#[allow(clippy::cast_possible_truncation)]
+	pub async fn write(&self) -> WriteLock<'_> {
+		// SAFETY: this is okay because semaphore will only return an error if it's closed.
+		WriteLock(unsafe {
+			self.0
+				.acquire_many(MAX_LOCKS as u32)
+				.await
+				.unwrap_unchecked()
+		})
 	}
 }
 
-#[repr(transparent)]
-pub struct SharedGuard<'a>(RwLockReadGuard<'a, ()>);
+impl Default for Guard {
+	fn default() -> Self {
+		Self::new()
+	}
+}
 
-#[repr(transparent)]
-pub struct ExclusiveGuard<'a>(RwLockWriteGuard<'a, ()>);
+impl Drop for Guard {
+	fn drop(&mut self) {
+		self.0.close();
+	}
+}
+
+/// Shareable read lock.
+#[derive(Debug)]
+pub struct ReadLock<'a>(SemaphorePermit<'a>);
+
+/// Exclusive write lock.
+#[derive(Debug)]
+pub struct WriteLock<'a>(SemaphorePermit<'a>);

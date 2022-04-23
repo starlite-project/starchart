@@ -12,7 +12,7 @@
 #![cfg_attr(
 	docsrs,
 	feature(doc_auto_cfg, doc_cfg),
-	deny(rustdoc::broken_intra_doc_links, clippy::missing_docs_in_private_items)
+	deny(rustdoc::broken_intra_doc_links)
 )]
 #![cfg_attr(not(test), warn(clippy::panic_in_result_fn))]
 //! All the basic backends for the starchart crate

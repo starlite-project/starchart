@@ -14,7 +14,9 @@ pub use crate::action::{ActionError, ActionErrorType, MissingValue};
 /// An error that occurred within the crate.
 #[derive(Debug)]
 pub struct Error {
+	/// Optional source of the error.
 	source: Option<Box<dyn StdError + Send + Sync>>,
+	/// Type of error that occurred.
 	kind: ErrorType,
 }
 

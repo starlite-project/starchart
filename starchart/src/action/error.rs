@@ -1,3 +1,5 @@
+//! Error module for Actions.
+
 use std::{
 	error::Error as StdError,
 	fmt::{Display, Formatter, Result as FmtResult},
@@ -33,6 +35,7 @@ impl ActionError {
 		(self.kind, self.source)
 	}
 
+	/// Creates an error from a backend easily.
 	pub(super) fn from_backend<E: StdError + Send + Sync + 'static>(e: E) -> Self {
 		Self {
 			source: Some(Box::new(e)),

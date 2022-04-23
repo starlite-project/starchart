@@ -12,7 +12,9 @@ use crate::{atomics::Guard, backend::Backend};
 /// is cheap and will allow multiple accesses to the data.
 #[derive(Debug, Default)]
 pub struct Starchart<B: Backend> {
+	/// The backend to use for data accessing.
 	backend: Arc<B>,
+	/// The guard to prevent data races.
 	pub(crate) guard: Arc<Guard>,
 }
 
@@ -53,6 +55,7 @@ impl<B: Backend> Deref for Starchart<B> {
 
 impl<B: Backend> Drop for Starchart<B> {
 	fn drop(&mut self) {
+		// SAFETY: it's not.
 		block_on(unsafe { self.backend.shutdown() });
 	}
 }

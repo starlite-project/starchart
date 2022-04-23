@@ -1,3 +1,7 @@
+//! Marker traits that the crate uses.
+//!
+//! All traits are either optional, or have blanket implementations.
+
 use std::{borrow::Cow, fmt::Debug};
 
 use serde::{de::DeserializeOwned, Serialize};
