@@ -6,10 +6,7 @@ use std::{
 };
 
 #[doc(inline)]
-pub use crate::action::{
-	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
-	ActionValidationErrorType,
-};
+pub use crate::action::{ActionError, ActionErrorType, MissingValue};
 
 // NOTE: This error shouldn't be used anywhere inside this crate, it's only meant for end users as an ease of use
 // error struct.
@@ -17,7 +14,9 @@ pub use crate::action::{
 /// An error that occurred within the crate.
 #[derive(Debug)]
 pub struct Error {
+	/// Optional source of the error.
 	source: Option<Box<dyn StdError + Send + Sync>>,
+	/// Type of error that occurred.
 	kind: ErrorType,
 }
 
@@ -42,9 +41,9 @@ impl Error {
 
 	/// Creates a new error from a backend.
 	#[must_use]
-	pub fn backend(e: Option<Box<dyn StdError + Send + Sync>>) -> Self {
+	pub fn from_backend(e: Box<dyn StdError + Send + Sync>) -> Self {
 		Self {
-			source: e,
+			source: Some(e),
 			kind: ErrorType::Backend,
 		}
 	}
@@ -54,8 +53,7 @@ impl Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
 		match &self.kind {
 			ErrorType::Backend => f.write_str("an error occurred within a backend"),
-			ErrorType::ActionRun => f.write_str("an error occurred running an action"),
-			ErrorType::ActionValidation => f.write_str("an action is invalid"),
+			ErrorType::Action => f.write_str("an error occurred with an action"),
 		}
 	}
 }
@@ -70,32 +68,9 @@ impl StdError for Error {
 
 impl From<ActionError> for Error {
 	fn from(e: ActionError) -> Self {
-		let kind = match e.kind() {
-			ActionErrorType::Run => ErrorType::ActionRun,
-			ActionErrorType::Validation => ErrorType::ActionValidation,
-		};
-		Self {
-			// source will always be an ActionRunError or ActionValidationError
-			source: e.into_source(),
-			kind,
-		}
-	}
-}
-
-impl From<ActionValidationError> for Error {
-	fn from(e: ActionValidationError) -> Self {
 		Self {
 			source: Some(Box::new(e)),
-			kind: ErrorType::ActionValidation,
-		}
-	}
-}
-
-impl From<ActionRunError> for Error {
-	fn from(e: ActionRunError) -> Self {
-		Self {
-			source: Some(Box::new(e)),
-			kind: ErrorType::ActionRun,
+			kind: ErrorType::Action,
 		}
 	}
 }
@@ -107,8 +82,6 @@ impl From<ActionRunError> for Error {
 pub enum ErrorType {
 	/// An error occurred within a backend.
 	Backend,
-	/// An [`ActionValidationError`] occurred.
-	ActionValidation,
-	/// An [`ActionRunError`] occurred.
-	ActionRun,
+	/// An [`ActionError`] occurred.
+	Action,
 }

@@ -5,14 +5,14 @@
 use std::{error::Error as StdError, iter::FromIterator};
 
 use futures_util::{
-	future::{join_all, ok, ready},
+	future::{ok, ready},
 	FutureExt,
 };
 
 use self::futures::{
 	CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, EnsureFuture,
-	EnsureTableFuture, GetAllFuture, GetFuture, GetKeysFuture, HasFuture, HasTableFuture,
-	InitFuture, ShutdownFuture, UpdateFuture,
+	EnsureTableFuture, GetAllFuture, GetFuture, HasFuture, HasTableFuture, InitFuture,
+	ShutdownFuture, UpdateFuture,
 };
 use crate::Entry;
 
@@ -69,34 +69,11 @@ pub trait Backend: Send + Sync {
 		.boxed()
 	}
 
-	/// Gets all entries that match a predicate, to get all entries, use [`get_keys`] first.
-	///
-	/// [`get_keys`]: Self::get_keys
-	fn get_all<'a, D, I>(
-		&'a self,
-		table: &'a str,
-		entries: &'a [&'a str],
-	) -> GetAllFuture<'a, I, Self::Error>
+	/// Gets all entries in the table.
+	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
-		I: FromIterator<D>,
-	{
-		async move {
-			let gets = entries.iter().copied().map(|v| self.get::<D>(table, v));
-
-			join_all(gets)
-				.await
-				.into_iter()
-				.filter_map(Result::transpose)
-				.collect::<Result<I, Self::Error>>()
-		}
-		.boxed()
-	}
-
-	/// Gets all the keys in the table.
-	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
-	where
-		I: FromIterator<String>;
+		I: FromIterator<(String, D)>;
 
 	/// Gets a certain entry from a table.
 	fn get<'a, D>(&'a self, table: &'a str, id: &'a str) -> GetFuture<'a, D, Self::Error>
@@ -146,6 +123,9 @@ pub trait Backend: Send + Sync {
 	where
 		S: Entry;
 
+	// We pass the generic value for things that need
+	// type information, like the FsBackend, which uses it to
+	// properly re-encode the data.
 	/// Deletes an entry from a table.
 	fn delete<'a>(&'a self, table: &'a str, id: &'a str) -> DeleteFuture<'a, Self::Error>;
 }

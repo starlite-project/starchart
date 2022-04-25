@@ -19,7 +19,7 @@ use starchart::{
 	backend::{
 		futures::{
 			CreateFuture, CreateTableFuture, DeleteFuture, DeleteTableFuture, GetAllFuture,
-			GetFuture, GetKeysFuture, HasFuture, HasTableFuture, UpdateFuture,
+			GetFuture, HasFuture, HasTableFuture, UpdateFuture,
 		},
 		Backend,
 	},
@@ -89,6 +89,12 @@ impl From<DeserializerError> for MemoryError {
 	}
 }
 
+impl From<MemoryError> for starchart::Error {
+	fn from(e: MemoryError) -> Self {
+		Self::from_backend(Box::new(e))
+	}
+}
+
 /// The type of [`MemoryError`] that occurred.
 #[cfg(feature = "memory")]
 #[allow(missing_copy_implementations)]
@@ -105,6 +111,7 @@ pub enum MemoryErrorType {
 /// to represent data.
 #[cfg(feature = "memory")]
 #[must_use = "a memory backend does nothing on it's own"]
+#[repr(transparent)]
 pub struct MemoryBackend<S = RandomState> {
 	tables: DashMap<String, DashMap<String, Value, S>, S>,
 }
@@ -181,27 +188,10 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 		ok(()).boxed()
 	}
 
-	fn get_keys<'a, I>(&'a self, table: &'a str) -> GetKeysFuture<'a, I, Self::Error>
-	where
-		I: FromIterator<String>,
-	{
-		async move {
-			self.tables.get(table).map_or_else(
-				|| Ok(None.into_iter().collect()),
-				|table| Ok(table.clone().into_iter().map(|(key, _)| key).collect()),
-			)
-		}
-		.boxed()
-	}
-
-	fn get_all<'a, D, I>(
-		&'a self,
-		table: &'a str,
-		entries: &'a [&'a str],
-	) -> GetAllFuture<'a, I, Self::Error>
+	fn get_all<'a, D, I>(&'a self, table: &'a str) -> GetAllFuture<'a, I, Self::Error>
 	where
 		D: Entry,
-		I: FromIterator<D>,
+		I: FromIterator<(String, D)>,
 	{
 		async move {
 			self.tables.get(table).map_or_else(
@@ -210,13 +200,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 					table
 						.clone()
 						.into_iter()
-						.filter_map(|(key, value)| {
-							if entries.contains(&key.as_str()) {
-								Some(value.deserialize_into().map_err(MemoryError::from))
-							} else {
-								None
-							}
-						})
+						.map(|(k, v)| Ok((k, v.deserialize_into().map_err(MemoryError::from)?)))
 						.collect::<Result<I, Self::Error>>()
 				},
 			)
@@ -303,7 +287,7 @@ impl<S: BuildHasher + Clone + Send + Sync> Backend for MemoryBackend<S> {
 
 #[cfg(all(test, not(miri)))]
 mod tests {
-	use std::fmt::Debug;
+	use std::{collections::HashMap, fmt::Debug};
 
 	use fxhash::FxBuildHasher;
 	use starchart::backend::Backend;
@@ -334,32 +318,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn get_keys() -> Result<(), MemoryError> {
-		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		let mut settings = TestSettings::default();
-
-		backend.create("table", "1", &settings).await?;
-		settings.id = 2;
-		settings.opt = None;
-		backend.create("table", "2", &settings);
-
-		let mut keys: Vec<String> = backend.get_keys("table").await?;
-
-		let mut expected = vec!["1".to_owned(), "2".to_owned()];
-
-		keys.sort();
-		expected.sort();
-
-		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
 	async fn get_and_create() -> Result<(), MemoryError> {
 		let backend = MemoryBackend::with_capacity_and_hasher(1, FxBuildHasher::default());
 
@@ -383,6 +341,8 @@ mod tests {
 		};
 
 		assert!(backend.create("table", "2", &settings).await.is_ok());
+
+		assert_eq!(backend.get::<TestSettings>("non_exist", "1").await?, None);
 
 		Ok(())
 	}
@@ -409,6 +369,63 @@ mod tests {
 		backend.delete("table", "1").await?;
 
 		assert_eq!(backend.get::<TestSettings>("table", "1").await?, None);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[cfg_attr(miri, ignore)]
+	async fn get_all() -> Result<(), MemoryError> {
+		let backend = MemoryBackend::with_capacity(1);
+		backend.init().await?;
+
+		backend.ensure_table("table").await?;
+
+		let mut settings = TestSettings::default();
+		backend.create("table", "1", &settings).await?;
+
+		settings.opt = None;
+		settings.id += 1;
+
+		backend.create("table", "2", &settings).await?;
+
+		settings.value = "goodbye!".to_owned();
+		settings.array.extend(&[7, 8, 9]);
+		settings.opt = TestSettings::default().opt;
+		settings.id += 1;
+
+		backend.create("table", "3", &settings);
+
+		let values: HashMap<_, TestSettings> = backend.get_all("table").await?;
+
+		let mut values = values.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+
+		values.sort_by(|a, b| a.id.cmp(&b.id));
+
+		assert_eq!(
+			values,
+			vec![
+				TestSettings::default(),
+				TestSettings {
+					id: 2,
+					opt: None,
+					..TestSettings::default()
+				},
+				TestSettings {
+					id: 3,
+					value: "goodbye!".to_owned(),
+					array: vec![1, 2, 3, 4, 5, 7, 8, 9],
+					..TestSettings::default()
+				}
+			]
+		);
+
+		assert_eq!(
+			backend
+				.get_all::<TestSettings, HashMap<_, _>>("non_exist")
+				.await?,
+			HashMap::new(),
+		);
 
 		Ok(())
 	}

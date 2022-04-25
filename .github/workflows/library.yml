@@ -10,7 +10,7 @@ jobs:
     name: Minimum supported Rust version
     runs-on: ubuntu-latest
     env:
-      minrust: 1.51
+      minrust: "1.60"
 
     steps:
       - name: Checkout sources
@@ -33,7 +33,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-features --all-targets
+          args: --all-features --all-targets --workspace --exclude test-suite
 
   build-docs:
     name: Build docs
@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --no-deps --all-features -Zrustdoc-map -Zunstable-options
+          args: --no-deps --all-features -Zrustdoc-map -Zunstable-options --workspace --exclude test-suite
         env:
           RUSTDOCFLAGS: --cfg docsrs -D rustdoc::broken_intra_doc_links
 
@@ -234,7 +234,7 @@ jobs:
         with:
           command: hack
           # group all of the fs backends together, skip default and derive as there's no tests for them
-          args: check --feature-powerset --exclude-features derive
+          args: check --feature-powerset --exclude-features derive --ignore-private
 
   miri:
     name: Miri UB tests

@@ -1,24 +1,36 @@
-#![allow(clippy::non_send_fields_in_send_ty)]
-use parking_lot::{lock_api::RawRwLock as _, RawRwLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+//! Atomics that the chart uses to ensure synchronized data accesses.
 
+use tokio::sync::{Semaphore, SemaphorePermit};
+
+/// Maximum number of locks for a [`Guard`].
+const MAX_LOCKS: usize = (u32::MAX >> 3) as usize;
+
+/// A guard for preventing data races easily.
 #[derive(Debug)]
-pub struct Guard(RwLock<()>);
+pub struct Guard(Semaphore);
 
 impl Guard {
+	/// Creates a new [`Guard`].
 	pub const fn new() -> Self {
-		Self(RwLock::const_new(RawRwLock::INIT, ()))
+		Self(Semaphore::const_new(MAX_LOCKS))
 	}
 
-	pub fn shared(&self) -> SharedGuard {
-		let inner = self.0.read();
-
-		SharedGuard(inner)
+	/// Gives a shared read lock.
+	pub async fn read(&self) -> ReadLock<'_> {
+		// SAFETY: this is okay because semaphore will only return an error if it's closed.
+		ReadLock(unsafe { self.0.acquire().await.unwrap_unchecked() })
 	}
 
-	pub fn exclusive(&self) -> ExclusiveGuard {
-		let inner = self.0.write();
-
-		ExclusiveGuard(inner)
+	/// Gives an exclusive write lock.
+	#[allow(clippy::cast_possible_truncation)]
+	pub async fn write(&self) -> WriteLock<'_> {
+		// SAFETY: this is okay because semaphore will only return an error if it's closed.
+		WriteLock(unsafe {
+			self.0
+				.acquire_many(MAX_LOCKS as u32)
+				.await
+				.unwrap_unchecked()
+		})
 	}
 }
 
@@ -28,11 +40,16 @@ impl Default for Guard {
 	}
 }
 
-// implementing send doesn't matter bc we're not actually editing the value, just using it for a locking mechanism
-pub struct SharedGuard<'a>(RwLockReadGuard<'a, ()>);
+impl Drop for Guard {
+	fn drop(&mut self) {
+		self.0.close();
+	}
+}
 
-unsafe impl<'a> Send for SharedGuard<'a> {}
+/// Shareable read lock.
+#[derive(Debug)]
+pub struct ReadLock<'a>(SemaphorePermit<'a>);
 
-pub struct ExclusiveGuard<'a>(RwLockWriteGuard<'a, ()>);
-
-unsafe impl<'a> Send for ExclusiveGuard<'a> {}
+/// Exclusive write lock.
+#[derive(Debug)]
+pub struct WriteLock<'a>(SemaphorePermit<'a>);

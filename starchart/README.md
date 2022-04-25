@@ -6,4 +6,4 @@ Starchart is a powerful, yet simple ORM, written to be safe, atomic, and fast.
 
 # MSRV
 
-The Minimum supported Rust version is 1.46
+The Minimum supported Rust version is 1.60

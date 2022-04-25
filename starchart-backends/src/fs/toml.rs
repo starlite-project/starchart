@@ -1,5 +1,6 @@
 use std::io::Read;
 
+use serde::{Deserialize, Serialize};
 use starchart::Entry;
 
 use super::{transcoders::TranscoderFormat, FsError, Transcoder};
@@ -16,10 +17,16 @@ impl TomlTranscoder {
 		Self(format)
 	}
 
+	/// Returns the transcoder format being used.
+	#[must_use]
+	pub const fn format(self) -> TranscoderFormat {
+		self.0
+	}
+
 	/// Returns whether or not this transcoder uses pretty formatting.
 	#[must_use]
 	pub const fn is_pretty(self) -> bool {
-		matches!(self.0, TranscoderFormat::Pretty)
+		matches!(self.format(), TranscoderFormat::Pretty)
 	}
 
 	/// Returns whether or not this transcoder uses standard formatting.
@@ -40,11 +47,16 @@ impl TomlTranscoder {
 }
 
 impl Transcoder for TomlTranscoder {
+	type IgnoredData = TomlValue;
+
+	const EXTENSION: &'static str = "toml";
+
 	fn serialize_value<T: Entry>(&self, value: &T) -> Result<Vec<u8>, FsError> {
-		if self.is_pretty() {
-			Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
-		} else {
-			Ok(serde_toml::to_vec(value)?)
+		match self.format() {
+			TranscoderFormat::Pretty => {
+				Ok(serde_toml::to_string_pretty(value).map(String::into_bytes)?)
+			}
+			TranscoderFormat::Standard => Ok(serde_toml::to_vec(value)?),
 		}
 	}
 
@@ -53,6 +65,28 @@ impl Transcoder for TomlTranscoder {
 		rdr.read_to_string(&mut output)?;
 		Ok(serde_toml::from_str(&output)?)
 	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
+#[cfg(feature = "toml")]
+pub struct TomlValue(serde_toml::Value);
+
+impl Default for TomlValue {
+	fn default() -> Self {
+		Self(serde_toml::Value::Table(serde_toml::map::Map::default()))
+	}
+}
+
+#[test]
+fn format_tests() {
+	let transcoder = TomlTranscoder::default();
+
+	assert!(!transcoder.is_pretty());
+	assert!(transcoder.is_standard());
+
+	assert_eq!(transcoder.format(), TomlTranscoder::standard().format());
 }
 
 #[cfg(all(test, not(miri)))]
@@ -72,8 +106,8 @@ mod tests {
 	#[tokio::test]
 	async fn init() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("init", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("init");
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -87,8 +121,8 @@ mod tests {
 	#[tokio::test]
 	async fn table_methods() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("table_methods", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("table_methods");
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -106,66 +140,10 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn get_keys() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
-
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		let mut settings = TestSettings::default();
-		backend.create("table", "1", &settings).await?;
-		settings.id = 2;
-		settings.opt = None;
-		backend.create("table", "2", &settings).await?;
-
-		let mut keys: Vec<String> = backend.get_keys("table").await?;
-
-		let mut expected = vec!["1".to_owned(), "2".to_owned()];
-
-		keys.sort();
-		expected.sort();
-
-		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn get_keys_pretty() -> Result<(), FsError> {
-		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_keys_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
-
-		backend.init().await?;
-
-		backend.create_table("table").await?;
-
-		let mut settings = TestSettings::default();
-		backend.create("table", "1", &settings).await?;
-		settings.id = 2;
-		settings.opt = None;
-		backend.create("table", "2", &settings).await?;
-
-		let mut keys: Vec<String> = backend.get_keys("table").await?;
-
-		let mut expected = vec!["1".to_owned(), "2".to_owned()];
-
-		keys.sort();
-		expected.sort();
-
-		assert_eq!(keys, expected);
-
-		Ok(())
-	}
-
-	#[tokio::test]
 	async fn get_and_create() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("get_and_create");
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 
@@ -194,8 +172,8 @@ mod tests {
 	#[tokio::test]
 	async fn get_and_create_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("get_and_create_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("get_and_create_pretty");
+		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 
@@ -224,8 +202,8 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete", "toml");
-		let backend = FsBackend::new(TomlTranscoder::default(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("update_and_delete");
+		let backend = FsBackend::new(TomlTranscoder::default(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;
@@ -253,8 +231,8 @@ mod tests {
 	#[tokio::test]
 	async fn update_and_delete_pretty() -> Result<(), FsError> {
 		let _lock = TEST_GUARD.lock().await;
-		let path = TestPath::new("update_and_delete_pretty", "toml");
-		let backend = FsBackend::new(TomlTranscoder::pretty(), "toml".to_owned(), &path)?;
+		let path = TestPath::new("update_and_delete_pretty");
+		let backend = FsBackend::new(TomlTranscoder::pretty(), &path)?;
 
 		backend.init().await?;
 		backend.create_table("table").await?;

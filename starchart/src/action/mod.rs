@@ -1,358 +1,293 @@
 //! The action structs for CRUD operations.
 
-// TODO: Add overwrite option.
-
-mod dynamic;
 mod error;
-mod r#impl;
-mod kind;
-mod result;
-mod target;
 
-#[cfg(feature = "metadata")]
-use std::any::type_name;
-use std::{
-	fmt::{Debug, Formatter, Result as FmtResult},
-	iter::FromIterator,
-	marker::PhantomData,
-};
-
-#[cfg(not(feature = "metadata"))]
-use futures_util::future::ok;
-use futures_util::Future;
+use std::{borrow::Cow, iter::FromIterator};
 
 #[doc(hidden)]
-pub use self::error::{
-	ActionError, ActionErrorType, ActionRunError, ActionRunErrorType, ActionValidationError,
-	ActionValidationErrorType,
-};
-pub use self::{
-	dynamic::DynamicAction,
-	kind::ActionKind,
-	r#impl::{
-		CreateOperation, CrudOperation, DeleteOperation, EntryTarget, OperationTarget,
-		ReadOperation, TableTarget, UpdateOperation,
-	},
-	result::ActionResult,
-	target::TargetKind,
-};
+pub use self::error::{ActionError, ActionErrorType, MissingValue};
 #[cfg(feature = "metadata")]
-use crate::METADATA_KEY;
-use crate::{
-	backend::Backend,
-	util::{is_metadata, InnerUnwrap},
-	Entry, IndexEntry, Key, Starchart,
-};
+use crate::metadata::Metadata;
+use crate::{backend::Backend, Entry, IndexEntry, Key, Starchart};
 
-/// A type alias for an [`Action`] with [`CreateOperation`] and [`EntryTarget`] as the parameters.
-pub type CreateEntryAction<'a, S> = Action<'a, S, CreateOperation, EntryTarget>;
-
-/// A type alias for an [`Action`] with [`ReadOperation`] and [`EntryTarget`] as the parameters.
-pub type ReadEntryAction<'a, S> = Action<'a, S, ReadOperation, EntryTarget>;
-
-/// A type alias for an [`Action`] with [`UpdateOperation`] and [`EntryTarget`] as the parameters.
-pub type UpdateEntryAction<'a, S> = Action<'a, S, UpdateOperation, EntryTarget>;
-
-/// A type alias for an [`Action`] with [`DeleteOperation`] and [`EntryTarget`] as the parameters.
-pub type DeleteEntryAction<'a, S> = Action<'a, S, DeleteOperation, EntryTarget>;
-
-/// A type alias for an [`Action`] with [`CreateOperation`] and [`TableTarget`] as the parameters.
-pub type CreateTableAction<'a, S> = Action<'a, S, CreateOperation, TableTarget>;
-
-/// A type alias for an [`Action`] with [`ReadOperation`] and [`TableTarget`] as the parameters.
-pub type ReadTableAction<'a, S> = Action<'a, S, ReadOperation, TableTarget>;
-
-/// A type alias for an [`Action`] with [`UpdateOperation`] and [`TableTarget`] as the parameters.
+/// An [`Action`] for an easy [`CRUD`] operation with a [`Starchart`].
 ///
-/// This action can never been ran.
-pub type UpdateTableAction<'a, S> = Action<'a, S, UpdateOperation, TableTarget>;
-
-/// A type alias for an [`Action`] with [`DeleteOperation`] and [`TableTarget`] as the parameters.
-pub type DeleteTableAction<'a, S> = Action<'a, S, DeleteOperation, TableTarget>;
-
-#[derive(Debug)]
-pub(crate) struct InnerAction<'a, S: ?Sized> {
-	pub data: Option<&'a S>,
-	pub key: Option<String>,
-	pub table: Option<&'a str>,
+/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
+#[derive(Debug, PartialEq, Eq)]
+#[must_use = "Actions do nothing on their own"]
+pub struct Action<'v, D: ?Sized> {
+	/// The table, which is required.
+	table: &'v str,
+	/// The key this Action can run on.
+	///
+	/// This uses a [`Cow`] because that's the easiest way to allow people to return either [`str`] or [`String`].
+	key: Option<Key>,
+	/// The data to use.
+	data: Option<&'v D>,
 }
 
-impl<'a, S: ?Sized> InnerAction<'a, S> {
-	const fn new() -> Self {
+impl<'v, D: ?Sized> Action<'v, D> {
+	/// Creates a new [`Action`] with the specified table.
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # fn ignore_me() -> Action<'static, u8> {
+	/// let act = Action::new("foo");
+	///
+	/// assert_eq!(act.table(), "foo");
+	/// # act }
+	/// ```
+	pub const fn new(table: &'v str) -> Self {
 		Self {
-			data: None,
+			table,
 			key: None,
-			table: None,
+			data: None,
 		}
 	}
 
-	fn validate_entry(&self) -> Result<(), ActionValidationError> {
-		self.validate_key()?;
-		self.validate_data()
+	/// Get a reference to the table.
+	#[must_use = "getting Action information does nothing on it's own"]
+	pub const fn table(&self) -> &str {
+		self.table
 	}
 
-	fn validate_table(&self) -> Result<(), ActionValidationError> {
-		if self.table.is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Table,
-			});
-		}
-
-		self.validate_metadata(self.table)
-	}
-
-	fn validate_data(&self) -> Result<(), ActionValidationError> {
-		if self.data.is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Data,
-			});
-		}
-
-		Ok(())
-	}
-
-	fn validate_key(&self) -> Result<(), ActionValidationError> {
-		if self.key.is_none() {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Key,
-			});
-		}
-
-		self.validate_metadata(self.key.as_deref())
-	}
-
-	#[cfg(feature = "metadata")]
-	#[allow(clippy::unused_self)]
-	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		if key == Some(METADATA_KEY) {
-			return Err(ActionValidationError {
-				source: None,
-				kind: ActionValidationErrorType::Metadata,
-			});
-		}
-
-		Ok(())
-	}
-
-	#[cfg(not(feature = "metadata"))]
-	#[allow(clippy::unused_self)]
-	fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionValidationError> {
-		Ok(())
+	/// Get a reference to the key, if one is set.
+	#[must_use = "getting Action information does nothing on it's own"]
+	pub fn key(&self) -> Option<&str> {
+		self.key.as_deref()
 	}
 }
 
-impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
-	#[cfg(feature = "metadata")]
-	async fn check_metadata<B: Backend>(
-		&self,
-		backend: &B,
-		table_name: &str,
-	) -> Result<(), ActionRunError> {
-		backend
-			.get::<S>(table_name, METADATA_KEY)
-			.await
-			.map(|_| {})
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Metadata {
-					type_name: type_name::<S>(),
-					table_name: table_name.to_owned(),
-				},
-			})
+impl<'v, D: Entry + ?Sized> Action<'v, D> {
+	/// Get a reference to the data, if any is set.
+	#[must_use = "getting Action information does nothing on it's own"]
+	#[allow(clippy::missing_const_for_fn)] // trait parameters other than sized are unstable for const fns, but clippy can't see that far
+	pub fn data(&self) -> Option<&'v D> {
+		self.data
 	}
 
-	#[cfg(not(feature = "metadata"))]
-	fn check_metadata<B: Backend>(
-		&self,
-		_: &B,
-		_: &str,
-	) -> impl Future<Output = Result<(), ActionRunError>> {
-		ok(())
+	/// Get a reference to the entry, if it is set.
+	#[must_use = "getting Action information does nothing on it's own"]
+	pub fn entry(&self) -> Option<(&str, &'v D)> {
+		self.key().zip(self.data())
 	}
 
-	async fn check_table<B: Backend>(
-		&self,
-		backend: &B,
-		table: &str,
-	) -> Result<(), ActionRunError> {
-		if backend.has_table(table).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})? {
-			Ok(())
-		} else {
-			Err(ActionRunError {
-				source: None,
-				kind: ActionRunErrorType::MissingTable,
-			})
-		}
+	/// Creates a new [`Action`] with the specified [`Key`].
+	pub fn with_key(table: &'v str, key: impl Into<Key>) -> Self {
+		let mut act = Self::new(table);
+
+		act.set_key(key);
+
+		act
 	}
 
-	async fn create_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		self.validate_entry()?;
-		self.validate_table()?;
+	/// Sets a [`Key`] on an [`Action`].
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # fn ignore_me() -> Action<'static, u8> {
+	/// let mut act = Action::new("foo");
+	///
+	/// assert_eq!(act.key(), None);
+	///
+	/// act.set_key(&"bar"); // need a borrowed type.
+	///
+	/// assert_eq!(act.key(), Some("bar"));
+	/// # act }
+	pub fn set_key(&mut self, key: impl Into<Key>) -> &mut Self {
+		self.key.replace(key.into());
 
-		let lock = chart.guard.exclusive();
+		self
+	}
+
+	/// Sets the [`Entry`] for this [`Action`].
+	///
+	/// ```rust
+	/// # use starchart::Action;
+	/// # use serde::{Serialize, Deserialize};
+	/// # #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+	/// struct Settings(String);
+	///
+	/// let settings = Settings("John".to_owned()); // our entry with a key
+	///
+	/// let mut act = Action::new("foo");
+	///
+	/// assert_eq!(act.data(), None);
+	///
+	/// act.set_data(&settings);
+	///
+	/// assert_eq!(act.data(), Some(&settings));
+	/// ```
+	pub fn set_data(&mut self, entry: &'v D) -> &mut Self {
+		self.data.replace(entry);
+
+		self
+	}
+
+	// run methods
+
+	/// Creates a new entry in the [`Starchart`] with the data specified in the action.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key or data isn't set (with the [`set_key`] and [`set_data`] methods, or [`set_entry`]), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	/// [`set_data`]: Self::set_data
+	/// [`set_entry`]: Self::set_entry
+	pub async fn create_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
-		let (table, key, entry) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-				self.data.take().inner_unwrap(),
-			)
-		};
+		let table = self.validate_table()?;
+		let (key, entry) = self.validate_entry()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
 
 		backend
-			.ensure(table, &key, &*entry)
+			.ensure(table, key, &*entry)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
+
 		Ok(())
 	}
 
-	async fn read_entry<B: Backend>(
-		mut self,
+	/// Reads an entry from the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key isn't set (with the [`set_key`] method), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	pub async fn read_entry<B: Backend>(
+		&self,
 		chart: &Starchart<B>,
-	) -> Result<Option<S>, ActionError> {
-		self.validate_table()?;
-		self.validate_key()?;
-
-		let lock = chart.guard.shared();
+	) -> Result<Option<D>, ActionError> {
+		let lock = chart.guard.read().await;
 
 		let backend = &**chart;
 
-		let (table, key) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-			)
-		};
+		let table = self.validate_table()?;
+		let key = self.validate_key()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
 
-		let res = backend.get(table, &key).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})?;
+		let res = backend
+			.get(table, key)
+			.await
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
 		Ok(res)
 	}
 
-	async fn update_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		self.validate_table()?;
-		self.validate_entry()?;
-
-		let lock = chart.guard.exclusive();
+	/// Updates an entry within the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key or data isn't set (with the [`set_key`] and [`set_data`] methods, or [`set_entry`]), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	/// [`set_data`]: Self::set_data
+	/// [`set_entry`]: Self::set_entry
+	pub async fn update_entry<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
-		let (table, key, entry) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-				self.data.take().inner_unwrap(),
-			)
-		};
+		let table = self.validate_table()?;
+		let (key, entry) = self.validate_entry()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
 
 		backend
-			.update(table, &key, &*entry)
+			.update(table, key, entry)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
 		Ok(())
 	}
 
-	async fn delete_entry<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
-		self.validate_table()?;
-		self.validate_key()?;
-		let lock = chart.guard.exclusive();
+	/// Deletes an entry from the [`Starchart`], returning whether or not the item was deleted.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the key isn't set (with the [`set_key`] method), or if the [`Backend`] encounters an error.
+	///
+	/// [`set_key`]: Self::set_key
+	pub async fn delete_entry<B: Backend>(
+		&self,
+		chart: &Starchart<B>,
+	) -> Result<bool, ActionError> {
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
-		let (table, key) = unsafe {
-			(
-				self.table.take().inner_unwrap(),
-				self.key.take().inner_unwrap(),
-			)
-		};
+		let table = self.validate_table()?;
+		let key = self.validate_key()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
 
-		if !backend.has(table, &key).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})? {
+		if !backend
+			.has(table, key)
+			.await
+			.map_err(ActionError::from_backend)?
+		{
 			drop(lock);
 			return Ok(false);
 		}
 
 		backend
-			.delete(table, &key)
+			.delete(table, key)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
-
 		Ok(true)
 	}
 
-	async fn create_table<B: Backend>(self, chart: &Starchart<B>) -> Result<(), ActionError> {
-		self.validate_table()?;
-
-		let lock = chart.guard.exclusive();
+	/// Creates a table within the [`Starchart`].
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
+	pub async fn create_table<B: Backend>(&self, chart: &Starchart<B>) -> Result<(), ActionError> {
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.inner_unwrap() };
+		let table = self.validate_table()?;
 
 		backend
 			.ensure_table(table)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		#[cfg(feature = "metadata")]
 		{
-			let metadata = S::default();
+			let metadata = Metadata::new::<D>(table.to_owned()).map_err(|e| ActionError {
+				source: Some(Box::new(e)),
+				kind: ActionErrorType::Metadata(Some(table.to_owned())),
+			})?;
 			backend
-				.ensure(table, METADATA_KEY, &metadata)
+				.ensure_table(crate::metadata::METADATA_KEY)
 				.await
-				.map_err(|e| ActionRunError {
-					source: Some(Box::new(e)),
-					kind: ActionRunErrorType::Metadata {
-						type_name: type_name::<S>(),
-						table_name: table.to_owned(),
-					},
-				})?;
+				.map_err(ActionError::from_backend)?;
+
+			backend
+				.ensure(crate::metadata::METADATA_KEY, table, &metadata)
+				.await
+				.map_err(ActionError::from_backend)?;
 		}
 
 		drop(lock);
@@ -360,403 +295,294 @@ impl<'a, S: Entry + ?Sized> InnerAction<'a, S> {
 		Ok(())
 	}
 
-	async fn read_table<B: Backend, I>(mut self, chart: &Starchart<B>) -> Result<I, ActionError>
-	where
-		I: FromIterator<S>,
-	{
-		self.validate_table()?;
-		let lock = chart.guard.shared();
+	/// Reads a table from the [`Starchart`], returning a map-based iterator.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
+	pub async fn read_table<I: FromIterator<(String, D)>, B: Backend>(
+		&self,
+		chart: &Starchart<B>,
+	) -> Result<I, ActionError> {
+		let lock = chart.guard.read().await;
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.take().inner_unwrap() };
+		let table = self.validate_table()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
+		self.check_table(backend).await?;
+		self.check_metadata(backend).await?;
 
-		let keys = backend
-			.get_keys::<Vec<_>>(table)
-			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
-
-		let keys = keys
-			.iter()
-			.filter_map(|v| {
-				if is_metadata(v) {
-					None
-				} else {
-					Some(v.as_str())
-				}
-			})
-			.collect::<Vec<_>>();
-
+		// HashMap as a sort of "middle grounds" before filtering
 		let data = backend
-			.get_all::<S, I>(table, &keys)
+			.get_all(table)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
 		Ok(data)
 	}
 
-	async fn delete_table<B: Backend>(mut self, chart: &Starchart<B>) -> Result<bool, ActionError> {
-		self.validate_table()?;
-
-		let lock = chart.guard.exclusive();
+	/// Deletes a table from the [`Starchart`], returning whether or not the table was actually deleted.
+	///
+	/// # Errors
+	///
+	/// This raises an error if the [`Backend`] encounters an error.
+	pub async fn delete_table<B: Backend>(
+		&self,
+		chart: &Starchart<B>,
+	) -> Result<bool, ActionError> {
+		let lock = chart.guard.write().await;
 
 		let backend = &**chart;
 
-		let table = unsafe { self.table.take().inner_unwrap() };
+		let table = self.validate_table()?;
 
-		self.check_table(backend, table).await?;
-		self.check_metadata(backend, table).await?;
-
-		if !backend.has_table(table).await.map_err(|e| ActionRunError {
-			source: Some(Box::new(e)),
-			kind: ActionRunErrorType::Backend,
-		})? {
+		if self.check_table(backend).await.is_err() {
 			drop(lock);
 			return Ok(false);
 		}
 
+		self.check_metadata(backend).await?;
+
 		backend
 			.delete_table(table)
 			.await
-			.map_err(|e| ActionRunError {
-				source: Some(Box::new(e)),
-				kind: ActionRunErrorType::Backend,
-			})?;
+			.map_err(ActionError::from_backend)?;
 
 		drop(lock);
 
 		Ok(true)
 	}
-}
 
-impl<'a, S: ?Sized> Default for InnerAction<'a, S> {
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl<'a, S: ?Sized> Clone for InnerAction<'a, S> {
-	fn clone(&self) -> Self {
-		Self {
-			key: self.key.clone(),
-			data: self.data,
-			table: self.table,
+	/// Checks that the metadata for [`D`] matches what's in the table.
+	#[cfg(feature = "metadata")]
+	async fn check_metadata<B: Backend>(&self, backend: &B) -> Result<(), ActionError> {
+		if !backend
+			.has_table(crate::metadata::METADATA_KEY)
+			.await
+			.map_err(ActionError::from_backend)?
+		{
+			return Err(ActionError {
+				source: None,
+				kind: ActionErrorType::SomethingMissing(MissingValue::Table),
+			});
 		}
-	}
-}
-
-/// An [`Action`] for easy [`CRUD`] operations within a [`Starchart`].
-///
-/// [`CRUD`]: https://en.wikipedia.org/wiki/Create,_read,_update_and_delete
-/// [`Starchart`]: crate::Starchart
-#[derive(Clone)]
-#[must_use = "an action alone has no side effects"]
-pub struct Action<'a, S, C, T> {
-	pub(crate) inner: InnerAction<'a, S>,
-	kind: PhantomData<C>,
-	target: PhantomData<T>,
-}
-
-impl<'a, S, C, T> Action<'a, S, C, T> {
-	/// Creates a new [`Action`] with the specified operation.
-	pub const fn new() -> Self {
-		Self {
-			inner: InnerAction::new(),
-			kind: PhantomData,
-			target: PhantomData,
-		}
-	}
-
-	/// Get a reference to the currently set table.
-	#[must_use]
-	pub const fn table(&self) -> Option<&str> {
-		self.inner.table
+		let m = backend
+			.get::<Metadata>(crate::metadata::METADATA_KEY, self.table)
+			.await
+			.map_err(|e| ActionError {
+				source: Some(Box::new(e)),
+				kind: ActionErrorType::Metadata(Some(self.table.to_owned())),
+			})?;
+		m.map_or(
+			Err(ActionError {
+				source: None,
+				kind: ActionErrorType::SomethingMissing(MissingValue::Metadata),
+			}),
+			|metadata| {
+				if metadata.is::<D>() {
+					Ok(())
+				} else {
+					Err(ActionError {
+						source: None,
+						kind: ActionErrorType::Metadata(Some(self.table.to_owned())),
+					})
+				}
+			},
+		)
 	}
 
-	/// Get a reference to the currently set key.
-	#[must_use]
-	pub fn key(&self) -> Option<&str> {
-		self.inner.key.as_deref()
-	}
-}
-
-impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Action<'a, S, C, T> {
-	/// Get a reference to the currently set data.
-	#[must_use]
-	pub fn data(&self) -> Option<&S> {
-		self.inner.data
+	#[cfg(not(feature = "metadata"))]
+	fn check_metadata<B: Backend>(
+		&self,
+		_: &B,
+	) -> impl futures_util::Future<Output = Result<(), ActionError>> {
+		futures_util::future::ok(())
 	}
 
-	/// Returns the [`ActionKind`] we will be performing with said action.
-	#[allow(clippy::unused_self)]
-	pub fn kind(&self) -> ActionKind {
-		C::kind()
-	}
-
-	/// Returns the [`OperationTarget`] we will be performing with said action.
-	#[allow(clippy::unused_self)]
-	pub fn target(&self) -> TargetKind {
-		T::target()
-	}
-
-	/// Converts the action to a dynamic one, usually for serialization of some sort.
-	pub fn to_dynamic(&self) -> DynamicAction<S> {
-		DynamicAction {
-			key: self.key().map(ToOwned::to_owned),
-			table: self.table().map(ToOwned::to_owned),
-			data: self.data().cloned().map(Box::new),
-			kind: C::kind(),
-			target: T::target(),
+	/// Checks that the table actually exists.
+	///
+	/// This doesn't violate any async guards because one will always be held when this is ran.
+	async fn check_table<B: Backend>(&self, backend: &B) -> Result<(), ActionError> {
+		if backend
+			.has_table(self.table)
+			.await
+			.map_err(|e| ActionError {
+				source: Some(Box::new(e)),
+				kind: ActionErrorType::Backend,
+			})? {
+			Ok(())
+		} else {
+			Err(ActionError {
+				source: None,
+				kind: ActionErrorType::SomethingMissing(MissingValue::Table),
+			})
 		}
 	}
 
-	/// Sets the table for this action.
-	pub fn set_table(&mut self, table_name: &'a str) -> &mut Self {
-		self.inner.table.replace(table_name);
-
-		self // coverage:ignore-line
-	}
-
-	/// Validates that the table key is set.
-	///
-	/// # Errors
-	///
-	/// Errors if [`Self::set_table`] has not yet been called.
-	pub fn validate_table(&self) -> Result<(), ActionValidationError> {
-		self.inner.validate_table()
-	}
-
-	/// Validates that the key is not the private metadata key.
-	///
-	/// # Errors
-	/// Errors if [`Self::set_key`] was passed the private metadata key.
+	/// Checks that the provided key isn't the restricted metadata key.
 	#[cfg(feature = "metadata")]
 	#[allow(clippy::unused_self)]
-	pub fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionValidationError> {
-		self.inner.validate_metadata(key)
-	}
+	fn validate_metadata(&self, key: Option<&str>) -> Result<(), ActionError> {
+		if key == Some(crate::metadata::METADATA_KEY) {
+			return Err(ActionError {
+				source: None,
+				kind: ActionErrorType::Metadata(None),
+			});
+		}
 
-	/// Validates that the key is not the private metadata key.
-	///
-	/// # Errors
-	/// Errors if [`Self::set_key`] was passed the private metadata key.
-	#[cfg(not(feature = "metadata"))]
-	#[allow(clippy::unused_self)]
-	pub fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionValidationError> {
 		Ok(())
 	}
-}
 
-// Entry helpers
-impl<'a, S: Entry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
-	/// Sets the key for the action.
-	///
-	/// Users should prefer to call [`Self::set_entry`] over this, as setting the
-	/// entry will automatically call this.
-	///
-	/// This is unused on [`TargetKind::Table`] actions.
-	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
-		self.inner.key.replace(key.to_key());
-
-		self // coverage:ignore-line
+	#[cfg(not(feature = "metadata"))]
+	#[allow(clippy::unused_self)]
+	fn validate_metadata(&self, _: Option<&str>) -> Result<(), ActionError> {
+		Ok(())
 	}
 
-	/// Sets the data for the action.
-	///
-	/// This is unused on [`TargetKind::Table`] actions.
-	pub fn set_data(&mut self, entity: &'a S) -> &mut Self {
-		self.inner.data.replace(entity);
+	/// Validates that the key exists and isn't the restricted metadata key.
+	fn validate_key(&self) -> Result<&str, ActionError> {
+		self.validate_metadata(self.key.as_deref())?;
 
-		self // coverage:ignore-line
+		self.key.as_deref().ok_or(ActionError {
+			source: None,
+			kind: ActionErrorType::SomethingMissing(MissingValue::Key),
+		})
 	}
 
-	/// Validate that the key has been set.
-	///
-	/// # Errors
-	///
-	/// Errors if [`Self::set_key`] has not yet been called.
-	pub fn validate_key(&self) -> Result<(), ActionValidationError> {
-		self.inner.validate_key()
+	/// Validates that the data exists.
+	fn validate_data(&self) -> Result<&'v D, ActionError> {
+		self.data.ok_or(ActionError {
+			source: None,
+			kind: ActionErrorType::SomethingMissing(MissingValue::Data),
+		})
 	}
 
-	/// Validates that the data has been set.
-	///
-	/// # Errors
-	///
-	/// Errors if [`Self::set_data`] has not yet been called.
-	pub fn validate_data(&self) -> Result<(), ActionValidationError> {
-		self.inner.validate_data()
+	/// Validates that the table isn't the restricted metadata key.
+	fn validate_table(&self) -> Result<&str, ActionError> {
+		self.validate_metadata(Some(self.table))?;
+
+		Ok(self.table)
 	}
 
-	/// Validates that both the key and data have been set.
-	///
-	/// # Errors
-	///
-	/// This errors if both the [`Self::set_key`] and [`Self::set_data`] (or [`Self::set_entry`]) has not been called.
-	pub fn validate_entry(&self) -> Result<(), ActionValidationError> {
-		self.inner.validate_entry()
+	/// Validates both the key and the data.
+	fn validate_entry(&self) -> Result<(&str, &'v D), ActionError> {
+		Ok((self.validate_key()?, self.validate_data()?))
 	}
 }
 
-impl<'a, S: IndexEntry, C: CrudOperation> Action<'a, S, C, EntryTarget> {
-	/// Sets the [`Entry`] and [`Key`] that this [`Action`] will act over.
-	pub fn set_entry(&mut self, entity: &'a S) -> &mut Self {
-		self.set_key(entity.key()).set_data(entity)
+impl<'v, D: IndexEntry + ?Sized> Action<'v, D> {
+	/// Create an [`Action`] with the provided [`IndexEntry`].
+	pub fn with_entry(table: &'v str, entry: &'v D) -> Self {
+		let mut act = Self::new(table);
+
+		act.set_entry(entry);
+
+		act
+	}
+
+	/// Sets an [`IndexEntry`], which provides it's own key.
+	pub fn set_entry(&mut self, entry: &'v D) -> &mut Self {
+		self.set_key(entry.key()).set_data(entry)
 	}
 }
 
-impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Debug for Action<'a, S, C, T> {
-	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-		let mut state = f.debug_struct("Action");
-
-		state
-			.field("kind", &self.kind())
-			.field("target", &self.target());
-
-		if let Some(key) = self.key() {
-			state.field("key", &key);
+impl<'v, D: ?Sized> Clone for Action<'v, D> {
+	fn clone(&self) -> Self {
+		Self {
+			table: self.table,
+			key: self.key.clone(),
+			data: self.data,
 		}
-
-		if let Some(table) = self.table() {
-			state.field("table", &table);
-		}
-
-		state.finish()
 	}
 }
 
-impl<'a, S: Entry, C: CrudOperation, T: OperationTarget> Default for Action<'a, S, C, T> {
+impl<'v, D: ?Sized> Default for Action<'v, D> {
 	fn default() -> Self {
 		Self {
-			inner: InnerAction::default(),
-			kind: PhantomData,
-			target: PhantomData,
+			table: Default::default(),
+			key: None,
+			data: None,
 		}
 	}
 }
 
-unsafe impl<'a, S: Entry + Send, C: CrudOperation, T: OperationTarget> Send
-	for Action<'a, S, C, T>
-{
-}
+#[cfg(test)]
+mod tests {
+	use serde::{Deserialize, Serialize};
 
-unsafe impl<'a, S: Entry + Sync, C: CrudOperation, T: OperationTarget> Sync
-	for Action<'a, S, C, T>
-{
-}
+	use crate::{Action, IndexEntry};
 
-impl<'a, S: Entry + Unpin, C: CrudOperation, T: OperationTarget> Unpin for Action<'a, S, C, T> {}
-
-// Action run impls
-
-impl<'a, S: Entry> CreateEntryAction<'a, S> {
-	/// Validates and runs a [`CreateEntryAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] or [`Self::validate_entry`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_create_entry<B: Backend>(
-		self,
-		chart: &'a Starchart<B>,
-	) -> impl Future<Output = Result<(), ActionError>> + 'a {
-		self.inner.create_entry(chart)
+	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+	struct TestSettings {
+		pub id: u32,
+		pub value: String,
+		pub array: Vec<u8>,
+		pub opt: Option<f64>,
 	}
-}
 
-impl<'a, S: Entry> ReadEntryAction<'a, S> {
-	/// Validates and runs a [`ReadEntryAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] or [`Self::validate_key`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_read_entry<B: Backend>(
-		self,
-		gateway: &'a Starchart<B>,
-	) -> impl Future<Output = Result<Option<S>, ActionError>> + 'a {
-		self.inner.read_entry(gateway)
+	impl Default for TestSettings {
+		fn default() -> Self {
+			Self {
+				id: 1,
+				value: "hello, world!".to_owned(),
+				array: vec![1, 2, 3, 4, 5],
+				opt: Some(4.2),
+			}
+		}
 	}
-}
 
-impl<'a, S: Entry> UpdateEntryAction<'a, S> {
-	/// Validates and runs a [`UpdateEntryAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] or [`Self::validate_entry`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_update_entry<B: Backend>(
-		self,
-		chart: &'a Starchart<B>,
-	) -> impl Future<Output = Result<(), ActionError>> + 'a {
-		self.inner.update_entry(chart)
+	impl IndexEntry for TestSettings {
+		fn key(&self) -> crate::Key {
+			crate::Key::new(&self.id)
+		}
 	}
-}
 
-impl<'a, S: Entry> DeleteEntryAction<'a, S> {
-	/// Validates and runs a [`DeleteEntryAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] or [`Self::validate_key`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_delete_entry<B: Backend>(
-		self,
-		gateway: &'a Starchart<B>,
-	) -> impl Future<Output = Result<bool, ActionError>> + 'a {
-		self.inner.delete_entry(gateway)
+	#[test]
+	fn doctests() {
+		let settings = TestSettings::default();
+		let mut act: Action<TestSettings> = Action::new("foo");
+
+		assert_eq!(act.table(), "foo");
+		assert_eq!(act.key(), None);
+
+		act.set_key("bar");
+
+		assert_eq!(act.key(), Some("bar"));
+		assert_eq!(act.data(), None);
+
+		act.set_data(&settings);
+
+		assert_eq!(act.data(), Some(&settings));
+
+		assert_eq!(act.entry(), Some(("bar", &settings)));
 	}
-}
 
-impl<'a, S: Entry> CreateTableAction<'a, S> {
-	/// Validates and runs a [`CreateTableAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_create_table<B: Backend>(
-		self,
-		gateway: &'a Starchart<B>,
-	) -> impl Future<Output = Result<(), ActionError>> + 'a {
-		self.inner.create_table(gateway)
-	}
-}
+	#[test]
+	fn constructor_methods() {
+		{
+			let act: Action<TestSettings> = Action::new("foo");
 
-impl<'a, S: Entry> ReadTableAction<'a, S> {
-	/// Validates and runs a [`ReadTableAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_read_table<B: Backend, I>(
-		self,
-		gateway: &'a Starchart<B>,
-	) -> impl Future<Output = Result<I, ActionError>> + 'a
-	where
-		I: FromIterator<S> + 'a,
-	{
-		self.inner.read_table(gateway)
-	}
-}
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.entry(), None);
+		}
 
-impl<'a, S: Entry> DeleteTableAction<'a, S> {
-	/// Validates and runs a [`DeleteTableAction`].
-	///
-	/// # Errors
-	///
-	/// This returns an error if [`Self::validate_table`] fails, or if any of the [`Backend`] methods fail.
-	pub fn run_delete_table<B: Backend>(
-		self,
-		gateway: &'a Starchart<B>,
-	) -> impl Future<Output = Result<bool, ActionError>> + 'a {
-		self.inner.delete_table(gateway)
+		{
+			let act: Action<TestSettings> = Action::with_key("foo", "bar");
+
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.key(), Some("bar"));
+			assert_eq!(act.entry(), None);
+		}
+
+		{
+			let settings = TestSettings::default();
+			let act = Action::with_entry("foo", &settings);
+
+			assert_eq!(act.table(), "foo");
+			assert_eq!(act.entry(), Some(("1", &settings)));
+		}
 	}
 }

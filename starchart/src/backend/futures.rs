@@ -27,9 +27,6 @@ pub type EnsureTableFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 /// The future returned from [`Backend::get_all`].
 pub type GetAllFuture<'a, I, E> = PinBoxFuture<'a, Result<I, E>>;
 
-/// The future returned from [`Backend::get_keys`].
-pub type GetKeysFuture<'a, I, E> = PinBoxFuture<'a, Result<I, E>>;
-
 /// The future returned from [`Backend::get`].
 pub type GetFuture<'a, D, E> = PinBoxFuture<'a, Result<Option<D>, E>>;
 
@@ -48,4 +45,5 @@ pub type UpdateFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 /// The future returned from [`Backend::delete`].
 pub type DeleteFuture<'a, E> = PinBoxFuture<'a, Result<(), E>>;
 
+/// A boxed pinned future.
 type PinBoxFuture<'a, Rt = ()> = Pin<Box<dyn Future<Output = Rt> + Send + 'a>>;
