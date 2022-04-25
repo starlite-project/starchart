@@ -99,7 +99,7 @@ async fn read_and_update() -> Result<()> {
 			.await?;
 	}
 
-	let read_action = Action::with_key(&test_name, &1_u32);
+	let read_action = Action::with_key(&test_name, 1_u32.to_string());
 
 	let reread_action = read_action.clone();
 
@@ -133,9 +133,9 @@ async fn deletes() -> Result<()> {
 		.create_entry(&gateway)
 		.await?;
 
-	let delete_action = Action::<TestSettings>::with_key(&test_name, &1_u32);
+	let delete_action = Action::<TestSettings>::with_key(&test_name, 1.to_string());
 	assert!(delete_action.delete_entry(&gateway).await?);
-	let read_action = Action::<TestSettings>::with_key(&test_name, &1_u32);
+	let read_action = Action::<TestSettings>::with_key(&test_name, 1.to_string());
 	assert_eq!(read_action.read_entry(&gateway).await?, None);
 
 	let delete_table_action = Action::<TestSettings>::new(&test_name);

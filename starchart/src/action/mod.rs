@@ -21,7 +21,7 @@ pub struct Action<'v, D: ?Sized> {
 	/// The key this Action can run on.
 	///
 	/// This uses a [`Cow`] because that's the easiest way to allow people to return either [`str`] or [`String`].
-	key: Option<Cow<'static, str>>,
+	key: Option<Key>,
 	/// The data to use.
 	data: Option<&'v D>,
 }
@@ -73,7 +73,7 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	}
 
 	/// Creates a new [`Action`] with the specified [`Key`].
-	pub fn with_key<K: Key>(table: &'v str, key: &K) -> Self {
+	pub fn with_key(table: &'v str, key: impl Into<Key>) -> Self {
 		let mut act = Self::new(table);
 
 		act.set_key(key);
@@ -94,8 +94,8 @@ impl<'v, D: Entry + ?Sized> Action<'v, D> {
 	///
 	/// assert_eq!(act.key(), Some("bar"));
 	/// # act }
-	pub fn set_key<K: Key>(&mut self, key: &K) -> &mut Self {
-		self.key.replace(key.to_key());
+	pub fn set_key(&mut self, key: impl Into<Key>) -> &mut Self {
+		self.key.replace(key.into());
 
 		self
 	}
@@ -535,10 +535,8 @@ mod tests {
 	}
 
 	impl IndexEntry for TestSettings {
-		type Key = u32;
-
-		fn key(&self) -> &Self::Key {
-			&self.id
+		fn key(&self) -> crate::Key {
+			crate::Key::new(&self.id)
 		}
 	}
 
@@ -550,7 +548,7 @@ mod tests {
 		assert_eq!(act.table(), "foo");
 		assert_eq!(act.key(), None);
 
-		act.set_key(&"bar");
+		act.set_key("bar");
 
 		assert_eq!(act.key(), Some("bar"));
 		assert_eq!(act.data(), None);
@@ -572,7 +570,7 @@ mod tests {
 		}
 
 		{
-			let act: Action<TestSettings> = Action::with_key("foo", &"bar");
+			let act: Action<TestSettings> = Action::with_key("foo", "bar");
 
 			assert_eq!(act.table(), "foo");
 			assert_eq!(act.key(), Some("bar"));

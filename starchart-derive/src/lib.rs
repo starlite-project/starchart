@@ -64,17 +64,13 @@ fn parse(input: &DeriveInput) -> Result<TokenStream> {
 		.as_ref()
 		.ok_or_else(|| Error::new_spanned(id_field, "expected a named field"))?;
 
-	let id_type = id_field.ty.clone();
-
 	let id_span = id_field.span();
 
 	let implementation = quote_spanned! {id_span=>
 		#[automatically_derived]
 		impl ::starchart::IndexEntry for #ident {
-			type Key = #id_type;
-
-			fn key(&self) -> &Self::Key {
-				&self.#id_ident
+			fn key(&self) -> ::starchart::Key {
+				::starchart::Key::new(&self.#id_ident)
 			}
 		}
 	};

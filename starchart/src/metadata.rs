@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use serde_value::{to_value, SerializerError, Value};
 
-use crate::{Entry, IndexEntry};
+use crate::{Entry, IndexEntry, Key};
 
 /// The key for the metadata tables.
 pub const METADATA_KEY: &str = "__metadata__";
@@ -34,10 +34,8 @@ impl Metadata {
 }
 
 impl IndexEntry for Metadata {
-	type Key = String;
-
-	fn key(&self) -> &Self::Key {
-		&self.table
+	fn key(&self) -> Key {
+		self.table.clone().into()
 	}
 }
 
